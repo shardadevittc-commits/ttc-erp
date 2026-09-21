@@ -1,0 +1,1053 @@
+/* -------------------------------------------------------------
+           CSS VARIABLES & COLOR SYSTEM (Steel Industry ERP Palette)
+        -------------------------------------------------------------- */
+        :root {
+            /* Primary Brand Red */
+            --primary-red: #E52D3F;
+            --primary-red-hover: #CC2334;
+            --red-glow: rgba(229, 45, 63, 0.22);
+            --red-subtle: rgba(229, 45, 63, 0.08);
+            --red-border: rgba(229, 45, 63, 0.20);
+
+            /* Dark Navy (Sidebar, strong headings, prominent accents) */
+            --dark-navy: #0B1220;
+
+            /* Secondary Blue (Production, operational data, charts, info) */
+            --accent-blue: #3B82F6;
+            --accent-blue-hover: #2563EB;
+            --accent-blue-subtle: rgba(59, 130, 246, 0.08);
+            --accent-blue-border: rgba(59, 130, 246, 0.22);
+
+            /* Success Green (Active status, positive growth, completed) */
+            --accent-green: #10B981;
+            --accent-green-subtle: rgba(16, 185, 129, 0.08);
+            --accent-green-border: rgba(16, 185, 129, 0.22);
+
+            /* Warning Orange (Warning, pending, financial attention, alerts) */
+            --accent-amber: #F59E0B;
+            --accent-amber-subtle: rgba(245, 158, 11, 0.08);
+            --accent-amber-border: rgba(245, 158, 11, 0.22);
+
+            /* Layout Constants */
+            --sidebar-width: 270px;
+            --navbar-height: 74px;
+            --transition-smooth: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* LIGHT THEME (Default - Crisp Steel Industry Enterprise Look) */
+        [data-theme="light"] {
+            --bg-main: #F5F7FA;
+            --bg-sidebar: #0B1220; /* Keep high-contrast enterprise dark navy sidebar */
+            --bg-card: #FFFFFF;
+            --bg-card-hover: #FAFCFE;
+            --bg-header: rgba(255, 255, 255, 0.94);
+            --bg-input: #F1F4F8;
+            --border-color: #E5EAF0;
+            --border-card: #E5EAF0;
+            --text-heading: #0B1220;
+            --text-body: #111827;
+            --text-muted: #64748B;
+            --card-shadow: 0 1px 3px rgba(11, 18, 32, 0.04), 0 4px 12px -2px rgba(11, 18, 32, 0.03);
+            --table-header: #F8FAFC;
+            --table-row-hover: #F8FAFC;
+        }
+
+        /* DARK THEME (High Contrast Steel Dark Navy) */
+        [data-theme="dark"] {
+            --bg-main: #070C16;
+            --bg-sidebar: #0B1220;
+            --bg-card: #10192A;
+            --bg-card-hover: #152238;
+            --bg-header: rgba(11, 18, 32, 0.92);
+            --bg-input: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(229, 234, 240, 0.1);
+            --border-card: rgba(229, 234, 240, 0.1);
+            --text-heading: #F8FAFC;
+            --text-body: #CBD5E1;
+            --text-muted: #8493A8;
+            --card-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45);
+            --table-header: rgba(255, 255, 255, 0.03);
+            --table-row-hover: rgba(255, 255, 255, 0.025);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-body);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        h1, h2, h3, h4, h5, h6, .brand-font {
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-heading);
+            letter-spacing: -0.2px;
+        }
+
+        /* -------------------------------------------------------------
+           LAYOUT WRAPPER
+        -------------------------------------------------------------- */
+        #main-wrapper {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* -------------------------------------------------------------
+           1. SIDEBAR (Dark Navy Enterprise Navigation)
+        -------------------------------------------------------------- */
+        .sidebar-vertical {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1050;
+            background: var(--bg-sidebar);
+            border-right: 1px solid rgba(255, 255, 255, 0.07);
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition-smooth);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+        }
+
+        .sidebar-vertical::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-vertical::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+
+        /* Sidebar Brand - Logo Only (Enlarged & High Impact) */
+        .sidebar-brand-box {
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            min-height: 82px;
+            height: 82px;
+            background: rgba(0, 0, 0, 0.22);
+            flex-shrink: 0;
+        }
+
+        .sidebar-brand-link {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar-logo-card {
+            background: #FFFFFF;
+            padding: 8px 14px;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar-logo-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+        }
+
+        .sidebar-brand-img {
+            height: 52px;
+            max-height: 54px;
+            width: auto;
+            max-width: 220px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .sidebar-close-btn {
+            background: transparent;
+            border: none;
+            color: #94A3B8;
+            font-size: 1.15rem;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }
+
+        /* Sidebar Navigation Items */
+        .sidebar-nav-container {
+            padding: 1.1rem 0.75rem;
+            flex-grow: 1;
+        }
+
+        .sidebar-heading {
+            font-size: 0.67rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.1px;
+            color: #64748B;
+            padding: 0.85rem 0.85rem 0.4rem;
+        }
+
+        .sidebar-menu-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 0.8rem 0;
+        }
+
+        .sidebar-item {
+            margin-bottom: 2px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 0.85rem;
+            color: #94A3B8;
+            text-decoration: none;
+            font-size: 0.84rem;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .sidebar-link i.nav-icon {
+            width: 20px;
+            font-size: 0.95rem;
+            margin-right: 12px;
+            color: #64748B;
+            transition: color 0.2s ease;
+            text-align: center;
+        }
+
+        .sidebar-link:hover {
+            color: #FFFFFF;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .sidebar-link:hover i.nav-icon {
+            color: #CBD5E1;
+        }
+
+        .sidebar-link.active {
+            color: #FFFFFF;
+            font-weight: 600;
+            background: linear-gradient(90deg, rgba(229, 45, 63, 0.18) 0%, rgba(229, 45, 63, 0.02) 100%);
+            border-left: 3px solid var(--primary-red);
+        }
+
+        .sidebar-link.active i.nav-icon {
+            color: var(--primary-red);
+        }
+
+        .sidebar-badge {
+            margin-left: auto;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 999px;
+        }
+
+        /* Sidebar Submenu Navigation */
+        .sidebar-link .submenu-arrow {
+            font-size: 0.68rem;
+            color: #64748B;
+            transition: transform 0.22s ease, color 0.22s ease;
+            margin-left: auto;
+        }
+
+        .sidebar-link:hover .submenu-arrow {
+            color: #CBD5E1;
+        }
+
+        .sidebar-link[aria-expanded="true"] {
+            color: #FFFFFF;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-link[aria-expanded="true"] .submenu-arrow {
+            transform: rotate(180deg);
+            color: var(--primary-red);
+        }
+
+        .sidebar-submenu-list {
+            list-style: none;
+            padding: 4px 0 6px 14px;
+            margin: 3px 0 6px 14px;
+            position: relative;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .submenu-item {
+            margin-bottom: 2px;
+        }
+
+        .submenu-link {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 0.45rem 0.85rem;
+            color: #8493A8;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border-radius: 7px;
+            transition: all 0.2s ease;
+        }
+
+        .submenu-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #64748B;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .submenu-link:hover {
+            color: #FFFFFF;
+            background: rgba(255, 255, 255, 0.05);
+            padding-left: 1rem;
+        }
+
+        .submenu-link:hover .submenu-dot {
+            background: var(--primary-red);
+            transform: scale(1.4);
+            box-shadow: 0 0 6px var(--red-glow);
+        }
+
+        .submenu-link.active {
+            color: #FFFFFF;
+            font-weight: 600;
+            background: rgba(229, 45, 63, 0.12);
+        }
+
+        .submenu-link.active .submenu-dot {
+            background: var(--primary-red);
+            box-shadow: 0 0 6px var(--red-glow);
+        }
+
+        /* Sidebar Footer Widget */
+        .sidebar-footer-widget {
+            padding: 0.9rem 1.1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-red) 0%, #BA1E2E 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFFFFF;
+            font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px var(--red-glow);
+        }
+
+        /* -------------------------------------------------------------
+           2. MAIN CONTENT WRAPPER & TOP NAVBAR
+        -------------------------------------------------------------- */
+        .page-content-wrapper {
+            flex-grow: 1;
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition-smooth);
+            width: calc(100% - var(--sidebar-width));
+        }
+
+        /* Header Navbar */
+        .header-navbar {
+            height: var(--navbar-height);
+            background: var(--bg-header);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 1.75rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* EXACT DASH UI SIDEBAR TOGGLE BUTTON */
+        .nav-toggle-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-heading);
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+            padding: 0;
+            user-select: none;
+        }
+
+        .nav-toggle-btn:hover {
+            background: var(--red-subtle);
+            border-color: var(--red-border);
+            color: var(--primary-red);
+            box-shadow: 0 0 12px var(--red-glow);
+        }
+
+        .nav-toggle-btn:active {
+            transform: scale(0.94);
+        }
+
+        .nav-toggle-btn svg {
+            transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+
+        /* Search Box Next to Toggle */
+        .header-search-wrap {
+            position: relative;
+            margin-left: 14px;
+            width: 310px;
+        }
+
+        .header-search-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 8px 36px 8px 38px;
+            color: var(--text-heading);
+            font-size: 0.85rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .header-search-input:focus {
+            border-color: var(--primary-red);
+            background: var(--bg-card);
+            box-shadow: 0 0 0 3px var(--red-subtle);
+        }
+
+        .header-search-wrap .search-icon {
+            position: absolute;
+            left: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+        .header-search-wrap .shortcut-badge {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            background: var(--border-color);
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        /* Header Right Controls */
+        .theme-toggle-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            width: 38px;
+            height: 38px;
+            border-radius: 9px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle-btn:hover {
+            color: var(--text-heading);
+            background: var(--bg-input);
+            border-color: var(--border-color);
+        }
+
+        .system-pill-live {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 5px 12px;
+            background: var(--accent-green-subtle);
+            border: 1px solid var(--accent-green-border);
+            color: var(--accent-green);
+            font-size: 0.74rem;
+            font-weight: 600;
+            border-radius: 999px;
+        }
+
+        .live-dot {
+            width: 7px;
+            height: 7px;
+            background-color: var(--accent-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-green);
+            animation: pulse 1.8s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.25); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        .user-nav-profile {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 4px 12px 4px 5px;
+            border-radius: 30px;
+        }
+
+        .btn-logout {
+            background: transparent;
+            border: 1px solid rgba(229, 45, 63, 0.35);
+            color: var(--primary-red);
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-logout:hover {
+            background: var(--primary-red);
+            border-color: var(--primary-red);
+            color: #FFFFFF;
+            box-shadow: 0 4px 14px var(--red-glow);
+        }
+
+        /* -------------------------------------------------------------
+           3. TOGGLED COLLAPSE STATE (WHEN SIDEBAR TOGGLE IS CLICKED)
+        -------------------------------------------------------------- */
+        #main-wrapper.sidebar-collapsed .sidebar-vertical {
+            transform: translateX(-100%) !important;
+        }
+
+        #main-wrapper.sidebar-collapsed .page-content-wrapper {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+
+        #main-wrapper.sidebar-collapsed .nav-toggle-btn svg {
+            transform: scaleX(-1);
+        }
+
+        /* Mobile Screen Behavior (< 992px) */
+        @media (max-width: 991.98px) {
+            .sidebar-vertical {
+                transform: translateX(-100%);
+            }
+
+            .page-content-wrapper {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
+
+            #main-wrapper.mobile-open .sidebar-vertical {
+                transform: translateX(0) !important;
+                box-shadow: 12px 0 32px rgba(0, 0, 0, 0.6);
+            }
+
+            .sidebar-backdrop {
+                display: block;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.68);
+                backdrop-filter: blur(4px);
+                z-index: 1045;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s ease;
+            }
+
+            #main-wrapper.mobile-open .sidebar-backdrop {
+                opacity: 1;
+                pointer-events: auto;
+            }
+        }
+
+        /* -------------------------------------------------------------
+           4. DASHBOARD HERO BANNER (Steel Industry Enterprise Card)
+        -------------------------------------------------------------- */
+        .dashboard-hero-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            padding: 1.85rem 2rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+
+        [data-theme="dark"] .dashboard-hero-card {
+            background: linear-gradient(135deg, #101B2E 0%, #0C1524 100%);
+            border-color: var(--border-card);
+        }
+
+        [data-theme="light"] .dashboard-hero-card {
+            background: #FFFFFF;
+            border-color: var(--border-card);
+        }
+
+        .dashboard-hero-card::after {
+            content: '';
+            position: absolute;
+            width: 380px;
+            height: 380px;
+            right: -80px;
+            top: -100px;
+            background: radial-gradient(circle, rgba(229, 45, 63, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin-bottom: 0.35rem;
+        }
+
+        .hero-subtitle {
+            font-size: 0.92rem;
+            color: var(--text-muted);
+            max-width: 680px;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* -------------------------------------------------------------
+           5. DASH UI STYLE METRIC KPI CARDS
+        -------------------------------------------------------------- */
+        .kpi-metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            padding: 1.35rem 1.4rem;
+            transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+            box-shadow: var(--card-shadow);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-metric-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(229, 45, 63, 0.3);
+            box-shadow: 0 10px 24px -4px rgba(11, 18, 32, 0.08);
+        }
+
+        .kpi-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.8rem;
+        }
+
+        .kpi-icon-pill {
+            width: 44px;
+            height: 44px;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+        }
+
+        .kpi-icon-red { background: var(--red-subtle); color: var(--primary-red); border: 1px solid var(--red-border); }
+        .kpi-icon-blue { background: var(--accent-blue-subtle); color: var(--accent-blue); border: 1px solid var(--accent-blue-border); }
+        .kpi-icon-green { background: var(--accent-green-subtle); color: var(--accent-green); border: 1px solid var(--accent-green-border); }
+        .kpi-icon-amber { background: var(--accent-amber-subtle); color: var(--accent-amber); border: 1px solid var(--accent-amber-border); }
+
+        .kpi-trend-badge {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .trend-up { background: var(--accent-green-subtle); color: var(--accent-green); border: 1px solid var(--accent-green-border); }
+        .trend-neutral { background: var(--accent-green-subtle); color: var(--accent-green); border: 1px solid var(--accent-green-border); }
+
+        .kpi-title {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 0.35rem;
+        }
+
+        .kpi-value-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+        }
+
+        .kpi-value {
+            font-size: 1.85rem;
+            font-weight: 700;
+            color: var(--text-heading);
+            font-family: 'Outfit', sans-serif;
+            line-height: 1;
+        }
+
+        /* Mini SVG Sparklines */
+        .sparkline-svg {
+            width: 90px;
+            height: 34px;
+            overflow: visible;
+        }
+
+        /* -------------------------------------------------------------
+           6. CHARTS & ANALYTICS SECTION
+        -------------------------------------------------------------- */
+        .chart-box-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            padding: 1.4rem;
+            box-shadow: var(--card-shadow);
+            height: 100%;
+        }
+
+        .card-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .card-header-flex h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .chart-filter-pills {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-input);
+            padding: 3px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .filter-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.74rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn.active, .filter-btn:hover {
+            background: var(--primary-red);
+            color: #FFFFFF;
+        }
+
+        /* -------------------------------------------------------------
+           7. MODULES ACCESS GRID
+        -------------------------------------------------------------- */
+        .module-tile {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            padding: 1.15rem;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            text-decoration: none;
+            transition: all 0.22s ease;
+            box-shadow: var(--card-shadow);
+            height: 100%;
+        }
+
+        .module-tile:hover {
+            transform: translateY(-2px);
+            border-color: rgba(229, 45, 63, 0.35);
+            background: var(--bg-card-hover);
+            box-shadow: 0 6px 18px -3px rgba(11, 18, 32, 0.08);
+        }
+
+        .module-icon-box {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            color: var(--text-heading);
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .module-tile:hover .module-icon-box {
+            background: var(--primary-red);
+            color: #FFFFFF;
+            border-color: var(--primary-red);
+            box-shadow: 0 4px 12px var(--red-glow);
+        }
+
+        .module-tile h4 {
+            font-size: 0.94rem;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+            color: var(--text-heading);
+        }
+
+        .module-tile p {
+            font-size: 0.77rem;
+            color: var(--text-muted);
+            line-height: 1.35;
+            margin: 0;
+        }
+
+        /* -------------------------------------------------------------
+           8. LIVE PLANT DATA TABLE
+        -------------------------------------------------------------- */
+        .plant-table-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+
+        .table-custom {
+            width: 100%;
+            margin-bottom: 0;
+            color: var(--text-body);
+            font-size: 0.83rem;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .table-custom thead th {
+            background: var(--table-header);
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 0.85rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table-custom tbody td {
+            padding: 0.85rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .table-custom tbody tr:hover {
+            background: var(--table-row-hover);
+        }
+
+        .badge-status {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .badge-status-inward { background: var(--accent-blue-subtle); color: var(--accent-blue); border: 1px solid var(--accent-blue-border); }
+        .badge-status-gross { background: var(--accent-amber-subtle); color: var(--accent-amber); border: 1px solid var(--accent-amber-border); }
+        .badge-status-verified { background: var(--accent-green-subtle); color: var(--accent-green); border: 1px solid var(--accent-green-border); }
+
+        /* -------------------------------------------------------------
+           9. USER PROFILE CARD (Right Panel)
+        -------------------------------------------------------------- */
+        .profile-hero-badge {
+            background: linear-gradient(135deg, rgba(229, 45, 63, 0.08) 0%, rgba(229, 45, 63, 0.02) 100%);
+            border: 1px solid var(--red-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .profile-avatar-large {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-red) 0%, #BA1E2E 100%);
+            color: #FFFFFF;
+            font-size: 1.45rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 4px 16px var(--red-glow);
+        }
+
+        .profile-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.82rem;
+        }
+
+        .profile-info-row:last-child {
+            border-bottom: none;
+        }
+
+        .profile-info-row .label {
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .profile-info-row .val {
+            color: var(--text-heading);
+            font-weight: 600;
+        }
+
+/* -------------------------------------------------------------
+       PREMIUM CUSTOM ERP TOGGLE SWITCH (100% Reliable & Non-blocking)
+    -------------------------------------------------------------- */
+    .erp-switch {
+        position: relative;
+        display: inline-block;
+        width: 46px;
+        height: 24px;
+        margin: 0;
+        cursor: pointer;
+        user-select: none;
+    }
+    .erp-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+        margin: 0;
+        padding: 0;
+    }
+    .erp-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #94A3B8;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 30px;
+    }
+    .erp-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: #FFFFFF;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 50%;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+    }
+    .erp-switch input:checked + .erp-slider {
+        background-color: var(--accent-green);
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.45);
+    }
+    .erp-switch input:checked + .erp-slider:before {
+        transform: translateX(22px);
+    }
+    .erp-switch input:disabled + .erp-slider {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Floating Toast Container */
+    .status-toast-container {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+    }
+    .status-toast {
+        min-width: 280px;
+        padding: 12px 18px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.35);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        pointer-events: auto;
+        animation: slideInToast 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    @keyframes slideInToast {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
