@@ -3,7 +3,8 @@
 @section('title', 'Edit User & Role | ' . $user->name)
 
 @section('content')
-    <div class="mb-4">
+    
+    <div>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-1" style="font-size: 0.8rem;">
                 <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none text-muted">Dashboard</a></li>
@@ -11,16 +12,20 @@
                 <li class="breadcrumb-item active text-danger fw-semibold" aria-current="page">Edit User</li>
             </ol>
         </nav>
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-            <div>
-                <h2 class="fs-4 fw-bold m-0" style="color: var(--text-heading); letter-spacing: -0.3px;">
-                    <i class="fa-solid fa-user-pen me-2 text-primary"></i>Edit User: {{ $user->name }}
-                </h2>
-                <p class="text-muted small m-0 mt-1">Update profile information, change assigned role, or reset account password.</p>
+    </div> 
+
+    <div class="page-header">
+        
+        <div class="page-header__inner">
+            <div class="page-header__content">
+                <div class="page-header__title">
+                    <h6>Manage Users</h6>
+                </div>
             </div>
-            <div>
+
+            <div class="page-header__actions">
                 <a href="{{ route('users.users') }}" class="btn btn-outline-secondary px-3 py-2 fw-semibold rounded-3">
-                    <i class="fa-solid fa-arrow-left me-1"></i> Back to Users List
+                    <i class="fa-solid fa-arrow-left me-1"></i> Back
                 </a>
             </div>
         </div>
@@ -49,17 +54,15 @@
                 <span class="badge rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background: var(--accent-blue-subtle); color: var(--accent-blue);">
                     <i class="fa-solid fa-user-gear"></i>
                 </span>
-                <h5 class="m-0 fs-6 fw-bold" style="color: var(--text-heading);">Edit Operator Account & Role Settings</h5>
+                <h5 class="m-0 fs-6 fw-bold" style="color: var(--text-heading);">Update User Details</h5>
             </div>
         </div>
         {{-- @php
-        pr($user); die;
+        pr($roles); die;
         @endphp --}}
         <div class="card-body p-4">
-            <form action="{{ route('users.edit') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('users.edit',['id' => $user->id]) }}" method="POST" enctype="multipart/form-data">
                 @csrf
-                @method('PUT')
-
                 <div class="row g-4">
                     <!-- Left Column: Profile Photo Upload -->
                     <div class="col-12 col-lg-3 text-center border-end-lg pe-lg-4" style="border-color: var(--border-color) !important;">
@@ -91,9 +94,9 @@
                             @error('role_id')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
-                            <div class="form-text small text-muted mt-1">
+                            {{-- <div class="form-text small text-muted mt-1">
                                 Controls which ERP modules and actions this operator can access.
-                            </div>
+                            </div> --}}
                         </div>
 
                         <!-- Status Selection -->
@@ -228,7 +231,7 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-                                <div class="form-text small text-muted">Only fill this if you want to change or reset this operator's password.</div>
+                                {{-- <div class="form-text small text-muted">Only fill this if you want to change or reset this operator's password.</div> --}}
                             </div>
 
                             <div class="col-12 mt-4 pt-2">
@@ -237,7 +240,7 @@
                                         Cancel
                                     </a>
                                     <button type="submit" class="btn text-white px-4 py-2 rounded-3 fw-semibold shadow-sm" style="background-color: var(--accent-blue); border-color: var(--accent-blue);">
-                                        <i class="fa-solid fa-floppy-disk me-1.5"></i> Update User Information
+                                        <i class="fa-solid fa-floppy-disk me-1.5"></i> Update
                                     </button>
                                 </div>
                             </div>

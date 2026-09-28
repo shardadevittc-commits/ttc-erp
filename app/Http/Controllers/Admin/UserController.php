@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -93,7 +94,7 @@ class UserController extends Controller
 
             return redirect()->route('users.users')->with('success', 'User added successfully with assigned role.');
         }
-        
+
         $roles = Role::where('status', Role::STATUS_ACTIVE)->orderBy('name')->get();
         return view('admin.users.create', compact('roles'));
     }
@@ -101,19 +102,80 @@ class UserController extends Controller
     /**
      * Display the specified user.
      */
-    public function view(User $user)
+    public function view(Request $request, $id)
     {
-        $user->load('role');
-        return view('admin.users.show', compact('user'));
+        $user = User::findOrFail($id);
+        return view('admin.users.view', compact('user'));
     }
 
     /**
      * Show the form for editing the specified user.
      */
-    public function edit(User $user)
+    public function edit(Request $request, $id)
     {
-        $roles = Role::where('status', Role::STATUS_ACTIVE)->orderBy('name')->get();
-        return view('admin.users.edit', compact('user', 'roles'));
+        $user = User::findOrFail($id);
+        $permissions = $user->permissions;
+        if($user){
+            if($request->isMethod('post')) {
+                $validated = $request->validate([
+                    'role_id' => ['required', 'exists:roles,id'],
+                    'first_name' => ['required', 'string', 'max:100'],
+                    'last_name' => ['nullable', 'string', 'max:100'],
+                    'username' => [
+                        'required',
+                        'string',
+                        'max:100',
+                        'alpha_dash',
+                        Rule::unique('users', 'username')->ignore($user->id),
+                    ],
+                    'email' => [
+                        'required',
+                        'string',
+                        'email',
+                        'max:255',
+                        Rule::unique('users', 'email')->ignore($user->id),
+                    ],
+                    'password' => ['nullable', 'string', 'min:6'],
+                    'phone_number' => ['nullable', 'string', 'max:30'],
+                    'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+                    'status' => ['required', Rule::in([User::STATUS_ACTIVE, User::STATUS_INACTIVE])],
+                ]);
+
+                $imagePath = $user->image;
+                if ($request->hasFile('image')) {
+                    // Delete old file if exists
+                    if ($user->image && Storage::disk('public')->exists($user->image)) {
+                        Storage::disk('public')->delete($user->image);
+                    }
+                    $imagePath = $request->file('image')->store('users', 'public');
+                }
+
+                $data = [
+                    'role_id' => $validated['role_id'],
+                    'first_name' => $validated['first_name'],
+                    'last_name' => $validated['last_name'] ?? null,
+                    'username' => strtolower($validated['username']),
+                    'email' => strtolower($validated['email']),
+                    'phone_number' => $validated['phone_number'] ?? null,
+                    'image' => $imagePath,
+                    'status' => (int) $validated['status'],
+                ];
+
+                if (!empty($validated['password'])) {
+                    $data['password'] = Hash::make($validated['password']);
+                }
+
+                $user->update($data);
+
+                return redirect()->route('users.users')->with('success', 'User updated successfully.');
+
+            }
+
+            $roles = Role::where('status', Role::STATUS_ACTIVE)->orderBy('name')->get();
+            return view('admin.users.edit', compact('user', 'roles'));
+        }else{
+            abort(404);
+        }
     }
 
     /**
