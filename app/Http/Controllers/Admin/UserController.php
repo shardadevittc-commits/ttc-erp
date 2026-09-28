@@ -52,7 +52,7 @@ class UserController extends Controller
             'roles_count' => Role::count(),
         ];
 
-        return view('admin.users.users', compact('listing', 'roles', 'stats'));
+        return view('admin.users.index', compact('listing', 'roles', 'stats'));
     }
 
     /**
