@@ -27,7 +27,7 @@
 					</small>
 				</a>
 				<small class="text-muted">
-					{{ '+91-'.$row->phonenumber }}
+					{{ '+91-'.$row->phone_number }}
 				</small>
 			</div>
 		</div>
@@ -123,8 +123,8 @@
 		</div>
 	</td> --}}
     <td class="d-flex align-items-center">
-        <a class="dropdown-item" href="{{ route('users.edit', ['id' => $row->id]) }}"><i class="fas fa-edit text-primary"></i> </a>
-        <a class="dropdown-item" href="{{ route('users.view', ['id' => $row->id]) }}"><i class="fas fa-eye text-info"></i> </a>
+        <a class="dropdown-item" href="{{ route('users.edit', ["back_url" => url()->full(),'id' => $row->id]) }}"><i class="fas fa-edit text-primary"></i> </a>
+        <a class="dropdown-item" href="{{ route('users.view', ["back_url" => url()->full(),'id' => $row->id]) }}"><i class="fas fa-eye text-info"></i> </a>
         <a class="dropdown-item delete_confirm" href="{{ route('users.delete', ['id' => $row->id]) }}"><i class="fas fa-trash-alt text-danger"></i> </a>
     </td>
 
