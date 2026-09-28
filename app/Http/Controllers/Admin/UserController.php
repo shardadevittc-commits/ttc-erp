@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 
@@ -42,7 +42,7 @@ class UserController extends Controller
             $query->where('status', $request->status);
         }
 
-        $users = $query->paginate(10)->withQueryString();
+        $listing = $query->paginate(10)->withQueryString();
         $roles = Role::where('status', Role::STATUS_ACTIVE)->orderBy('name')->get();
 
         $stats = [
@@ -52,60 +52,56 @@ class UserController extends Controller
             'roles_count' => Role::count(),
         ];
 
-        return view('admin.users.index', compact('users', 'roles', 'stats'));
+        return view('admin.users.index', compact('listing', 'roles', 'stats'));
     }
 
     /**
      * Show the form for creating a new user with a role.
      */
-    public function create()
+    public function add(Request $request)
     {
+        if($request->isMethod('post')) {
+             $validated = $request->validate([
+                'role_id' => ['required', 'exists:roles,id'],
+                'first_name' => ['required', 'string', 'max:100'],
+                'last_name' => ['nullable', 'string', 'max:100'],
+                'username' => ['required', 'string', 'max:100', 'alpha_dash', 'unique:users,username'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+                'password' => ['required', 'string', 'min:6'],
+                'phone_number' => ['nullable', 'string', 'max:30'],
+                'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+                'status' => ['required', Rule::in([User::STATUS_ACTIVE, User::STATUS_INACTIVE])],
+            ]);
+
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('users', 'public');
+            }
+
+            User::create([
+                'role_id' => $validated['role_id'],
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'] ?? null,
+                'username' => strtolower($validated['username']),
+                'email' => strtolower($validated['email']),
+                'password' => Hash::make($validated['password']),
+                'phone_number' => $validated['phone_number'] ?? null,
+                'image' => $imagePath,
+                'status' => (int) $validated['status'],
+                'created_by' => auth()->id(),
+            ]);
+
+            return redirect()->route('users.users')->with('success', 'User added successfully with assigned role.');
+        }
+        
         $roles = Role::where('status', Role::STATUS_ACTIVE)->orderBy('name')->get();
         return view('admin.users.create', compact('roles'));
     }
 
     /**
-     * Store a newly created user in storage.
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'role_id' => ['required', 'exists:roles,id'],
-            'first_name' => ['required', 'string', 'max:100'],
-            'last_name' => ['nullable', 'string', 'max:100'],
-            'username' => ['required', 'string', 'max:100', 'alpha_dash', 'unique:users,username'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:6'],
-            'phone_number' => ['nullable', 'string', 'max:30'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
-            'status' => ['required', Rule::in([User::STATUS_ACTIVE, User::STATUS_INACTIVE])],
-        ]);
-
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('users', 'public');
-        }
-
-        User::create([
-            'role_id' => $validated['role_id'],
-            'first_name' => $validated['first_name'],
-            'last_name' => $validated['last_name'] ?? null,
-            'username' => strtolower($validated['username']),
-            'email' => strtolower($validated['email']),
-            'password' => Hash::make($validated['password']),
-            'phone_number' => $validated['phone_number'] ?? null,
-            'image' => $imagePath,
-            'status' => (int) $validated['status'],
-            'created_by' => auth()->id(),
-        ]);
-
-        return redirect()->route('users.index')->with('success', 'User added successfully with assigned role.');
-    }
-
-    /**
      * Display the specified user.
      */
-    public function show(User $user)
+    public function view(User $user)
     {
         $user->load('role');
         return view('admin.users.show', compact('user'));

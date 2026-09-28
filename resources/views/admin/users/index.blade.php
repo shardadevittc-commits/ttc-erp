@@ -7,15 +7,41 @@
 @endpush
 
 @section('content')
+
     <!-- Floating Toast Notification Area -->
-    <div id="statusToastContainer" class="status-toast-container"></div>
+    {{-- <div id="statusToastContainer" class="status-toast-container"></div> --}}
+
+
+   <div class="page-header">
+        <div class="page-header__inner">
+            <div class="page-header__content">
+                <div class="page-header__title">
+                    <h6>Manage Users & Roles</h6>
+                    <span>Manage system operators, assign plant department roles, and toggle Active/Inactive status directly from the list.</span>
+                </div>
+                <div class="page-header__tabs">
+                    <a href="#" class="page-tab active">All Users </a>
+                    {{-- <a href="#" class="page-tab"> Pending </a>
+                    <a href="#" class="page-tab">Processing</a>
+                    <a href="#" class="page-tab"> Completed </a>
+                    <a href="#" class="page-tab"> Cancelled</a> --}}
+                </div>
+            </div>
+
+            <div class="page-header__actions">
+                <a href="{{ route('users.add') }}" class="header-btn header-btn--primary"><i class="fas fa-plus"></i> Add New User / Role </a>
+                @include('admin.users.filters')
+            </div>
+        </div>
+    </div>
+
 
     <!-- Page Header & Action Controls -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    {{-- <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-1" style="font-size: 0.8rem;">
-                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none text-muted">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('users.users') }}" class="text-decoration-none text-muted">Dashboard</a></li>
                     <li class="breadcrumb-item active text-danger fw-semibold" aria-current="page">Users & Roles</li>
                 </ol>
             </nav>
@@ -24,15 +50,11 @@
             </h2>
             <p class="text-muted small m-0 mt-1">Manage system operators, assign plant department roles, and toggle Active/Inactive status directly from the list.</p>
         </div>
-        <div class="d-flex gap-2 align-items-center">
-            <a href="{{ route('users.create') }}" class="btn text-white px-3 py-2 fw-semibold rounded-3 shadow-sm" style="background-color: var(--primary-red); border-color: var(--primary-red);">
-                <i class="fa-solid fa-user-plus me-1.5"></i> Add New User / Role
-            </a>
-        </div>
-    </div>
+      
+    </div> --}}
 
     <!-- Quick Stat KPI Summary Cards -->
-    <div class="row g-3 mb-4">
+    {{-- <div class="row g-3 mb-4">
         <div class="col-12 col-sm-6 col-xl-3">
             <div class="p-3 rounded-3 border" style="background: var(--bg-card); border-color: var(--border-card) !important; box-shadow: var(--card-shadow);">
                 <div class="d-flex align-items-center justify-content-between">
@@ -85,53 +107,13 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
 
     <!-- Filter & Search Panel -->
-    <div class="card border mb-4 rounded-3" style="background: var(--bg-card); border-color: var(--border-card) !important; box-shadow: var(--card-shadow);">
-        <div class="card-body p-3">
-            <form method="GET" action="{{ route('users.index') }}" class="row g-2 align-items-center">
-                <div class="col-12 col-md-5">
-                    <div class="input-group">
-                        <span class="input-group-text border-end-0" style="background: var(--bg-input); border-color: var(--border-color); color: var(--text-muted);">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                        </span>
-                        <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0" placeholder="Search by name, username, email, phone..." style="background: var(--bg-input); border-color: var(--border-color); color: var(--text-heading);">
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <select name="role_id" class="form-select" style="background: var(--bg-input); border-color: var(--border-color); color: var(--text-heading);">
-                        <option value="">-- All Assigned Roles --</option>
-                        @foreach($roles as $role)
-                            <option value="{{ $role->id }}" {{ request('role_id') == $role->id ? 'selected' : '' }}>
-                                {{ $role->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-6 col-md-2">
-                    <select name="status" class="form-select" style="background: var(--bg-input); border-color: var(--border-color); color: var(--text-heading);">
-                        <option value="">-- Status --</option>
-                        <option value="{{ \App\Models\User::STATUS_ACTIVE }}" {{ request('status') == \App\Models\User::STATUS_ACTIVE ? 'selected' : '' }}>Active</option>
-                        <option value="{{ \App\Models\User::STATUS_INACTIVE }}" {{ request('status') == \App\Models\User::STATUS_INACTIVE ? 'selected' : '' }}>Inactive</option>
-                    </select>
-                </div>
-                <div class="col-12 col-md-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary w-100 fw-semibold rounded-3" style="background: var(--accent-blue); border-color: var(--accent-blue);">
-                        <i class="fa-solid fa-filter me-1"></i> Filter
-                    </button>
-                    @if(request()->hasAny(['search', 'role_id', 'status']))
-                        <a href="{{ route('users.index') }}" class="btn btn-outline-secondary rounded-3" title="Clear Filters">
-                            <i class="fa-solid fa-rotate-left"></i>
-                        </a>
-                    @endif
-                </div>
-            </form>
-        </div>
-    </div>
+    {{-- @include('admin.users.filters') --}}
 
     <!-- Users Table Card -->
-    <div class="card border rounded-3 overflow-hidden" style="background: var(--bg-card); border-color: var(--border-card) !important; box-shadow: var(--card-shadow);">
+    {{-- <div class="card border rounded-3 overflow-hidden" style="background: var(--bg-card); border-color: var(--border-card) !important; box-shadow: var(--card-shadow);">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0" style="color: var(--text-body);">
                 <thead style="background: var(--table-header); border-bottom: 1px solid var(--border-color);">
@@ -296,10 +278,161 @@
                 </div>
             </div>
         @endif
+    </div> --}}
+
+
+    <div class="content_area">
+        <div class="flex-grow-1 container-p-y">
+            <div class="row">
+                <div class="col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+                    {{-- @include('admin.partials.flash_messages') --}}
+                    <!--!!!!! DO NOT REMOVE listing-block CLASS. INCLUDE THIS IN PARENT DIV OF TABLE ON LISTING USERS !!!!!-->
+                    <div class="card listing-block">
+                        <div class="card-header">
+                            <div class="heading">
+                                <h5 class="mb-0">Here Is Your Users & Roles Listing!</h5>
+                            </div>
+                            {{-- <div class="actions">
+                                <div class="input-group input-group-merge">
+                                    <span class="input-group-text"><i class="bx bx-search"></i></span>
+                                    <input type="text" class="form-control listing-search" placeholder="Search..." value="{{ (isset($_GET['search']) && $_GET['search'] ? $_GET['search'] : '') }}">
+                                </div>
+                                @if(Permission::hasPermission('users', 'update') || Permission::hasPermission('users', 'delete'))
+                                <div class="action_dropdown btn-group">
+                                    <a href="javascript:;" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                            @if(Permission::hasPermission('users', 'update'))
+                                            <li>
+                                                <a class="dropdown-item" href="javascript:;" 
+                                                onclick="bulk_actions('{{ route('admin.users.bulkActions', ['action' => 'active']) }}', 'active');">
+                                                    <i class="fas fa-circle text-success"></i>
+                                                    <span class="status">Publish</span>
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="javascript:;" 
+                                                onclick="bulk_actions('{{ route('admin.users.bulkActions', ['action' => 'inactive']) }}', 'inactive');">
+                                                    <i class="fas fa-circle text-danger"></i>
+                                                    <span class="status">Unpublish</span>
+                                                </a>
+                                            </li>
+                                            @endif
+
+                                            @if(Permission::hasPermission('users', 'update') && Permission::hasPermission('users', 'delete'))
+                                            <div class="dropdown-divider"></div>
+                                            @endif
+
+                                            @if(Permission::hasPermission('users', 'delete'))
+                                            <li>
+                                                <a class="dropdown-item" href="javascript:;" 
+                                                onclick="bulk_actions('{{ route('admin.users.bulkActions', ['action' => 'delete']) }}', 'delete');">
+                                                    <i class="fas fa-times text-danger"></i>
+                                                    <span class="status">Delete</span>
+                                                </a>
+                                            </li>
+                                            @endif
+                                        @endif
+                                    </ul>
+                                </div>
+                                @endif
+                            </div> --}}
+                        </div>
+                        <!--!!!!! DO NOT REMOVE listing-table, mark_all  CLASSES. INCLUDE THIS IN ALL TABLES LISTING USERS !!!!!-->
+                        <div class="card-body p-0">
+                            <div class="table-responsive text-nowrap">
+                                <table class="table listing-table">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            {{-- <th width="5%">
+                                                <div class="form-check">
+                                                    <input type="checkbox" class="form-check-input mark_all" id="mark_all">
+                                                    <label class="form-check-label" for="mark_all"></label>
+                                                </div>
+                                            </th> --}}
+                                            <th class="sort">
+                                                <!--- MAKE SURE TO USE PROPOER FIELD IN data-field AND PROPOER DIRECTION IN data-sort -->
+                                                Id
+                                                @if(isset($_GET['sort']) && $_GET['sort'] == 'users.id' && isset($_GET['direction']) && $_GET['direction'] == 'asc')
+                                                <i class="fas fa-sort-down active" data-field="users.id" data-sort="asc"></i>
+                                                @elseif(isset($_GET['sort']) && $_GET['sort'] == 'users.id' && isset($_GET['direction']) && $_GET['direction'] == 'desc')
+                                                <i class="fas fa-sort-up active" data-field="users.id" data-sort="desc"></i>
+                                                @else
+                                                <i class="fas fa-sort" data-field="users.id" data-sort="asc"></i>
+                                                @endif
+                                            </th>
+                                            <th class="sort">
+                                                User Profile
+                                                @if(isset($_GET['sort']) && $_GET['sort'] == 'users.first_name' && isset($_GET['direction']) && $_GET['direction'] == 'asc')
+                                                <i class="fas fa-sort-down active" data-field="users.first_name" data-sort="asc"></i>
+                                                @elseif(isset($_GET['sort']) && $_GET['sort'] == 'users.first_name' && isset($_GET['direction']) && $_GET['direction'] == 'desc')
+                                                <i class="fas fa-sort-up active" data-field="users.first_name" data-sort="desc"></i>
+                                                @else
+                                                <i class="fas fa-sort" data-field="users.first_name"></i>
+                                                @endif
+                                            </th>
+                                            <th class="sort">
+                                                Role Assigned
+                                                @if(isset($_GET['sort']) && $_GET['sort'] == 'users.first_name' && isset($_GET['direction']) && $_GET['direction'] == 'asc')
+                                                <i class="fas fa-sort-down active" data-field="users.first_name" data-sort="asc"></i>
+                                                @elseif(isset($_GET['sort']) && $_GET['sort'] == 'users.first_name' && isset($_GET['direction']) && $_GET['direction'] == 'desc')
+                                                <i class="fas fa-sort-up active" data-field="users.first_name" data-sort="desc"></i>
+                                                @else
+                                                <i class="fas fa-sort" data-field="users.first_name"></i>
+                                                @endif
+                                            </th>
+                                            <th class="sort">
+                                                Contact Details
+                                            </th>
+                                            <th class="sort">
+                                                Status
+                                                @if(isset($_GET['sort']) && $_GET['sort'] == 'users.first_name' && isset($_GET['direction']) && $_GET['direction'] == 'asc')
+                                                <i class="fas fa-sort-down active" data-field="users.first_name" data-sort="asc"></i>
+                                                @elseif(isset($_GET['sort']) && $_GET['sort'] == 'users.first_name' && isset($_GET['direction']) && $_GET['direction'] == 'desc')
+                                                <i class="fas fa-sort-up active" data-field="users.first_name" data-sort="desc"></i>
+                                                @else
+                                                <i class="fas fa-sort" data-field="users.first_name"></i>
+                                                @endif
+                                            </th>
+                                            <th class="sort">
+                                                Created
+                                            </th>
+                                            <th>
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="list">
+                                        @if(!empty($listing->items()))
+                                            @include('admin.users.listingLoop')
+                                        @else
+                                        <td align="left" colspan="7">
+                                            No records found!
+                                        </td>
+                                        @endif
+                                    </tbody>
+                                    
+                                    {{-- <tfoot>
+                                        <tr>
+                                            <th align="left" colspan="20">
+                                                @include('admin.partials.pagination', ["pagination" => $listing])
+                                            </th>
+                                        </tr>
+                                    </tfoot> --}}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+
 @endsection
 
-@push('scripts')
+{{-- @push('scripts')
 <script>
     /**
      * Handle real-time toggle switch for Active / Inactive status
@@ -413,4 +546,4 @@
         }, 3500);
     }
 </script>
-@endpush
+@endpush --}}

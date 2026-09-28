@@ -7,7 +7,7 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-1" style="font-size: 0.8rem;">
                 <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none text-muted">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('users.index') }}" class="text-decoration-none text-muted">Users & Roles</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('users.users') }}" class="text-decoration-none text-muted">Users & Roles</a></li>
                 <li class="breadcrumb-item active text-danger fw-semibold" aria-current="page">Edit User</li>
             </ol>
         </nav>
@@ -19,7 +19,7 @@
                 <p class="text-muted small m-0 mt-1">Update profile information, change assigned role, or reset account password.</p>
             </div>
             <div>
-                <a href="{{ route('users.index') }}" class="btn btn-outline-secondary px-3 py-2 fw-semibold rounded-3">
+                <a href="{{ route('users.users') }}" class="btn btn-outline-secondary px-3 py-2 fw-semibold rounded-3">
                     <i class="fa-solid fa-arrow-left me-1"></i> Back to Users List
                 </a>
             </div>
@@ -52,9 +52,11 @@
                 <h5 class="m-0 fs-6 fw-bold" style="color: var(--text-heading);">Edit Operator Account & Role Settings</h5>
             </div>
         </div>
-
+        {{-- @php
+        pr($user); die;
+        @endphp --}}
         <div class="card-body p-4">
-            <form action="{{ route('users.update', $user->id) }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('users.edit') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
@@ -231,7 +233,7 @@
 
                             <div class="col-12 mt-4 pt-2">
                                 <div class="d-flex justify-content-end gap-2">
-                                    <a href="{{ route('users.index') }}" class="btn btn-outline-secondary px-4 py-2 rounded-3 fw-semibold">
+                                    <a href="{{ route('users.users') }}" class="btn btn-outline-secondary px-4 py-2 rounded-3 fw-semibold">
                                         Cancel
                                     </a>
                                     <button type="submit" class="btn text-white px-4 py-2 rounded-3 fw-semibold shadow-sm" style="background-color: var(--accent-blue); border-color: var(--accent-blue);">

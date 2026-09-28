@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 
 class User extends Authenticatable
 {
@@ -24,6 +25,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'id',    
         'role_id',
         'first_name',
         'last_name',
@@ -86,6 +88,47 @@ class User extends Authenticatable
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * Get the permissions assigned to this user through their role.
+     *
+     * This project currently uses the existing `roles` table and `role_id` field,
+     * so no separate permissions table or pivot is required.
+     */
+    public function permissions(): Collection
+    {
+        return $this->role ? $this->role->permissions() : collect();
+    }
+
+    /**
+     * Check whether the current user has a given permission.
+     */
+    public function hasPermission(string $permission): bool
+    {
+        return $this->permissions()->contains($permission);
+    }
+
+    /**
+     * Accessor for the permission list.
+     *
+     * Enables the common usage pattern:
+     * Auth::user()->permissions
+     */
+    public function getPermissionsAttribute(): Collection
+    {
+        return $this->permissions();
+    }
+
+    /**
+     * Accessor for the user's role.
+     *
+     * Enables the common usage pattern:
+     * Auth::user()->role
+     */
+    public function getRoleAttribute(): ?Role
+    {
+        return $this->role()->first();
     }
 
     /**

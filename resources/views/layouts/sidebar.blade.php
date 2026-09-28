@@ -61,13 +61,13 @@
                 <div class="collapse {{ request()->routeIs('users.*') ? 'show' : '' }}" id="usersCollapse">
                     <ul class="sidebar-submenu-list">
                         <li class="submenu-item">
-                            <a href="{{ route('users.index') }}" class="submenu-link {{ request()->routeIs('users.index') ? 'active' : '' }}">
+                            <a href="{{ route('users.users') }}" class="submenu-link {{ request()->routeIs('users.users') ? 'active' : '' }}">
                                 <span class="submenu-dot"></span>
                                 <span>All Users</span>
                             </a>
                         </li>
                         <li class="submenu-item">
-                            <a href="{{ route('users.create') }}" class="submenu-link {{ request()->routeIs('users.create') ? 'active' : '' }}">
+                            <a href="{{ route('users.add') }}" class="submenu-link {{ request()->routeIs('users.add') ? 'active' : '' }}">
                                 <span class="submenu-dot"></span>
                                 <span>Add User / Role</span>
                             </a>

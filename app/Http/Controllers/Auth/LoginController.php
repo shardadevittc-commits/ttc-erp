@@ -32,14 +32,13 @@ class LoginController extends Controller
 
         $loginInput = $request->input('email');
         $fieldType = filter_var($loginInput, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
-
+        
         $attemptCredentials = [
             $fieldType => $loginInput,
             'password' => $request->input('password'),
         ];
-
         $remember = $request->boolean('remember');
-
+        
         if (Auth::attempt($attemptCredentials, $remember)) {
             $user = Auth::user();
 

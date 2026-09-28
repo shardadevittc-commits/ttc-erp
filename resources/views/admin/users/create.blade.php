@@ -7,7 +7,7 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-1" style="font-size: 0.8rem;">
                 <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none text-muted">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('users.index') }}" class="text-decoration-none text-muted">Users & Roles</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('users.users') }}" class="text-decoration-none text-muted">Users & Roles</a></li>
                 <li class="breadcrumb-item active text-danger fw-semibold" aria-current="page">Add User</li>
             </ol>
         </nav>
@@ -19,7 +19,7 @@
                 <p class="text-muted small m-0 mt-1">Create credentials, personal profile, and assign departmental role permissions.</p>
             </div>
             <div>
-                <a href="{{ route('users.index') }}" class="btn btn-outline-secondary px-3 py-2 fw-semibold rounded-3">
+                <a href="{{ route('users.users') }}" class="btn btn-outline-secondary px-3 py-2 fw-semibold rounded-3">
                     <i class="fa-solid fa-arrow-left me-1"></i> Back to Users List
                 </a>
             </div>
@@ -54,7 +54,7 @@
         </div>
 
         <div class="card-body p-4">
-            <form action="{{ route('users.store') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('users.add') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
                 <div class="row g-4">
@@ -230,7 +230,7 @@
 
                             <div class="col-12 mt-4 pt-2">
                                 <div class="d-flex justify-content-end gap-2">
-                                    <a href="{{ route('users.index') }}" class="btn btn-outline-secondary px-4 py-2 rounded-3 fw-semibold">
+                                    <a href="{{ route('users.users') }}" class="btn btn-outline-secondary px-4 py-2 rounded-3 fw-semibold">
                                         Cancel
                                     </a>
                                     <button type="submit" class="btn text-white px-4 py-2 rounded-3 fw-semibold shadow-sm" style="background-color: var(--primary-red); border-color: var(--primary-red);">

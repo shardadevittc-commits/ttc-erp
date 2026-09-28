@@ -3,6 +3,13 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 
+function pr($data){
+    echo "<pre>";
+    print_r($data);
+    echo "</pre>";
+    exit;
+}
+
 define('LARAVEL_START', microtime(true));
 
 // Determine if the application is in maintenance mode...

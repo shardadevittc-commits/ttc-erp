@@ -20,9 +20,12 @@
 
     <!-- FontAwesome 6 CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-
+    
     <!-- Extracted Dashboard CSS -->
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+
+    {{-- Pages Header CSS --}}
+    <link rel="stylesheet" href="{{ asset('css/admin-listing.css') }}">
 
     <!-- Chart.js for Dash UI Style Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
