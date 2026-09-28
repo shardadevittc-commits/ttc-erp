@@ -52,7 +52,7 @@ class UserController extends Controller
             'roles_count' => Role::count(),
         ];
 
-        return view('admin.users.index', compact('listing', 'roles', 'stats'));
+        return view('admin.users.users', compact('listing', 'roles', 'stats'));
     }
 
     /**
@@ -171,7 +171,7 @@ class UserController extends Controller
 
         $user->update($data);
 
-        return redirect()->route('users.index')->with('success', 'User updated successfully.');
+        return redirect()->route('users.users')->with('success', 'User updated successfully.');
     }
 
     /**
@@ -180,12 +180,12 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         if (auth()->check() && auth()->id() === $user->id) {
-            return redirect()->route('users.index')->with('error', 'You cannot delete your own active account.');
+            return redirect()->route('users.users')->with('error', 'You cannot delete your own active account.');
         }
 
         $user->delete();
 
-        return redirect()->route('users.index')->with('success', 'User deleted successfully.');
+        return redirect()->route('users.users')->with('success', 'User deleted successfully.');
     }
 
     /**

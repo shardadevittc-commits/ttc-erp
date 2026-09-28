@@ -79,7 +79,7 @@
                     <i class="fa-solid fa-filter me-1"></i> Filter
                 </button>
                 @if(request()->hasAny(['search', 'role_id', 'status']))
-                    <a href="{{ route('users.index') }}" class="btn btn-outline-secondary rounded-3" title="Clear Filters">
+                    <a href="{{ route('users.users') }}" class="btn btn-outline-secondary rounded-3" title="Clear Filters">
                         <i class="fa-solid fa-rotate-left"></i>
                     </a>
                 @endif

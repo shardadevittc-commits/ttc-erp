@@ -211,7 +211,7 @@
             <div class="row g-3">
                 <!-- Module 1: Users & Roles -->
                 <div class="col-12 col-md-6">
-                    <a href="{{ route('users.index') }}" class="module-tile">
+                    <a href="{{ route('users.users') }}" class="module-tile">
                         <div class="module-icon-box">
                             <i class="fa-solid fa-users"></i>
                         </div>
