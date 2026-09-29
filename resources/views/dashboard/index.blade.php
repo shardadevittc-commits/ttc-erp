@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard | TTC Robotronics - Steel Industry ERP')
+@section('title', ucfirst(auth()->user()->role['short_name']) . ' Dashboard | TTC Robotronics - Steel Industry ERP')
 
 @section('content')
     <!-- 1. Hero Banner Card -->

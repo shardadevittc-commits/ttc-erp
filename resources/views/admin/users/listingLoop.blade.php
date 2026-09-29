@@ -64,7 +64,7 @@
             <span class="badge bg-secondary">No Role</span>
         @endif
 	</td>
-	
+
 	<td>
 		<div class="d-flex justify-content-start align-items-center user-name">
 			<div class="d-flex flex-column">
@@ -74,13 +74,13 @@
 		</div>
 	</td>
     <td>
-        @if($row->status == 'active')
+        @if($row->status == '1')
             <span class="badge bg-success">Active</span>
         @else
             <span class="badge bg-secondary">Inactive</span>
         @endif
 	</td>
-	
+
 	<td>
 		{{ $row->created_at ? $row->created_at->format('d M, Y') : '-' }}
 	</td>
