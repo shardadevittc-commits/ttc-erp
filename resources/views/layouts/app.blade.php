@@ -202,6 +202,8 @@
             applyTheme(savedTheme);
         });
     </script>
+    <script src="{{ asset('js/custom.js') }}"></script>
+    <script src="{{ asset('js/admin-listing.js') }}"></script>
     @stack('scripts')
 </body>
 </html>

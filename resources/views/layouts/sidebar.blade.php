@@ -14,6 +14,7 @@
     <!-- Navigation Links Container -->
     <div class="sidebar-nav-container">
         <ul class="sidebar-menu-list">
+            {{-- Dashboard --}}
             <li class="sidebar-item">
                 <a href="{{ route('dashboard') }}" class="sidebar-link active">
                     <i class="fa-solid fa-chart-pie nav-icon"></i>
@@ -21,6 +22,7 @@
                     <span class="sidebar-badge text-white" style="background-color: var(--primary-red);">Live</span>
                 </a>
             </li>
+            {{-- Manage Orders --}}
             <li class="sidebar-item">
                 <a href="#ordersCollapse" class="sidebar-link" data-bs-toggle="collapse" data-bs-target="#ordersCollapse" role="button" aria-expanded="false" aria-controls="ordersCollapse">
                     <i class="fa-solid fa-cart-shopping nav-icon"></i>
@@ -52,6 +54,82 @@
                     </ul>
                 </div>
             </li>
+            @php
+                $active = request()->routeIs('brands*', 'products*', 'sizes*', 'grades*');
+            @endphp
+            {{-- Manage Products --}}
+            <li class="sidebar-item">
+                <a href="#productsCollapse" class="sidebar-link {{ $active ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#productsCollapse" role="button" aria-expanded="{{ $active ? 'true' : 'false' }}" aria-controls="productsCollapse">
+                    <i class="fa-solid fa-boxes nav-icon"></i>
+                    <span>Manage Products</span>
+                    <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                </a>
+                <div class="collapse {{ $active ? 'show' : '' }}" id="productsCollapse" >
+                    <ul class="sidebar-submenu-list">
+                        {{-- Brands --}}
+                            {{-- $active = strpos(request()->route()->getAction()['as'], 'brands') > -1|| --}}
+                        @php($active = request()->routeIs('brands*'))
+                        <li class="submenu-item">
+                            <a href="{{ route('brands') }}" class="submenu-link {{ $active ? 'active' : '' }}">
+                                <span class="submenu-dot"></span>
+                                <span>Brands</span>
+                            </a>
+                        </li>
+
+                        {{-- Products --}}
+                        <li class="submenu-item">
+                            <a href="{{ route('products') }}" class="submenu-link {{ request()->routeIs('products*') ? 'active' : '' }}">
+                                <span class="submenu-dot"></span>
+                                <span>Products</span>
+                            </a>
+                        </li>
+
+                        {{-- Sizes --}}
+                        <li class="submenu-item">
+                            <a href="{{ route('sizes') }}" class="submenu-link {{ request()->routeIs('sizes*') ? 'active' : '' }}">
+                                <span class="submenu-dot"></span>
+                                <span>Sizes</span>
+                            </a>
+                        </li>
+
+                        {{-- Grades --}}
+                        <li class="submenu-item">
+                            <a href="{{ route('grades') }}" class="submenu-link {{ request()->routeIs('grades*') ? 'active' : '' }}">
+                                <span class="submenu-dot"></span>
+                                <span>Grades</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            {{-- Manage Locations --}}
+            @php($locationsActive = request()->routeIs('cities*', 'states*'))
+            <li class="sidebar-item">
+                <a href="#locationsCollapse" class="sidebar-link {{ $locationsActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#locationsCollapse" role="button" aria-expanded="{{ $locationsActive ? 'true' : 'false' }}" aria-controls="locationsCollapse">
+                    <i class="fa-solid fa-location-dot nav-icon"></i>
+                    <span>Manage Locations</span>
+                    <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                </a>
+                <div class="collapse {{ $locationsActive ? 'show' : '' }}" id="locationsCollapse">
+                    <ul class="sidebar-submenu-list">
+                        <li class="submenu-item">
+                            <a href="{{ route('cities') }}" class="submenu-link {{ request()->routeIs('cities*') ? 'active' : '' }}">
+                                <span class="submenu-dot"></span>
+                                <span>Cities</span>
+                            </a>
+                        </li>
+                        <li class="submenu-item">
+                            <a href="{{ route('states') }}" class="submenu-link {{ request()->routeIs('states*') ? 'active' : '' }}">
+                                <span class="submenu-dot"></span>
+                                <span>States</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            {{-- Manage User --}}
              <li class="sidebar-item">
                 <a href="#usersCollapse" class="sidebar-link {{ request()->routeIs('users.*') ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#usersCollapse" role="button" aria-expanded="{{ request()->routeIs('users.*') ? 'true' : 'false' }}" aria-controls="usersCollapse">
                     <i class="fa-solid fa-users nav-icon"></i>

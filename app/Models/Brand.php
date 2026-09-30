@@ -17,11 +17,13 @@ class Brand extends Model
 
     protected $fillable = [
         'brand_name',
+        'status',
         'created_by',
     ];
 
     protected $casts = [
         'created_by' => 'integer',
+        'status' => 'integer',
     ];
 
     public function createdBy(): BelongsTo

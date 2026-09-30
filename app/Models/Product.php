@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\User;
-use App\Models\size;
-use App\Models\grade;
+use App\Models\Size;
+use App\Models\Grade;
 
 class Product extends Model
 {
@@ -17,6 +17,7 @@ class Product extends Model
 
     protected $fillable = [
         'product_name',
+        'status',
         'size_id',
         'grade_id',
         'product_type',
@@ -28,6 +29,7 @@ class Product extends Model
         'size_id' => 'integer',
         'grade_id' => 'integer',
         'created_by' => 'integer',
+        'status' => 'integer',
     ];
 
     public function size(): BelongsTo
