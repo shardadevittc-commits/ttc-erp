@@ -23,6 +23,7 @@ class Size extends Model
 
     protected $fillable = [
         'size_name',
+        'status',
         'grade_id',
         'brand_id',
         'unit_id',
@@ -43,6 +44,7 @@ class Size extends Model
         'brand_id' => 'integer',
         'unit_id' => 'integer',
         'created_by' => 'integer',
+        'status' => 'integer',
 
         'length' => 'decimal:2',
         'width' => 'decimal:2',
