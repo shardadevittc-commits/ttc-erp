@@ -846,3 +846,11 @@
 .listing-block .action_dropdown .dropdown-menu {
     z-index: 1055;
 }
+
+.form-control:focus {
+    border-color: rgba(13, 110, 253, 0.35);
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.06);
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+

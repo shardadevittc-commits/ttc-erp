@@ -25,6 +25,9 @@
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 
     {{-- Pages Header CSS --}}
+
+    <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+    {{-- <link rel="stylesheet" href="{{ asset('css/admin-sale-order.css') }}"> --}}
     <link rel="stylesheet" href="{{ asset('css/admin-listing.css') }}">
 
     <!-- Chart.js for Dash UI Style Analytics -->
@@ -75,7 +78,7 @@
 
     <!-- Bootstrap 5 JS Bundle CDN -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <!-- Interactive Dash UI Master Scripts -->
     <script>
         // 1. GLOBAL SIDEBAR TOGGLE WITH DEBOUNCE GUARD

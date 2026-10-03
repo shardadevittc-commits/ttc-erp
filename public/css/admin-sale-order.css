@@ -1,0 +1,267 @@
+/* =========================================
+   SALE ORDER
+========================================= */
+
+.product,
+.size,
+.grade {
+    min-width: 150px;
+}
+
+.rtprice {
+    min-width: 100px;
+}
+
+.itemremarks {
+    min-width: 250px;
+}
+
+.itemtable {
+    white-space: nowrap;
+}
+
+.itemtable th,
+.itemtable td {
+    vertical-align: middle;
+}
+
+.itemtable .form-control {
+    min-height: 38px;
+}
+
+.col-size > div {
+    gap: 5px;
+}
+
+.col-size .size {
+    min-width: 150px;
+}
+
+.sizein {
+    min-width: 120px;
+}
+
+.sizeUnit {
+    min-width: 65px;
+}
+
+.qtyunit11 {
+    min-width: 80px;
+}
+
+.pcslengthunit {
+    min-width: 80px;
+}
+
+.hardnessUnit {
+    min-width: 80px;
+}
+
+.col-fsbndle input[type="number"] {
+    min-width: 90px;
+    margin-right: 5px;
+}
+
+.col-fsbndle {
+    min-width: 150px;
+}
+
+.col-coating {
+    min-width: 150px;
+}
+
+.col-straightening-toggle,
+.col-point-discard-toggle,
+.col-phosphating-toggle {
+    min-width: 150px;
+}
+
+.col-hardness {
+    min-width: 180px;
+}
+
+.col-remarks {
+    min-width: 250px;
+}
+
+.status-text {
+    margin-left: 8px;
+    font-weight: 500;
+}
+
+.inspection-check {
+    width: auto !important;
+    height: auto;
+}
+
+.itemtable label {
+    margin-bottom: 0;
+}
+
+.itemtable .form-check {
+    margin-bottom: 0;
+}
+
+.itemtable .d-flex {
+    align-items: center;
+}
+
+.data-row {
+    vertical-align: middle;
+}
+
+@media (max-width: 768px) {
+
+    .product,
+    .size,
+    .grade {
+        min-width: 130px;
+    }
+
+    .itemremarks {
+        min-width: 200px;
+    }
+
+}
+
+
+/* ========================================
+   COMMON FORM STYLING
+   Use: <div class="common-form">
+   ======================================== */
+
+.common-form .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #344054;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.common-form .form-control,
+.common-form .form-select {
+    min-height: 44px;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    padding: 0.55rem 0.75rem;
+    color: #344054;
+    font-size: 0.875rem;
+    background-color: #fff;
+    transition: all 0.2s ease;
+}
+
+.common-form .form-control::placeholder {
+    color: #98a2b3;
+    opacity: 1;
+}
+
+.common-form .form-control:hover,
+.common-form .form-select:hover {
+    border-color: #b8c0cc;
+}
+
+.common-form .form-control:focus,
+.common-form .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.08);
+}
+
+.common-form textarea.form-control {
+    min-height: 100px;
+    resize: vertical;
+}
+
+
+/* Validation */
+
+.common-form .form-control.is-invalid,
+.common-form .form-select.is-invalid {
+    border-color: #dc3545;
+}
+
+.common-form .form-control.is-invalid:focus,
+.common-form .form-select.is-invalid:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.08);
+}
+
+.common-form .invalid-feedback {
+    font-size: 0.8rem;
+    margin-top: 0.35rem;
+}
+
+
+/* Input Group */
+
+.common-form .input-group-text {
+    min-height: 44px;
+    border-color: #d0d5dd;
+    background-color: #f8f9fa;
+    color: #667085;
+}
+
+.common-form .input-group .form-control {
+    min-height: 44px;
+}
+
+
+/* Checkbox / Radio */
+
+.common-form .form-check-input {
+    cursor: pointer;
+}
+
+.common-form .form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.12);
+}
+
+
+/* Switch */
+
+.common-form .form-switch .form-check-input {
+    width: 2.5em;
+    height: 1.3em;
+}
+
+
+/* Section */
+
+.common-form .form-section {
+    padding: 1rem 0;
+}
+
+.common-form .form-section-title {
+    margin-bottom: 1rem;
+    color: #101828;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.common-form .form-section-description {
+    margin-top: -0.5rem;
+    margin-bottom: 1.25rem;
+    color: #667085;
+    font-size: 0.8rem;
+}
+
+
+/* Buttons */
+
+.common-form .btn {
+    font-size: 0.875rem;
+    border-radius: 8px;
+}
+
+
+/* Responsive */
+
+@media (max-width: 576px) {
+
+    .common-form .form-control,
+    .common-form .form-select {
+        min-height: 42px;
+        font-size: 0.875rem;
+    }
+
+}
+

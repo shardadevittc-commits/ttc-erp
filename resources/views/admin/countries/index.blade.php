@@ -51,7 +51,7 @@
 						</div>
 						<div class="actions">
 							<div class="input-group input-group-merge">
-		                    	<span class="input-group-text"><i class="bx bx-search"></i></span>
+		                    	<span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></span>
 		                    	<input type="text" class="form-control listing-search" placeholder="Search..." value="{{ (isset($_GET['search']) && $_GET['search'] ? $_GET['search'] : '') }}">
 		                    </div>
 		                    @if(Permission::hasPermission('countries', 'update') || Permission::hasPermission('countries', 'delete'))

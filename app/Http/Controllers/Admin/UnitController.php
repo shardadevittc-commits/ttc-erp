@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 
-class UnitsController extends Controller
+class UnitController extends Controller
 {
     public function index(Request $request)
     {

@@ -39,54 +39,8 @@
                     <div class="card listing-block">
                         <div class="card-header">
                             <div class="heading">
-                                <h5 class="mb-0">Here Is Your Brands Listing!</h5>
+                                <h5 class="mb-0">Here Is Your Units Listing!</h5>
                             </div>
-                            {{-- <div class="actions">
-                                <div class="input-group input-group-merge">
-                                    <span class="input-group-text"><i class="bx bx-search"></i></span>
-                                    <input type="text" class="form-control listing-search" placeholder="Search..." value="{{ (isset($_GET['search']) && $_GET['search'] ? $_GET['search'] : '') }}">
-                                </div>
-                                @if(Permission::hasPermission('users', 'update') || Permission::hasPermission('users', 'delete'))
-                                <div class="action_dropdown btn-group">
-                                    <a href="javascript:;" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                        <i class="fas fa-ellipsis-v"></i>
-                                    </a>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                            @if(Permission::hasPermission('users', 'update'))
-                                            <li>
-                                                <a class="dropdown-item" href="javascript:;" 
-                                                onclick="bulk_actions('{{ route('admin.users.bulkActions', ['action' => 'active']) }}', 'active');">
-                                                    <i class="fas fa-circle text-success"></i>
-                                                    <span class="status">Publish</span>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="javascript:;" 
-                                                onclick="bulk_actions('{{ route('admin.users.bulkActions', ['action' => 'inactive']) }}', 'inactive');">
-                                                    <i class="fas fa-circle text-danger"></i>
-                                                    <span class="status">Unpublish</span>
-                                                </a>
-                                            </li>
-                                            @endif
-
-                                            @if(Permission::hasPermission('users', 'update') && Permission::hasPermission('users', 'delete'))
-                                            <div class="dropdown-divider"></div>
-                                            @endif
-
-                                            @if(Permission::hasPermission('users', 'delete'))
-                                            <li>
-                                                <a class="dropdown-item" href="javascript:;" 
-                                                onclick="bulk_actions('{{ route('admin.users.bulkActions', ['action' => 'delete']) }}', 'delete');">
-                                                    <i class="fas fa-times text-danger"></i>
-                                                    <span class="status">Delete</span>
-                                                </a>
-                                            </li>
-                                            @endif
-                                        @endif
-                                    </ul>
-                                </div>
-                                @endif
-                            </div> --}}
                         </div>
                         <!--!!!!! DO NOT REMOVE listing-table, mark_all  CLASSES. INCLUDE THIS IN ALL TABLES LISTING USERS !!!!!-->
                         <div class="card-body p-0">

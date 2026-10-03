@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'gst' => [
+        'lookup_url' => env('GST_LOOKUP_URL'),
+        'api_token' => env('GST_LOOKUP_TOKEN'),
+    ],
+
 ];
