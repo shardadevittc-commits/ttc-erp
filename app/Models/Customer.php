@@ -23,6 +23,7 @@ class Customer extends Model
         'city_id',
         'address',
         'gst_no',
+        'gst_details',
         'pincode',
         'buyer',
         'supplier',
@@ -37,6 +38,7 @@ class Customer extends Model
         'buyer' => 'integer',
         'supplier' => 'integer',
         'created_by' => 'integer',
+        'gst_details' => 'array',
     ];
 
     /* Status */

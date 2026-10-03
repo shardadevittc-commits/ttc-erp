@@ -1,14 +1,20 @@
-@foreach($listing->items() as $k => $row)
+@forelse($listing->items() as $k => $row)
 <tr>
-	
+	{{-- <td>
+		<!-- MAKE SURE THIS HAS ID CORRECT AND VALUES CORRENCT. THIS WILL EFFECT ON BULK CRUTIAL ACTIONS -->
+		<div class="form-check">
+        	<input type="checkbox" class="form-check-input listing_check" value="{{ $row->id }}" id="listing_check{{ $row->id }}">
+        	<label class="form-check-label" for="listing_check{{ $row->id }}"></label>
+      	</div>
+	</td> --}}
 	<td>
 		{{ $row->id }}
 	</td>
 	<td>
 		<div class="d-flex justify-content-start align-items-center user-name">
 			<div class="d-flex flex-column">
-				<a href="{{ route('brands.view', ['id' => $row->id]) }}" class="text-body text-truncate">
-					<span class="fw-medium">{{ $row->brand_name ?: 'Unnamed Brand' }}</span>
+				<a href="{{ route('sizes.view', ['id' => $row->id]) }}" class="text-body text-truncate">
+					<span class="fw-medium">{{ $row->size_name ?: 'Unnamed Size' }}</span>
 				</a>
 			</div>
 		</div>
@@ -63,8 +69,13 @@
 		</div>
 	</td> --}}
     <td class="d-flex align-items-center">
-        <a class="dropdown-item" href="{{ route('brands.edit', ["back_url" => url()->full(),'id' => $row->id]) }}"><i class="fas fa-edit text-primary"></i> </a>
-        <a class="dropdown-item" href="{{ route('brands.delete', ['id' => $row->id]) }}" onclick="return confirm('Are you sure you want to delete this brand?');"><i class="fas fa-trash-alt text-danger"></i></a>
+        <a class="dropdown-item" href="{{ route('sizes.edit', ["back_url" => url()->full(),'id' => $row->id]) }}"><i class="fas fa-edit text-primary"></i> </a>
+        <a class="dropdown-item" href="{{ route('sizes.view', ['id' => $row->id]) }}"><i class="fas fa-eye text-info"></i><span class="status"></span></a>
+		<a class="dropdown-item" href="{{ route('sizes.delete', ['id' => $row->id]) }}" onclick="return confirm('Are you sure you want to delete this size?');"><i class="fas fa-trash-alt text-danger"></i></a>
     </td>
 </tr>
-@endforeach
+@empty
+<tr>
+    <td colspan="5" class="text-center py-3">No records found!</td>
+</tr>
+@endforelse

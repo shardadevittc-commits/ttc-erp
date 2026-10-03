@@ -27,6 +27,8 @@ Route::middleware(['auth'])->group(function () {
     include "Admin/grades.php";
     include "Admin/sizes.php";
     include "Admin/units.php";
+    include "Admin/saleOrders.php";
+    include "Admin/customers.php";
     // Route::resource('users', UserController::class);
     // Route::match(['patch', 'post'], '/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
     // Route::get('/add-role', [UserController::class, 'create'])->name('add-role');

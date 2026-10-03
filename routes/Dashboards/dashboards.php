@@ -1,0 +1,46 @@
+<?php
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DashboardController;
+
+// Admin
+Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+// Sale
+Route::get('/sale/dashboard', [DashboardController::class, 'sale'])
+    ->name('dashboard.sale');
+
+// Purchase
+Route::get('/purchase/dashboard', [DashboardController::class, 'purchase'])
+    ->name('dashboard.purchase');
+
+// Gate
+Route::get('/gate/dashboard', [DashboardController::class, 'gate'])
+    ->name('dashboard.gate');
+
+// Weight
+Route::get('/weight/dashboard', [DashboardController::class, 'weight'])
+    ->name('dashboard.weight');
+
+// Unloader
+Route::get('/unloader/dashboard', [DashboardController::class, 'unloader'])
+    ->name('dashboard.unloader');
+
+// Dispatch
+Route::get('/dispatch/dashboard', [DashboardController::class, 'dispatch'])
+    ->name('dashboard.dispatch');
+
+// Lab
+Route::get('/lab/dashboard', [DashboardController::class, 'lab'])
+    ->name('dashboard.lab');
+
+// Production
+Route::get('/production/dashboard', [DashboardController::class, 'production'])
+    ->name('dashboard.production');
+
+// Lab Production
+Route::get('/lab-production/dashboard', [DashboardController::class, 'labProduction'])
+    ->name('dashboard.lab-production');
+
+// Account
+Route::get('/account/dashboard', [DashboardController::class, 'account'])
+    ->name('dashboard.account');
