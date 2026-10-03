@@ -29,8 +29,8 @@
     <!-- Navigation -->
     <div class="sidebar-nav-container">
         <ul class="sidebar-menu-list">
-
             <!-- Dashboard -->
+            @if(in_array($role, ['admin', 'sale']))
             <li class="sidebar-item">
                 <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <i class="fa-solid fa-chart-pie nav-icon"></i>
@@ -38,12 +38,13 @@
                     <span class="sidebar-badge text-white" style="background-color: var(--primary-red);">Live</span>
                 </a>
             </li>
+            @endif
 
             <!-- Manage Orders -->
             @php
                 $ordersActive = request()->routeIs('saleOrders*');
             @endphp
-
+            @if(in_array($role, ['admin', 'sale']))
             <li class="sidebar-item">
                 <a href="#ordersCollapse" class="sidebar-link {{ $ordersActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#ordersCollapse" role="button" aria-expanded="{{ $ordersActive ? 'true' : 'false' }}" aria-controls="ordersCollapse">
                     <i class="fa-solid fa-cart-shopping nav-icon"></i>
@@ -81,6 +82,7 @@
                     </ul>
                 </div>
             </li>
+            @endif
 
             <!-- Manage Customers -->
             <li class="sidebar-item">
