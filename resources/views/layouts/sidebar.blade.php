@@ -1,5 +1,8 @@
 @php
     $role = strtolower(auth()->user()->role->name ?? '');
+    $productsActive = request()->routeIs('brands*', 'products*', 'sizes*', 'grades*');
+    $locationsActive = request()->routeIs('cities*', 'states*');
+    $usersActive = request()->routeIs('users.*');
 @endphp
 
 <aside class="sidebar-vertical" id="sidebarVertical">
@@ -27,7 +30,7 @@
     <div class="sidebar-nav-container">
         <ul class="sidebar-menu-list">
 
-            {{-- Dashboard: Admin + Sale --}}
+            {{-- Dashboard: ADMIN + SALE --}}
             @if(in_array($role, ['admin', 'sale']))
                 <li class="sidebar-item">
                     <a href="{{ route('dashboard') }}"
@@ -49,8 +52,7 @@
             {{-- =========================
                 MANAGE ORDERS
             ========================== --}}
-            @if($role === 'admin' || $role === 'sale')
-
+            @if(in_array($role, ['admin', 'sale']))
                 <li class="sidebar-item">
 
                     <a href="#ordersCollapse"
@@ -86,51 +88,148 @@
                                 </li>
                             @endif
 
-
                             {{-- Sale Orders: ADMIN + SALE --}}
-                            @if(in_array($role, ['admin', 'sale']))
-                                <li class="submenu-item">
-                                    <a href="#create-order"
-                                       class="submenu-link">
-                                        <span class="submenu-dot"></span>
-                                        <span>Sale Orders</span>
+                            <li class="submenu-item">
+                                <a href="#create-order" class="submenu-link">
+                                    <span class="submenu-dot"></span>
+                                    <span>Sale Orders</span>
 
-                                        <span class="sidebar-badge text-white ms-auto"
-                                              style="background-color: var(--accent-amber); font-size: 0.65rem;">
-                                            5
-                                        </span>
-                                    </a>
-                                </li>
+                                    <span class="sidebar-badge text-white ms-auto"
+                                          style="background-color: var(--accent-amber); font-size: 0.65rem;">
+                                        5
+                                    </span>
+                                </a>
+                            </li>
 
-                                <li class="submenu-item">
-                                    <a href="#pending-orders"
-                                       class="submenu-link">
-                                        <span class="submenu-dot"></span>
-                                        <span>Sale Orders Sizes</span>
-                                    </a>
-                                </li>
-                            @endif
+                            <li class="submenu-item">
+                                <a href="#pending-orders" class="submenu-link">
+                                    <span class="submenu-dot"></span>
+                                    <span>Sale Orders Sizes</span>
+                                </a>
+                            </li>
 
                         </ul>
                     </div>
                 </li>
-
             @endif
+
+
+            {{-- =========================
+                MANAGE PRODUCTS
+            ========================== --}}
+            <li class="sidebar-item">
+
+                <a href="#productsCollapse"
+                   class="sidebar-link {{ $productsActive ? 'active' : '' }}"
+                   data-bs-toggle="collapse"
+                   data-bs-target="#productsCollapse"
+                   role="button"
+                   aria-expanded="{{ $productsActive ? 'true' : 'false' }}"
+                   aria-controls="productsCollapse">
+
+                    <i class="fa-solid fa-boxes nav-icon"></i>
+                    <span>Manage Products</span>
+                    <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                </a>
+
+                <div class="collapse {{ $productsActive ? 'show' : '' }}"
+                     id="productsCollapse">
+
+                    <ul class="sidebar-submenu-list">
+
+                        <li class="submenu-item">
+                            <a href="{{ route('brands') }}"
+                               class="submenu-link {{ request()->routeIs('brands*') ? 'active' : '' }}">
+                                <span class="submenu-dot"></span>
+                                <span>Brands</span>
+                            </a>
+                        </li>
+
+                        <li class="submenu-item">
+                            <a href="{{ route('products') }}"
+                               class="submenu-link {{ request()->routeIs('products*') ? 'active' : '' }}">
+                                <span class="submenu-dot"></span>
+                                <span>Products</span>
+                            </a>
+                        </li>
+
+                        <li class="submenu-item">
+                            <a href="{{ route('sizes') }}"
+                               class="submenu-link {{ request()->routeIs('sizes*') ? 'active' : '' }}">
+                                <span class="submenu-dot"></span>
+                                <span>Sizes</span>
+                            </a>
+                        </li>
+
+                        <li class="submenu-item">
+                            <a href="{{ route('grades') }}"
+                               class="submenu-link {{ request()->routeIs('grades*') ? 'active' : '' }}">
+                                <span class="submenu-dot"></span>
+                                <span>Grades</span>
+                            </a>
+                        </li>
+
+                    </ul>
+                </div>
+            </li>
+
+
+            {{-- =========================
+                MANAGE LOCATIONS
+            ========================== --}}
+            <li class="sidebar-item">
+
+                <a href="#locationsCollapse"
+                   class="sidebar-link {{ $locationsActive ? 'active' : '' }}"
+                   data-bs-toggle="collapse"
+                   data-bs-target="#locationsCollapse"
+                   role="button"
+                   aria-expanded="{{ $locationsActive ? 'true' : 'false' }}"
+                   aria-controls="locationsCollapse">
+
+                    <i class="fa-solid fa-location-dot nav-icon"></i>
+                    <span>Manage Locations</span>
+                    <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                </a>
+
+                <div class="collapse {{ $locationsActive ? 'show' : '' }}"
+                     id="locationsCollapse">
+
+                    <ul class="sidebar-submenu-list">
+
+                        <li class="submenu-item">
+                            <a href="{{ route('cities') }}"
+                               class="submenu-link {{ request()->routeIs('cities*') ? 'active' : '' }}">
+                                <span class="submenu-dot"></span>
+                                <span>Cities</span>
+                            </a>
+                        </li>
+
+                        <li class="submenu-item">
+                            <a href="{{ route('states') }}"
+                               class="submenu-link {{ request()->routeIs('states*') ? 'active' : '' }}">
+                                <span class="submenu-dot"></span>
+                                <span>States</span>
+                            </a>
+                        </li>
+
+                    </ul>
+                </div>
+            </li>
 
 
             {{-- =========================
                 MANAGE USERS
             ========================== --}}
             @if(in_array($role, ['admin', 'sale']))
-
                 <li class="sidebar-item">
 
                     <a href="#usersCollapse"
-                       class="sidebar-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
+                       class="sidebar-link {{ $usersActive ? 'active' : '' }}"
                        data-bs-toggle="collapse"
                        data-bs-target="#usersCollapse"
                        role="button"
-                       aria-expanded="{{ request()->routeIs('users.*') ? 'true' : 'false' }}"
+                       aria-expanded="{{ $usersActive ? 'true' : 'false' }}"
                        aria-controls="usersCollapse">
 
                         <i class="fa-solid fa-users nav-icon"></i>
@@ -138,7 +237,7 @@
                         <i class="fa-solid fa-chevron-down submenu-arrow"></i>
                     </a>
 
-                    <div class="collapse {{ request()->routeIs('users.*') ? 'show' : '' }}"
+                    <div class="collapse {{ $usersActive ? 'show' : '' }}"
                          id="usersCollapse">
 
                         <ul class="sidebar-submenu-list">
@@ -147,19 +246,16 @@
                             <li class="submenu-item">
                                 <a href="{{ route('users.users') }}"
                                    class="submenu-link {{ request()->routeIs('users.users') ? 'active' : '' }}">
-
                                     <span class="submenu-dot"></span>
                                     <span>All Users</span>
                                 </a>
                             </li>
-
 
                             {{-- ADD USER / ROLE: ADMIN ONLY --}}
                             @if($role === 'admin')
                                 <li class="submenu-item">
                                     <a href="{{ route('users.add') }}"
                                        class="submenu-link {{ request()->routeIs('users.add') ? 'active' : '' }}">
-
                                         <span class="submenu-dot"></span>
                                         <span>Add User / Role</span>
                                     </a>
@@ -169,7 +265,6 @@
                         </ul>
                     </div>
                 </li>
-
             @endif
 
         </ul>
