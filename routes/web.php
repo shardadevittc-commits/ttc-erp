@@ -21,11 +21,14 @@
         include "Admin/countries.php";
         include "Admin/cities.php";
         include "Admin/states.php";
-        
+
         include "Admin/brands.php";
         include "Admin/products.php";
         include "Admin/grades.php";
         include "Admin/sizes.php";
         include "Admin/units.php";
+        include "Admin/units.php";
+        include "Admin/saleOrders.php";
+        include "Admin/customers.php";
 
     });
