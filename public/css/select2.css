@@ -1,0 +1,58 @@
+/* Select2 main box */
+.select2-container--bootstrap-5 .select2-selection {
+    border: 1px solid #ced4da !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    min-height: 38px;
+}
+
+/* Focus par normal Bootstrap outline */
+.select2-container--bootstrap-5.select2-container--focus
+.select2-selection {
+    border-color: #86b7fe !important;
+    box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.15) !important;
+}
+
+/* Cross / clear button hide */
+.select2-container--bootstrap-5
+.select2-selection__clear {
+    display: none !important;
+}
+
+/* Dropdown */
+.select2-container--bootstrap-5 .select2-dropdown {
+    border: 1px solid #86b7fe !important;
+    border-radius: 0 0 6px 6px !important;
+}
+
+/* Search box - FULL WIDTH */
+.select2-container--bootstrap-5 .select2-search--dropdown {
+    padding: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Search input - FULL WIDTH */
+.select2-container--bootstrap-5 .select2-search--dropdown .select2-search__field {
+    width: 100% !important;
+    height: 38px !important;
+    box-sizing: border-box !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 5px !important;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 6px 10px !important;
+}
+
+/* Search input focus */
+.select2-container--bootstrap-5
+.select2-search--dropdown
+.select2-search__field:focus {
+    border-color: #86b7fe !important;
+    box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.15) !important;
+}
+
+/* Results */
+.select2-container--bootstrap-5 .select2-results__option {
+    padding: 8px 12px !important;
+}
