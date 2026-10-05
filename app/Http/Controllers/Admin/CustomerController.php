@@ -67,6 +67,7 @@ class CustomerController extends Controller
     public function add(Request $request)
     {
         if ($request->isMethod('post')) {
+            // pr($request->toArray()); die;
             $request->merge(['gst_no' => strtoupper(trim((string) $request->input('gst_no')))]);
             $validated = $request->validate($this->validationRules($request));
             $validated['gst_details'] = $this->decodeGstDetails($validated['gst_details'] ?? null);
@@ -77,9 +78,10 @@ class CustomerController extends Controller
         }
 
         $countries = Country::where('status', 1)->orderBy('name')->get();
-        $states = State::where('status', 1)->where('country_id', old('country_id'))->orderBy('name')->get();
+        // $states = State::where('status', 1)->where('country_id', old('country_id'))->orderBy('name')->get();
+        $states = State::where('status', 1)->where('status', 1)->orderBy('name')->get();
         $cities = City::where('status', 1)->where('state_id', old('state_id'))->orderBy('name')->get();
-
+        // pr($states); die;
         return view('admin.customers.add', [
             'customer' => null,
             'countries' => $countries,
@@ -92,7 +94,7 @@ class CustomerController extends Controller
     {
         $customer = Customer::with(['country', 'state', 'city', 'createdBy'])->findOrFail($id);
 
-        return view('admin.customers.show', compact('customer'));
+        return view('admin.customers.view', compact('customer'));
     }
 
     public function edit(Request $request, $id)
@@ -103,18 +105,18 @@ class CustomerController extends Controller
             $request->merge(['gst_no' => strtoupper(trim((string) $request->input('gst_no')))]);
             $validated = $request->validate($this->validationRules($request, $customer));
             $gstDetails = $this->decodeGstDetails($validated['gst_details'] ?? null);
-            $validated['gst_details'] = $gstDetails
-                ?? ($validated['gst_no'] === $customer->gst_no ? $customer->gst_details : null);
+            $validated['gst_details'] = $gstDetails ?? ($validated['gst_no'] === $customer->gst_no ? $customer->gst_details : null);
             $customer->update($validated);
-
+            pr($customer); die;
+            
             return redirect()->route('customers')->with('success', 'Customer updated successfully.');
         }
 
         $countries = Country::where('status', 1)->orderBy('name')->get();
         $states = State::where('status', 1)->where('country_id', old('country_id', $customer->country_id))->orderBy('name')->get();
-        $cities = City::where('status', 1)->where('state_id', old('state_id', $customer->state_id))->orderBy('name')->get();
+        // $cities = City::where('status', 1)->where('state_id', old('state_id', $customer->state_id))->orderBy('name')->get();
 
-        return view('admin.customers.form', compact('customer', 'countries', 'states', 'cities'));
+        return view('admin.customers.edit', compact('customer', 'countries', 'states'));
     }
 
     public function statesByCountry(Request $request)
@@ -226,20 +228,21 @@ class CustomerController extends Controller
         }
 
         return [
-            'company_name' => ['required', 'string', 'max:255'],
-            'cust_code' => ['required', 'string', 'max:100', $codeUnique],
-            'gst_no' => ['required', 'string', 'regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/', $gstUnique],
-            'gst_details' => ['nullable', 'json', 'max:50000'],
-            'email' => ['required', 'email', 'max:255'],
-            'mobile' => ['required', 'string', 'max:30'],
-            'country_id' => ['required', 'integer', 'exists:countries,id'],
-            'state_id' => ['required', 'integer', Rule::exists('states', 'id')->where('country_id', $request->input('country_id'))],
-            'city_id' => ['nullable', 'integer', Rule::exists('cities', 'id')->where('state_id', $request->input('state_id'))],
-            'pincode' => ['nullable', 'string', 'max:20'],
-            'address' => ['nullable', 'string', 'max:5000'],
-            'buyer' => ['required', Rule::in([Customer::YES, Customer::NO])],
-            'supplier' => ['required', Rule::in([Customer::YES, Customer::NO])],
-            'status' => ['required', Rule::in([Customer::STATUS_ACTIVE, Customer::STATUS_DEACTIVE])],
+            'company_name'  => ['required', 'string',   'max:255'],
+            'customer_name' => ['required', 'string',   'max:255'],
+            'cust_code'     => ['required', 'string',   'max:100', $codeUnique],
+            'gst_no'        => ['required', 'string',   'regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/', $gstUnique],
+            'gst_details'   => ['nullable', 'json',     'max:50000'],
+            'email'         => ['required', 'email',    'max:255'],
+            'mobile'        => ['required', 'string',   'max:30'],
+            'country_id'    => ['required', 'integer',  'exists:countries,id'],
+            'state_id'      => ['required', 'integer',  Rule::exists('states', 'id')->where('country_id', $request->input('country_id'))],
+            'city_name'     => ['nullable', 'string',   'max:255'],
+            'pincode'       => ['nullable', 'string',   'max:20'],
+            'address'       => ['nullable', 'string',   'max:5000'],
+            'buyer'         => ['required', Rule::in([Customer::YES, Customer::NO])],
+            'supplier'      => ['required', Rule::in([Customer::YES, Customer::NO])],
+            'status'        => ['required', Rule::in([Customer::STATUS_ACTIVE, Customer::STATUS_DEACTIVE])],
         ];
     }
 

@@ -1,3 +1,8 @@
+body {
+    font-family: 'Poppins', sans-serif;
+}
+
 @import url('admin-listing.css');
 @import url('admin-sale-order.css');
+@import url('select2.css');
 

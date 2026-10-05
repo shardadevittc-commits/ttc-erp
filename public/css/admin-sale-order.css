@@ -1,10 +1,11 @@
 /* =========================================
    SALE ORDER
 ========================================= */
+body {
+    font-family: 'Poppins', sans-serif;
+}
 
-.product,
-.size,
-.grade {
+.product, .size, .grade {
     min-width: 150px;
 }
 
@@ -140,10 +141,10 @@
 
 .common-form .form-control,
 .common-form .form-select {
-    min-height: 44px;
+    min-height: 38px;
     border: 1px solid #d0d5dd;
     border-radius: 8px;
-    padding: 0.55rem 0.75rem;
+    padding: .375rem 2.25rem .375rem .75rem;
     color: #344054;
     font-size: 0.875rem;
     background-color: #fff;
@@ -194,14 +195,14 @@
 /* Input Group */
 
 .common-form .input-group-text {
-    min-height: 44px;
+    min-height: 38px;
     border-color: #d0d5dd;
     background-color: #f8f9fa;
     color: #667085;
 }
 
 .common-form .input-group .form-control {
-    min-height: 44px;
+    min-height: 38px;
 }
 
 

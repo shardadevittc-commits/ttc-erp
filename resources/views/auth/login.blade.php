@@ -803,16 +803,7 @@
                     <div class="form-group-custom">
                         <label for="email" class="form-label-custom">Username or Email Address</label>
                         <div class="input-control-box">
-                            <input 
-                                type="text" 
-                                name="email" 
-                                id="email" 
-                                class="input-field @error('email') is-invalid @enderror" 
-                                placeholder="admin@gmail.com" 
-                                value="{{ old('email') }}" 
-                                required 
-                                autofocus
-                                autocomplete="username">
+                            <input type="text" name="email" id="email" class="input-field @error('email') is-invalid @enderror" placeholder="admin@gmail.com" value="{{ old('email') }}" required autofocu autocomplete="username">
                             <i class="fa-solid fa-user lead-icon"></i>
                         </div>
                         @error('email')
@@ -828,15 +819,7 @@
                             <label for="password" class="form-label-custom mb-0">Password</label>
                         </div>
                         <div class="input-control-box">
-                            <input 
-                                type="password" 
-                                name="password" 
-                                id="password" 
-                                class="input-field @error('password') is-invalid @enderror" 
-                                placeholder="••••••••" 
-                                value="{{ old('password') }}" 
-                                required
-                                autocomplete="current-password">
+                            <input type="password" name="password" id="password" class="input-field @error('password') is-invalid @enderror" placeholder="••••••••" value="{{ old('password') }}" required autocomplete="current-password">
                             <i class="fa-solid fa-lock lead-icon"></i>
                             <button type="button" class="password-toggle-btn" id="togglePasswordBtn" title="Toggle password visibility" tabindex="-1">
                                 <i class="fa-solid fa-eye" id="togglePasswordIcon"></i>

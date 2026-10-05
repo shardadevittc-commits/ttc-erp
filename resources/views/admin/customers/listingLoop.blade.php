@@ -10,7 +10,7 @@
 	<td>
 		{{ $row->id }}
 	</td>
-	<td>
+	{{-- <td>
 		<div class="d-flex justify-content-start align-items-center user-name">
 			<div class="d-flex flex-column">
 				<a href="{{ route('customers.view', ['id' => $row->id]) }}" class="text-body text-truncate">
@@ -18,8 +18,28 @@
 				</a>
 			</div>
 		</div>
+	</td> --}}
+	<td>
+		<div class="d-flex justify-content-start align-items-center user-name">
+			{{-- <div class="avatar-wrapper">
+				<div class="avatar avatar-sm me-3">
+					<img src="{{ $row->avatar_url }}" alt="Avatar" class="rounded-circle">
+				</div>
+			</div> --}}
+			<div class="d-flex flex-column">
+				<a href="{{ route('customers.view', ['id' => $row->id]) }}" class="text-body text-truncate">
+					<span class="fw-medium">{{ ($row->company_name  ?: 'Unnamed Customer') .' '. ($row->cust_code ? ' - ('.$row->cust_code.')' : '') }}</span>
+				</a>
+				<a href="mailto:{{ $row->email }}">
+					<small class="text-muted">{{ $row->email ? 'Email - '. $row->email : '' }}</small>
+				</a>
+				<a href="tel:{{ $row->mobile }}">
+					<small class="text-muted">{{ $row->mobile ? 'Mobile - '. '+91-'.$row->mobile : '' }}</small>
+				</a>
+			</div>
+		</div>
 	</td>
-    <td>
+    {{-- <td>
 		<div class="d-flex justify-content-start align-items-center user-name">
 			<div class="d-flex flex-column">
 				<a href="mailto:{{ $row->email }}" class="text-body text-truncate">
@@ -27,7 +47,7 @@
 				</a>
 			</div>
 		</div>
-	</td>
+	</td> --}}
     <td>
 		<div class="d-flex justify-content-start align-items-center user-name">
 			<div class="d-flex flex-column">
