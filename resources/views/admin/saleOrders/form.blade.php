@@ -1,9 +1,4 @@
-@extends('layouts.app')
-
-@section('title', 'Add Sale Order')
-
-@section('content')
-    @php
+@php
     $editing = isset($saleOrder);
     $itemRows = old('items');
     if ($itemRows === null && $editing) {
@@ -51,7 +46,7 @@
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label for="customer_id" class="form-label">Customer <span class="text-danger">*</span></label>
-                        <select class="form-select select2" id="customer_id" name="customer_id" required>
+                        <select class="form-select" id="customer_id" name="customer_id" required>
                             <option value="">Select Customer</option>
                             @foreach ($customers as $customer)
                                 <option value="{{ $customer->id }}" @selected((string) old('customer_id', $saleOrder->customer_id ?? '') === (string) $customer->id)>
@@ -60,65 +55,34 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+                    <div class="col-md-4">
                         <label for="payment_term" class="form-label">Payment Term</label>
                         <input type="text" class="form-control" id="payment_term" name="payment_term" value="{{ old('payment_term', $saleOrder->payment_term ?? '') }}">
                     </div>
-                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+                    <div class="col-md-4">
                         <label for="customer_po_no" class="form-label">Customer P.O. No.</label>
                         <input type="text" class="form-control" id="customer_po_no" name="customer_po_no" value="{{ old('customer_po_no', $saleOrder->customer_po_no ?? '') }}">
                     </div>
-                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
-                        <div class="form-group">
-                            <label class="form-label d-block">Freight Basis</label>
-                            <div class="d-flex align-items-center gap-3 mt-2">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="frtBasis" id="frtBasisEx" value="EX" @checked(old('frtBasis', $saleOrder->frtBasis ?? 'FOR') == 'EX')>
-                                    <label class="form-check-label" for="frtBasisEx">EX</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="frtBasis" id="frtBasisFor" value="FOR" @checked(old('frtBasis', $saleOrder->frtBasis ?? 'FOR') == 'FOR')>
-                                    <label class="form-check-label" for="frtBasisFor">FOR</label>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="col-md-4">
+                        <label for="freight_basis" class="form-label">Freight Basis <span class="text-danger">*</span></label>
+                        <select class="form-select" id="freight_basis" name="freight_basis" required>
+                            <option value="1" @selected((string) old('freight_basis', $saleOrder->freight_basis ?? '') === '1')>EX</option>
+                            <option value="2" @selected((string) old('freight_basis', $saleOrder->freight_basis ?? '') === '2')>FOR</option>
+                        </select>
                     </div>
-                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+                    <div class="col-md-4">
                         <label for="order_qty" class="form-label">Order Qty</label>
                         <input type="number" min="0" step="0.001" class="form-control" id="order_qty" name="order_qty" value="{{ old('order_qty', $saleOrder->order_qty ?? '') }}">
                     </div>
-                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+                    <div class="col-md-4">
                         <label for="basic_rate" class="form-label">Basic Rate</label>
                         <input type="number" min="0" step="0.001" class="form-control" id="basic_rate" name="basic_rate" value="{{ old('basic_rate', $saleOrder->basic_rate ?? '') }}">
                     </div>
-                     <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
-                        <div class="form-group">
-                            <label for="orderType" class="form-label">Order Type</label>
-                            <select class="form-control" name="orderType" id="orderType">
-                                <option value="">Select Order Type</option>
-                                <option value="NULL" @selected(old('orderType', $saleOrder->orderType ?? 'NULL') == 'NULL')>General Order</option>
-                                <option value="1" @selected(old('orderType', $saleOrder->orderType ?? '') == '1')>Special Order</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
-                        <div class="form-group">
-                            <label for="product_type" class="form-label">Product Category <span class="text-danger">*</span></label>
-                            <select name="product_type" id="product_type" class="form-control" required>
-                                <option value="">Select Product Type</option>
-                                <option value="brightbar" @selected(old('product_type', $saleOrder->product_type ?? '') == 'brightbar')>Bright Bar</option>
-                                <option value="hb_wire" @selected(old('product_type', $saleOrder->product_type ?? '') == 'hb_wire')>HB Wire</option>
-                                <option value="hhb_wire" @selected(old('product_type', $saleOrder->product_type ?? '') == 'hhb_wire')>HHB Wire</option>
-                                <option value="annealed_bright_bar" @selected(old('product_type', $saleOrder->product_type ?? '') == 'annealed_bright_bar')>Annealed Bar</option>
-                                <option value="bold_rods" @selected(old('product_type', $saleOrder->product_type ?? '') == 'bold_rods')>Bolt Rods</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+                    <div class="col-md-4">
                         <label for="dispatch_date" class="form-label">Dispatch Date</label>
                         <input type="text" class="form-control" id="dispatch_date" name="dispatch_date" value="{{ old('dispatch_date', $saleOrder->dispatch_date ?? '') }}" placeholder="Enter dispatch date">
                     </div>
-                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+                    <div class="col-md-8">
                         <label for="remarks" class="form-label">Remarks</label>
                         <textarea class="form-control" id="remarks" name="remarks" rows="1">{{ old('remarks', $saleOrder->remarks ?? '') }}</textarea>
                     </div>
@@ -204,5 +168,3 @@
         document.getElementById('addSaleOrderItem').addEventListener('click', addRow);
     })();
 </script>
-
-@endsection

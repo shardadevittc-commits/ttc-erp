@@ -67,7 +67,6 @@ class CustomerController extends Controller
     public function add(Request $request)
     {
         if ($request->isMethod('post')) {
-            // pr($request->toArray()); die;
             $request->merge(['gst_no' => strtoupper(trim((string) $request->input('gst_no')))]);
             $validated = $request->validate($this->validationRules($request));
             $validated['gst_details'] = $this->decodeGstDetails($validated['gst_details'] ?? null);
