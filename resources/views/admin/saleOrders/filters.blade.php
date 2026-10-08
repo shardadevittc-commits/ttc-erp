@@ -5,7 +5,7 @@
 	<i class="fas fa-filter"></i> Filters
 </a>
 <div class="dropdown-menu dropdown-menu-end">
-	<form action="{{ route('sizes') }}" id="filters-form">
+	<form action="{{ route('saleOrders') }}" id="filters-form">
 		<a href="javascript:;" class="float-end px-2 closeit">
 			<i class="fa fa-times-circle"></i>
 		</a>
@@ -52,7 +52,7 @@
 		</div>
 		<div class="dropdown-divider"></div>
 		<div class="dropdown-bottom ">
-			<a href="{{ route('sizes') }}" class="btn btn-sm btn-danger px-3 float-start">
+			<a href="{{ route('saleOrders') }}" class="btn btn-sm btn-danger px-3 float-start">
 				Reset All
 			</a>
 			<button type="submit" class="btn btn-sm px-3 btn-primary float-end">Submit</button>

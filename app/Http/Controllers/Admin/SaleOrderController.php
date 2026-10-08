@@ -2,160 +2,156 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Validation\Rule;
-use App\Models\SaleOrder;
+use App\Models\Brand;
 use App\Models\Customer;
+use App\Models\Grade;
+use App\Models\Product;
+use App\Models\SaleOrder;
+use App\Models\Size;
+use App\Repositories\SaleOrderRepository;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SaleOrderController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public function __construct(private SaleOrderRepository $saleOrderRepository)
+    {
+    }
+
     public function index(Request $request)
     {
-        $query = SaleOrder::query()->with(['grade', 'brand', 'unit', 'saleOrderItems', 'customer']);
-        $search = trim((string) $request->query('search', ''));
-        if ($search !== '') {
-            $query->where(function ($query) use ($search) {
-                $query->where('customer_id', 'like', "%{$search}%")
-                    ->orWhere('id', 'like', "%{$search}%")
-                    ->orWhere('payment_term', 'like', "%{$search}%")
-                    ->orWhere('order_qty', 'like', "%{$search}%")
-                    ->orWhere('basic_rate', 'like', "%{$search}%")
-                    ->orWhere('dispatch_date', 'like', "%{$search}%")
-                    ->orWhere('remarks', 'like', "%{$search}%")
-                    ->orWhere('freight_basis', 'like', "%{$search}%")
-                    ->orWhere('created_at', 'like', "%{$search}%")
-                    ->orWhere('updated_at', 'like', "%{$search}%")
-                    ->orWhere('customer_po_no', 'like', "%{$search}%");
-            });
-        }
+        $listing = $this->saleOrderRepository->listing($request);
 
-        $sortBy = in_array($request->query('sort_by'), ['id', 'size_name', 'status', 'created_at'], true)
-            ? $request->query('sort_by') : 'id';
-        $sortOrder = $request->query('sort_order') === 'asc' ? 'asc' : 'desc';
-        $perPage = (int) $request->query('per_page', 10);
-        $perPage = in_array($perPage, [10, 25, 50, 100], true) ? $perPage : 10;
-
-        $listing = $query->orderBy($sortBy, $sortOrder)->paginate($perPage)->withQueryString();
-
-        /* AJAX Request */
         if ($request->ajax()) {
-
-            $html = view(
-                'admin.saleOrders.listingLoop',
-                [
-                    'listing' => $listing
-                ]
-            )->render();
-
             return response()->json([
                 'status' => true,
-                'html' => $html,
+                'html' => view('admin.saleOrders.listingLoop', compact('listing'))->render(),
                 'page' => $listing->currentPage(),
                 'counter' => $listing->perPage(),
                 'count' => $listing->total(),
                 'lastPage' => $listing->lastPage(),
                 'pagination' => $listing->links('pagination::bootstrap-5')->toHtml(),
-            ], 200);
+            ]);
         }
 
-        /* Normal Request */
-        $customers = Customer::all();
-        return view('admin.saleOrders.index',[
-                'listing' => $listing,
-                'customers' => $customers
-            ]
-        );
+        return view('admin.saleOrders.index', compact('listing'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function add(Request $request)
     {
-        if($request->isMethod('post')) {
-			
-            $validated = $request->validate([
-                'size_name' => ['required', 'string', 'max:50', Rule::unique('sizes', 'size_name')->whereNull('deleted_at')],
-            ]);
-
-            $imagePath = null;
-            if ($request->hasFile('image')) {
-                $imagePath = $request->file('image')->store('users', 'public');
-            }
-
-            SaleOrder::create([
-                'size_name' => $validated['size_name'],
-                'status' => (int) $request->status ?? 1,
-                'created_by' => auth()->id(),
-            ]);
+        if ($request->isMethod('post')) {
+            $validated = $this->validateSaleOrder($request);
+            $this->saleOrderRepository->save(
+                $this->saleOrderData($validated),
+                $validated['items']
+            );
 
             return redirect()->route('saleOrders')->with('success', 'Sale Order added successfully.');
         }
-        $customers = Customer::all();
-        return view('admin.saleOrders.add', compact('customers'));
+
+        return view('admin.saleOrders.add', $this->formData());
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function view(int $id)
     {
-        $sizes = SaleOrder::with(['grade', 'brand', 'unit'])->findOrFail($id);
-        return view('admin.saleOrders.view',[
-            'sizes' => $sizes
+        $saleOrder = $this->saleOrderRepository->find($id);
+
+        return view('admin.saleOrders.view', compact('saleOrder'));
+    }
+
+    public function edit(Request $request, int $id)
+    {
+        $saleOrder = $this->saleOrderRepository->find($id);
+
+        if ($request->isMethod('post')) {
+            $validated = $this->validateSaleOrder($request);
+            $this->saleOrderRepository->save(
+                $this->saleOrderData($validated),
+                $validated['items'],
+                $saleOrder
+            );
+
+            return redirect()->route('saleOrders')->with('success', 'Sale Order updated successfully.');
+        }
+
+        return view('admin.saleOrders.edit', array_merge(
+            $this->formData(),
+            compact('saleOrder')
+        ));
+    }
+
+    public function destroy(int $id)
+    {
+        $this->saleOrderRepository->find($id)->delete();
+
+        return redirect()->route('saleOrders')->with('success', 'Sale Order deleted successfully.');
+    }
+
+    private function validateSaleOrder(Request $request): array
+    {
+        return $request->validate([
+            'customer_id' => ['required', 'integer', Rule::exists('customers', 'id')->whereNull('deleted_at')],
+            'payment_term' => ['nullable', 'string'],
+            'customer_po_no' => ['nullable', 'string'],
+            'order_qty' => ['nullable', 'numeric', 'min:0'],
+            'basic_rate' => ['nullable', 'numeric', 'min:0'],
+            'dispatch_date' => ['nullable', 'string'],
+            'remarks' => ['nullable', 'string'],
+            'freight_basis' => ['required', 'integer', Rule::in([SaleOrder::FREIGHT_EX, SaleOrder::FREIGHT_FOR])],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.id' => ['nullable', 'integer'],
+            'items.*.category' => ['nullable', 'string', 'max:20'],
+            'items.*.product_id' => ['required', 'integer', Rule::exists('products', 'id')->whereNull('deleted_at')],
+            'items.*.size_unit' => ['nullable', 'string'],
+            'items.*.grade_id' => ['nullable', 'integer', Rule::exists('grades', 'id')->whereNull('deleted_at')],
+            'items.*.brand_id' => ['nullable', 'integer', Rule::exists('brands', 'id')->whereNull('deleted_at')],
+            'items.*.size_id' => ['nullable', 'integer', Rule::exists('sizes', 'id')->whereNull('deleted_at')],
+            'items.*.sale_item_prices' => ['nullable', 'numeric', 'min:0'],
+            'items.*.size_extra' => ['nullable', 'numeric', 'min:0'],
+            'items.*.item_qty' => ['nullable', 'numeric', 'min:0'],
+            'items.*.qty_type' => ['nullable', 'integer', Rule::in([1, 2])],
+            'items.*.dispatch_qty' => ['nullable', 'numeric', 'min:0'],
+            'items.*.dispatched_qty' => ['nullable', 'numeric', 'min:0'],
+            'items.*.pending_qty' => ['nullable', 'numeric', 'min:0'],
+            'items.*.s_marked_completed' => ['nullable', 'integer', Rule::in([1, 2])],
+            'items.*.item_remarks' => ['nullable', 'string'],
+            'items.*.straightening' => ['nullable', 'integer', Rule::in([1, 2])],
+            'items.*.point_discard' => ['nullable', 'integer', Rule::in([1, 2])],
+            'items.*.phosphating' => ['nullable', 'integer', Rule::in([1, 2])],
+            'items.*.hardness' => ['nullable', 'string'],
+            'items.*.hardness_unit' => ['nullable', 'string', 'max:20'],
+            'items.*.pcs_length_unit' => ['nullable', 'string', 'max:20'],
+            'items.*.coating' => ['nullable', 'string', 'max:50'],
+            'items.*.product_type' => ['nullable', 'integer', 'min:0'],
+            'items.*.fs_bundle_weight' => ['nullable', 'numeric', 'min:0'],
+            'items.*.fs_bundle_unit' => ['nullable', 'integer', Rule::in([1, 2])],
         ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Request $request, $id)
+    private function saleOrderData(array $validated): array
     {
-        $saleOrder = SaleOrder::findOrFail($id);
-        $permissions = $saleOrder->permissions;
-        if($saleOrder){
-            if($request->isMethod('post')) {
-                $validated = $request->validate([
-                    'size_name' => [
-                        'required',
-                        'string',
-                        'max:100',
-                        // 'alpha_dash',
-                        Rule::unique('sizes', 'size_name')->ignore($saleOrder->id),
-                    ],
-                ]);
-
-                $data = [
-                    'size_name' => $validated['size_name'],
-                ];
-
-                if ($request->has('status')) {
-                    $data['status'] = (int) $request->status;
-                }
-    
-                $size->update($data);
-
-                return redirect()->route('saleOrders')->with('success', 'Sale Order updated successfully.');
-
-            }
-
-            return view('admin.saleOrders.edit', compact('size'));
-        }else{
-            abort(404);
-        }
+        return [
+            'customer_id' => $validated['customer_id'],
+            'payment_term' => $validated['payment_term'] ?? null,
+            'customer_po_no' => $validated['customer_po_no'] ?? null,
+            'order_qty' => $validated['order_qty'] ?? null,
+            'basic_rate' => $validated['basic_rate'] ?? null,
+            'dispatch_date' => $validated['dispatch_date'] ?? null,
+            'remarks' => $validated['remarks'] ?? null,
+            'freight_basis' => $validated['freight_basis'],
+            'created_by' => auth()->id(),
+        ];
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(int $id)
+    private function formData(): array
     {
-        SaleOrder::findOrFail($id)->delete();
-
-        return redirect()->route('saleOrders')->with('success', 'Sale Order deleted successfully.');
+        return [
+            'customers' => Customer::query()->orderBy('company_name')->get(),
+            'products' => Product::query()->with(['grade', 'size'])->orderBy('product_name')->get(),
+            'grades' => Grade::query()->orderBy('grade_name')->get(),
+            'brands' => Brand::query()->orderBy('brand_name')->get(),
+            'sizes' => Size::query()->orderBy('size_name')->get(),
+        ];
     }
 }
