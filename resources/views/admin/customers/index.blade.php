@@ -86,7 +86,7 @@
                                                 <i class="fas fa-sort" data-field="company_name"></i>
                                                 @endif
                                             </th>
-                                            <th class="sort">
+                                            {{-- <th class="sort">
                                                 Emails
                                                 @if(request('sort_by') === 'email' && request('sort_order') === 'asc')
                                                 <i class="fas fa-sort-down active" data-field="email"></i>
@@ -95,7 +95,7 @@
                                                 @else
                                                 <i class="fas fa-sort" data-field="email"></i>
                                                 @endif
-                                            </th>
+                                            </th> --}}
                                             <th class="sort">
                                                 State / Country
                                                 @if(request('sort_by') === 'state_id' && request('sort_order') === 'asc')

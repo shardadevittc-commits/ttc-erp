@@ -4,8 +4,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-use App\Models\SaleOrderItem;
 use App\Models\Customer;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SaleOrder extends Model
 {
@@ -17,6 +18,10 @@ class SaleOrder extends Model
         'customer_id',
         'payment_term',
         'customer_po_no',
+        'order_qty',
+        'basic_rate',
+        'dispatch_date',
+        'remarks',
         'freight_basis',
         'created_by',
     ];
@@ -31,13 +36,13 @@ class SaleOrder extends Model
     public const FREIGHT_EX = 1;
     public const FREIGHT_FOR = 2;
 
-    public function items()
+    public function items(): HasMany
     {
         return $this->hasMany(SaleOrderItem::class, 'sale_order_id');
     }
 
-    public function customer()
+    public function customer(): BelongsTo
     {
-        return $this->belongsTo(Customers::class);
+        return $this->belongsTo(Customer::class, 'customer_id');
     }
 }
