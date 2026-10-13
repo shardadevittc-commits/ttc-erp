@@ -2,7 +2,8 @@
    SALE ORDER
 ========================================= */
 body {
-    font-family: 'Poppins', sans-serif;
+        font-family: "Nunito", sans-serif;
+    
 }
 
 .product, .size, .grade {
@@ -264,5 +265,16 @@ body {
         font-size: 0.875rem;
     }
 
+}
+tbody, td, tfoot, th, thead, tr {
+    
+    font-size: 13px;
+    padding: 5px 10px;
+    text-transform: uppercase;
+}
+.form-label{
+    font-size: 13px;
+    font-weight: bold;
+    text-transform: uppercase;
 }
 

@@ -75,11 +75,18 @@ class SizeController extends Controller
                 $imagePath = $request->file('image')->store('users', 'public');
             }
 
-            Size::create([
+            $size = Size::create([
                 'size_name' => $validated['size_name'],
                 'status' => (int) $request->status ?? 1,
                 'created_by' => auth()->id(),
             ]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'id' => $size->id,
+                    'text' => $size->size_name,
+                ], 201);
+            }
 
             return redirect()->route('sizes')->with('success', 'Size added successfully.');
         }

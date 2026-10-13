@@ -13,7 +13,8 @@ class SaleOrderRepository
 {
     public function listing(Request $request): LengthAwarePaginator
     {
-        $query = SaleOrder::query()->with('customer')->withCount('items');
+        $query = SaleOrder::query()->with(['customer','items.grade'])->withCount('items')->withSum('items as total_qty', 'item_qty');
+        // pr($query->toSql()); die;
         $search = trim((string) $request->query('search', ''));
 
         if ($search !== '') {

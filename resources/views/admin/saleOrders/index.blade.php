@@ -40,12 +40,20 @@
                     <table class="table listing-table">
                         <thead>
                             <tr>
-                                <th>Order #</th>
-                                <th>Customer</th>
-                                <th>Customer P.O. No.</th>
-                                <th>Items</th>
-                                <th>Freight</th>
-                                <th>Created</th>
+                                <th>OR. NO.</th>
+                                <th>Order Date</th>
+                                <th>Party Name</th>
+                                <th style="width: 5%;">Deal Qty. (Tons).</th>
+                                <th width="10%">Pending Deal. (Tons).</th>
+                                {{-- <th>Basic Rate</th> --}}
+                                <th>Sale Rate - Product - Sizes - Grade</th>
+                                {{-- <th>Grade</th> --}}
+                                <th width="10%">Order Qty. (Tons).</th>
+                                <th width="10%">Dispatched Qty. (Tons).</th>
+                                <th width="10%">Pending Qty. (Tons).</th>
+                                <th>Status</th>
+                                {{-- <th>Added By</th> --}}
+                                
                                 <th>Actions</th>
                             </tr>
                         </thead>
