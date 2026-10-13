@@ -71,11 +71,18 @@ class GradeController extends Controller
                 $imagePath = $request->file('image')->store('users', 'public');
             }
 
-            Grade::create([
+            $grade = Grade::create([
                 'grade_name' => $validated['grade_name'],
                 'status' => (int) $request->status ?? 1,
                 'created_by' => auth()->id(),
             ]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'id' => $grade->id,
+                    'text' => $grade->grade_name,
+                ], 201);
+            }
 
             return redirect()->route('grades')->with('success', 'Grade added successfully.');
         }

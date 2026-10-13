@@ -23,20 +23,98 @@
 
 <div class="content_area">
     <div class="container-xxl flex-grow-1 container-p-y">
-        <div class="card mb-4">
-            <div class="card-header"><h5 class="mb-0">Order Details</h5></div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-4"><strong>Customer:</strong> {{ $saleOrder->customer?->company_name ?? '-' }}</div>
-                    <div class="col-md-4"><strong>Customer P.O. No.:</strong> {{ $saleOrder->customer_po_no ?: '-' }}</div>
-                    <div class="col-md-4"><strong>Payment Term:</strong> {{ $saleOrder->payment_term ?: '-' }}</div>
-                    <div class="col-md-4"><strong>Freight Basis:</strong> {{ $saleOrder->freight_basis === \App\Models\SaleOrder::FREIGHT_EX ? 'EX' : ($saleOrder->freight_basis === \App\Models\SaleOrder::FREIGHT_FOR ? 'FOR' : '-') }}</div>
-                    <div class="col-md-4"><strong>Order Qty:</strong> {{ $saleOrder->order_qty ?? '-' }}</div>
-                    <div class="col-md-4"><strong>Basic Rate:</strong> {{ $saleOrder->basic_rate ?? '-' }}</div>
-                    <div class="col-md-4"><strong>Dispatch Date:</strong> {{ $saleOrder->dispatch_date ?: '-' }}</div>
-                    <div class="col-md-8"><strong>Remarks:</strong> {{ $saleOrder->remarks ?: '-' }}</div>
+        <div class="row">
+            <div class="col-xxl-6 col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+                <div class="card mb-4">
+                    <div class="card-header"><h5 class="mb-0">Order Details</h5></div>
+                    <div class="card-body p-0">
+						<div class="table-responsive text-nowrap">
+							<table class="table">
+								<tbody>
+									<tr>
+										<th>Order No</th>
+										<td>{{ $saleOrder->id ?? '-' }}</td>
+									</tr>
+                                    <tr>
+										<th>Order Date</th>
+										<td>{{ _d($saleOrder->created_at) ?? '-' }}</td>
+									</tr>
+                                    <tr>
+										<th>Payment Term</th>
+										<td>{{ $saleOrder->payment_term ?: '-' }}</td>
+									</tr>
+                                    <tr>
+										<th>Total Order Qty</th>
+										<td>{{  $saleOrder->order_qty ?? '-' }}</td>
+									</tr>
+									<tr>
+										<th>Basic Rate</th>
+										<td>{{ $saleOrder->basic_rate ?? '-' }}</td>
+									</tr>
+                                    <tr>
+										<th>Remarks</th>
+										<td>{{ $saleOrder->remarks ?: '-' }}</td>
+									</tr>									
+								</tbody>
+							</table>
+						</div>
+					</div>
                 </div>
             </div>
+            <div class="col-xxl-6 col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 mb-2">
+				<!-- ==== Party Details -->
+				<div class="card">
+					<div class="card-header view_header">
+			        	<div class="heading">
+							<h5 class="mb-0">Party Details</h5>
+						</div>
+					</div>
+					<div class="card-body p-0">
+                        <div class="article-content container-max p-2 small">
+                            <h6>{{ $saleOrder->customer?->company_name ?? '-' }}</h6>
+                            @if ($saleOrder->customer?->address)
+                                <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode(strip_tags($saleOrder->customer->address)) }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="text-dark text-decoration-none">
+                                    {!! $saleOrder->customer->address !!}
+                                    <i class="bi bi-geo-alt"></i>
+                                </a>
+                            @endif
+                        </div>
+						<div class="table-responsive text-nowrap">
+							<table class="table">
+								<tbody>
+									<tr>
+										<th>Contact Person</th>
+										<td>
+											{{ _dt($saleOrder->created_at) }}
+										</td>
+									</tr>
+									<tr>
+										<th>Designation</th>
+										<td>
+											{{ $saleOrder->customer->updated_at }}
+										</td>
+									</tr>
+									<tr>
+										<th>Contact No.</th>
+										<td>
+											{{ isset($saleOrder->customer->owner) ? $saleOrder->customer->owner->first_name . ' ' . $saleOrder->customer->owner->last_name : "" }}
+										</td>
+									</tr>
+                                    <tr>
+										<th>Email</th>
+										<th>
+											{!! $saleOrder->customer->status ? '<span class="badge bg-success">Publish</span>' : '<span class="badge bg-danger">Unpublish</span>' !!}
+										</th>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
         </div>
 
         <div class="card">
@@ -68,7 +146,7 @@
                             <th>Coating</th>
                             <th>FS Bundle Weight</th>
                             <th>FS Bundle Unit</th>
-                            <th>Product Type ID</th>
+                            <th>Product Type</th>
                             <th>Item Remarks</th>
                         </tr>
                     </thead>
@@ -98,7 +176,7 @@
                                 <td>{{ $item->coating ?: '-' }}</td>
                                 <td>{{ $item->fs_bundle_weight ?? '-' }}</td>
                                 <td>{{ $item->fs_bundle_unit === 1 ? 'KG' : ($item->fs_bundle_unit === 2 ? 'Tons' : '-') }}</td>
-                                <td>{{ $item->product_type ?? '-' }}</td>
+                                <td>{{ [1 => 'Bright Bar', 2 => 'HB Wire', 3 => 'HHB Wire', 4 => 'Annealed Bright Bar', 5 => 'Bolt Rods'][$item->product_type] ?? '-' }}</td>
                                 <td>{{ $item->item_remarks ?: '-' }}</td>
                             </tr>
                         @empty

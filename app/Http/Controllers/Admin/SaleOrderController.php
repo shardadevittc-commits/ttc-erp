@@ -9,6 +9,7 @@ use App\Models\Grade;
 use App\Models\Product;
 use App\Models\SaleOrder;
 use App\Models\Size;
+use App\Models\State;
 use App\Repositories\SaleOrderRepository;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -42,6 +43,7 @@ class SaleOrderController extends Controller
     {
         if ($request->isMethod('post')) {
             $validated = $this->validateSaleOrder($request);
+            // pr($validated); die;
             $this->saleOrderRepository->save(
                 $this->saleOrderData($validated),
                 $validated['items']
@@ -90,7 +92,18 @@ class SaleOrderController extends Controller
 
     private function validateSaleOrder(Request $request): array
     {
-        return $request->validate([
+        $productType = $request->input('product_type');
+        $typeFields = [
+            'brightbar' => ['straightening', 'point_discard'],
+            'hb_wire' => ['phosphating'],
+            'hhb_wire' => ['straightening', 'hardness', 'hardness_unit'],
+            'annealed_bright_bar' => ['hardness', 'hardness_unit'],
+            'bold_rods' => ['pcs_length_unit', 'coating'],
+        ];
+        $requiredFields = $typeFields[$productType] ?? [];
+
+        $validated = $request->validate([
+            'product_type' => ['required', 'string', Rule::in(array_keys($typeFields))],
             'customer_id' => ['required', 'integer', Rule::exists('customers', 'id')->whereNull('deleted_at')],
             'payment_term' => ['nullable', 'string'],
             'customer_po_no' => ['nullable', 'string'],
@@ -101,32 +114,44 @@ class SaleOrderController extends Controller
             'freight_basis' => ['required', 'integer', Rule::in([SaleOrder::FREIGHT_EX, SaleOrder::FREIGHT_FOR])],
             'items' => ['required', 'array', 'min:1'],
             'items.*.id' => ['nullable', 'integer'],
-            'items.*.category' => ['nullable', 'string', 'max:20'],
             'items.*.product_id' => ['required', 'integer', Rule::exists('products', 'id')->whereNull('deleted_at')],
-            'items.*.size_unit' => ['nullable', 'string'],
-            'items.*.grade_id' => ['nullable', 'integer', Rule::exists('grades', 'id')->whereNull('deleted_at')],
+            'items.*.size_unit' => ['nullable', 'string', 'required_without:items.*.size_id'],
+            'items.*.grade_id' => ['required', 'integer', Rule::exists('grades', 'id')->whereNull('deleted_at')],
             'items.*.brand_id' => ['nullable', 'integer', Rule::exists('brands', 'id')->whereNull('deleted_at')],
-            'items.*.size_id' => ['nullable', 'integer', Rule::exists('sizes', 'id')->whereNull('deleted_at')],
-            'items.*.sale_item_prices' => ['nullable', 'numeric', 'min:0'],
+            'items.*.size_id' => ['nullable', 'integer', 'required_without:items.*.size_unit', Rule::exists('sizes', 'id')->whereNull('deleted_at')],
+            'items.*.sale_item_prices' => ['required', 'numeric', 'min:0'],
             'items.*.size_extra' => ['nullable', 'numeric', 'min:0'],
-            'items.*.item_qty' => ['nullable', 'numeric', 'min:0'],
-            'items.*.qty_type' => ['nullable', 'integer', Rule::in([1, 2])],
+            'items.*.item_qty' => ['required', 'numeric', 'min:0'],
+            'items.*.qty_type' => ['required', 'integer', Rule::in([1, 2])],
             'items.*.dispatch_qty' => ['nullable', 'numeric', 'min:0'],
             'items.*.dispatched_qty' => ['nullable', 'numeric', 'min:0'],
             'items.*.pending_qty' => ['nullable', 'numeric', 'min:0'],
             'items.*.s_marked_completed' => ['nullable', 'integer', Rule::in([1, 2])],
-            'items.*.item_remarks' => ['nullable', 'string'],
-            'items.*.straightening' => ['nullable', 'integer', Rule::in([1, 2])],
-            'items.*.point_discard' => ['nullable', 'integer', Rule::in([1, 2])],
-            'items.*.phosphating' => ['nullable', 'integer', Rule::in([1, 2])],
-            'items.*.hardness' => ['nullable', 'string'],
-            'items.*.hardness_unit' => ['nullable', 'string', 'max:20'],
-            'items.*.pcs_length_unit' => ['nullable', 'string', 'max:20'],
-            'items.*.coating' => ['nullable', 'string', 'max:50'],
-            'items.*.product_type' => ['nullable', 'integer', 'min:0'],
-            'items.*.fs_bundle_weight' => ['nullable', 'numeric', 'min:0'],
-            'items.*.fs_bundle_unit' => ['nullable', 'integer', Rule::in([1, 2])],
+            'items.*.item_remarks' => ['required', 'string'],
+            'items.*.straightening' => [Rule::requiredIf(in_array('straightening', $requiredFields, true)), 'nullable', 'integer', Rule::in([1, 2])],
+            'items.*.point_discard' => [Rule::requiredIf(in_array('point_discard', $requiredFields, true)), 'nullable', 'integer', Rule::in([1, 2])],
+            'items.*.phosphating' => [Rule::requiredIf(in_array('phosphating', $requiredFields, true)), 'nullable', 'integer', Rule::in([1, 2])],
+            'items.*.hardness' => [Rule::requiredIf(in_array('hardness', $requiredFields, true)), 'nullable', 'string'],
+            'items.*.hardness_unit' => [Rule::requiredIf(in_array('hardness_unit', $requiredFields, true)), 'nullable', 'string', 'max:20'],
+            'items.*.pcs_length_unit' => [Rule::requiredIf(in_array('pcs_length_unit', $requiredFields, true)), 'nullable', 'string', 'max:20'],
+            'items.*.coating' => [Rule::requiredIf(in_array('coating', $requiredFields, true)), 'nullable', 'string', Rule::in(['autoblack', 'galvanized'])],
+            'items.*.fs_bundle_weight' => ['required', 'numeric', 'min:0'],
+            'items.*.fs_bundle_unit' => ['required', 'integer', Rule::in([1, 2])],
         ]);
+
+        $productTypeIds = [
+            'brightbar' => 1,
+            'hb_wire' => 2,
+            'hhb_wire' => 3,
+            'annealed_bright_bar' => 4,
+            'bold_rods' => 5,
+        ];
+
+        foreach ($validated['items'] as $index => $item) {
+            $validated['items'][$index]['product_type'] = $productTypeIds[$validated['product_type']];
+        }
+
+        return $validated;
     }
 
     private function saleOrderData(array $validated): array
@@ -152,6 +177,7 @@ class SaleOrderController extends Controller
             'grades' => Grade::query()->orderBy('grade_name')->get(),
             'brands' => Brand::query()->orderBy('brand_name')->get(),
             'sizes' => Size::query()->orderBy('size_name')->get(),
+            'states' => State::query()->orderBy('name')->get(),
         ];
     }
 }

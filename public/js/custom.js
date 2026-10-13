@@ -1,19 +1,11 @@
 $(function () {
 
     const formSelector = '.customer-form';
-
-    /* =========================================================
-       LOCATION FUNCTIONS
-       Country → State → City
-    ========================================================= */
-
+    /* LOCATION FUNCTIONS Country → State → City */
     let statesRequest;
     let citiesRequest;
 
-
-    /**
-     * Set options in select dropdown
-     */
+    /**Set options in select dropdown*/
     function setOptions($select, options, placeholder, selectedValue) {
 
         $select.empty().append(
@@ -21,16 +13,9 @@ $(function () {
         );
 
         options.forEach(function (option) {
-
             $select.append(
-                new Option(
-                    option.name,
-                    option.id,
-                    false,
-                    String(option.id) === String(selectedValue || '')
-                )
+                new Option(option.name,option.id,false,String(option.id) === String(selectedValue || ''))
             );
-
         });
     }
 
@@ -39,28 +24,19 @@ $(function () {
      * Load cities based on state
      */
     function loadCities($form, stateId, selectedCityId) {
-
         const $city = $form.find('#city_id');
-
         // Clear city dropdown
-        setOptions(
-            $city,
-            [],
-            'Select city'
-        );
-
+        setOptions($city,[],'Select city');
 
         // Abort previous cities request
         if (citiesRequest && citiesRequest.readyState !== 4) {
             citiesRequest.abort();
         }
 
-
         // No state selected
         if (!stateId) {
             return;
         }
-
 
         // Get cities
         citiesRequest = $.ajax({
@@ -77,54 +53,7 @@ $(function () {
     }
 
 
-    /**
-     * Load states based on country
-     */
-    /* function loadStates($form, countryId, selectedStateId, selectedCityId) {
-
-        const $state = $form.find('#state_id');
-        const $city = $form.find('#city_id');
-
-        // Clear state and city dropdown
-        setOptions($state,[],'Select state');
-
-        setOptions( $city, [], 'Select city');
-
-        // Abort previous states request
-        if (statesRequest && statesRequest.readyState !== 4) {
-            statesRequest.abort();
-        }
-
-        // No country selected
-        // if (!countryId) {
-        //     return;
-        // }
-
-        countryId = countryId || 19;
-
-        // Get states
-        statesRequest = $.ajax({
-            url: $form.data('states-url'),
-            type: 'GET',
-            dataType: 'json',
-            data: {
-                country_id: countryId
-            }
-
-        }).done(function (response) {
-
-            setOptions($state,response.options || [],'Select state',selectedStateId);
-            // If state is already selected,
-            // load its cities
-            if (selectedStateId && $state.val()) {
-                loadCities($form, selectedStateId, selectedCityId);
-            }
-        });
-    } */
-
-
     /* LOCATION EVENTS */
-
     /** Country change */
     $(document).on('change', formSelector + ' #country_id',
         function () {
@@ -133,21 +62,13 @@ $(function () {
         }
     );
 
-
     /** State change */
     $(document).on('change', formSelector + ' #state_id',
         function () {
-
             const $form = $(this).closest(formSelector);
-
-            loadCities(
-                $form,
-                $(this).val()
-            );
+            loadCities($form, $(this).val());
         }
     );
-
-
 
     /* GST FUNCTIONS */
 
@@ -161,7 +82,6 @@ $(function () {
         // Clear old GST details
         $form.find('#gst_details').val('');
 
-
         // Clear GST status
         $form.find('#gstStatus').text('').removeClass('text-danger text-success');
     }
@@ -169,7 +89,6 @@ $(function () {
 
     /** Verify GST */
     function verifyGst($button) {
-
         const $form = $button.closest(formSelector);
         const $gst = $form.find('#gst_no');
         const $status = $form.find('#gstStatus');
@@ -182,12 +101,8 @@ $(function () {
         /* GSTIN VALIDATION */
 
         if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gstin)) {
-
-            $status.text('Enter a valid 15-character GSTIN.')
-                .removeClass('text-success')
-                .addClass('text-danger');
+            $status.text('Enter a valid 15-character GSTIN.').removeClass('text-success').addClass('text-danger');
             $gst.trigger('focus');
-
             return;
         }
 
@@ -326,126 +241,314 @@ $(document).ready(function () {
     });
 });
 
+// Form Validation 08/10/2026
+/* function set_validation(setValidation)
+{
+    if($(setValidation).length)
+    {
+        $(setValidation).validate({
+            ignore: [],
+            rules: {
+                email: {
+                    email: true,
+                    required: true,
+                    emailcheck: true
+                }
+            },
+            messages: {
+                email: {
+                    required: "This field is required.",
+                    email: "Please enter a valid email address",
+                    emailcheck: "Please enter a valid email address"
+                }
+            }
+        });
+        $('body').on('submit', setValidation, function(){
+            if($(setValidation).valid())
+            {
+                $(setValidation +" button[type='submit']").prepend('<i class="far fa-spin fa-spinner"></i> ').attr('disabled', true);
+                return true;
+            }
+        });
+    }
+}
 
-// $(function () {
-//     const formSelector = '.customer-form';
-//     let statesRequest;
-//     let citiesRequest;
+set_validation('.form-validation');
+set_validation('.form-validation1'); */
 
-//     function setOptions($select, options, placeholder, selectedValue) {
-//         $select.empty().append(new Option(placeholder, ''));
-//         options.forEach(function (option) {
-//             $select.append(new Option(option.name, option.id, false, String(option.id) === String(selectedValue || '')));
-//         });
-//     }
 
-//     function loadCities($form, stateId, selectedCityId) {
-//         const $city = $form.find('#city_id');
-//         setOptions($city, [], 'Select city');
-//         if (citiesRequest && citiesRequest.readyState !== 4) {
-//             citiesRequest.abort();
-//         }
-//         if (!stateId) {
-//             return;
-//         }
+// Common Model  Submit throught ajax
+if($('.ajax-modal-form').length) {
+    $(document).on('submit', '.ajax-modal-form', function (e) {
+    e.preventDefault();
 
-//         citiesRequest = $.ajax({
-//             url: $form.data('cities-url'),
-//             type: 'GET',
-//             dataType: 'json',
-//             data: { state_id: stateId }
-//         }).done(function (response) {
-//             setOptions($city, response.options || [], 'Select city', selectedCityId);
-//         });
-//     }
+    const $form = $(this);
+    const $modal = $form.closest('.modal');
+    const $btn = $form.find('[type="submit"]');
 
-//     function loadStates($form, countryId, selectedStateId, selectedCityId) {
-//         const $state = $form.find('#state_id');
-//         setOptions($state, [], 'Select state');
-//         setOptions($form.find('#city_id'), [], 'Select city');
-//         if (statesRequest && statesRequest.readyState !== 4) {
-//             statesRequest.abort();
-//         }
-//         if (!countryId) {
-//             return;
-//         }
+    $btn.prop('disabled', true);
 
-//         statesRequest = $.ajax({
-//             url: $form.data('states-url'),
-//             type: 'GET',
-//             dataType: 'json',
-//             data: { country_id: countryId }
-//         }).done(function (response) {
-//             setOptions($state, response.options || [], 'Select state', selectedStateId);
-//             if (selectedStateId && $state.val()) {
-//                 loadCities($form, selectedStateId, selectedCityId);
-//             }
-//         });
-//     }
+    $.ajax({
+        url: $form.attr('action'),
+        type: 'POST',
+        data: $form.serialize(),
 
-//     $(document).on('change', formSelector + ' #country_id', function () {
-//         const $form = $(this).closest(formSelector);
-//         loadStates($form, $(this).val());
-//     });
+        success: function () {
+            $modal.modal('hide');
+            $form[0].reset();
 
-//     $(document).on('change', formSelector + ' #state_id', function () {
-//         loadCities($(this).closest(formSelector), $(this).val());
-//     });
+            alert(response.message || 'Saved successfully.');
 
-//     $(document).on('input', formSelector + ' #gst_no', function () {
-//         $(this).val($(this).val().toUpperCase());
-//         $(this).closest(formSelector).find('#gst_details').val('');
-//         $(this).closest(formSelector).find('#gstStatus').text('').removeClass('text-danger text-success');
-//     });
+            location.reload();
+        },
 
-//     $(document).on('click', formSelector + ' #verifyGst', function () {
-//         const $button = $(this);
-//         const $form = $button.closest(formSelector);
-//         const $gst = $form.find('#gst_no');
-//         const gstin = $.trim($gst.val()).toUpperCase();
-//         const $status = $form.find('#gstStatus');
+        error: function (xhr) {
+            alert(xhr.status === 422 ? 'Please check the required fields.' : 'Something went wrong.');
+        },
 
-//         $gst.val(gstin);
-//         if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gstin)) {
-//             $status.text('Enter a valid 15-character GSTIN.').removeClass('text-success').addClass('text-danger');
-//             $gst.trigger('focus');
-//             return;
-//         }
+        complete: function () {
+            $btn.prop('disabled', false);
+        }
+    });
+});
+}
 
-//         $button.prop('disabled', true);
-//         $status.text('Verifying GST number...').removeClass('text-danger text-success');
-//         $.ajax({
-//             url: $form.data('gst-url') + '/' + encodeURIComponent(gstin),
-//             // url: $form.data('https://sheet.gstincheck.co.in/check') + '/' + $form.data('18189796bdcab5783baf477710e2562f') + '/' + encodeURIComponent(gstin),
-//             type: 'GET',
-//             dataType: 'json'
-//         }).done(function (response) {
-//             const fields = response.fields || {};
-//             ['company_name', 'email', 'mobile', 'address', 'pincode'].forEach(function (field) {
-//                 if (fields[field]) {
-//                     $form.find('[name="' + field + '"]').val(fields[field]);
-//                 }
-//             });
-//             $form.find('#gst_details').val(JSON.stringify(response.details || {}));
+/* SALE ORDER ADD MORE ITEM */
+if ($('#saleOrderItems').length) {
+    let handleSaleOrderItems = {
+        body: null,
+        addSaleOrderItem: null,
+        removeSaleOrderItem: null,
+        nextIndex: 0,
 
-//             const countryId = fields.country_id || $form.find('#country_id').val();
-//             if (fields.country_id) {
-//                 $form.find('#country_id').val(String(fields.country_id));
-//             }
-//             if (countryId && fields.state_id) {
-//                 loadStates($form, countryId, fields.state_id, fields.city_id);
-//             } else if (fields.country_id) {
-//                 loadStates($form, countryId);
-//             }
+        init: function () {
+            this.body = $('body');
+            this.nextIndex = 0;
+            $('#saleOrderItems [data-item-row]').each(function () {
+                let name = $(this).find('[name^="items["]').first().attr('name') || '';
+                let index = Number(name.match(/^items\[(\d+)\]/)?.[1] || 0);
+                handleSaleOrderItems.nextIndex = Math.max(handleSaleOrderItems.nextIndex, index + 1);
+            });
 
-//             $status.text('GST details verified and populated.').removeClass('text-danger').addClass('text-success');
-//         }).fail(function (xhr) {
-//             const message = xhr.responseJSON && xhr.responseJSON.message
-//                 ? xhr.responseJSON.message
-//                 : 'GST verification failed. Please try again.';
-//             $status.text(message).removeClass('text-success').addClass('text-danger');
-//         }).always(function () {
-//             $button.prop('disabled', false);
-//         });
-//     });
-// });
+            this.addSaleOrderItem = '#addSaleOrderItem';
+            this.removeSaleOrderItem = '.remove-sale-order-item';
+
+            this.body.on('click', this.addSaleOrderItem, this.addRow);
+            this.body.on('click', this.removeSaleOrderItem, this.removeRow);
+
+            this.body.on('input change', '[name$="[size_id]"], [name$="[size_unit]"]', this.productTypeChange);
+            this.body.on('change', '#product_type', this.productTypeChange);
+
+            $('#saleOrderItems [data-item-row]').each(function () {
+                handleSaleOrderItems.bindRow($(this));
+            });
+            this.productTypeChange();
+        },
+
+        productTypeChange: function () {
+            let productType = $('#product_type').val();
+            let fieldsByType = {
+                brightbar: ['straightening', 'point_discard'],
+                hb_wire: ['phosphating'],
+                hhb_wire: ['straightening', 'hardness'],
+                annealed_bright_bar: ['hardness'],
+                bold_rods: ['length', 'coating']
+            };
+            let commonFields = ['item_name', 'size', 'grade', 'qty', 'sale_rate', 'fs_bundle_weight', 'remarks'];
+            let typeFields = fieldsByType[productType] || [];
+            let visibleFields = commonFields.concat(typeFields);
+            let requiredByField = {
+                item_name: ['product_id'],
+                size: ['size_id', 'size_unit'],
+                grade: ['grade_id'],
+                qty: ['item_qty', 'qty_type'],
+                sale_rate: ['sale_item_prices'],
+                straightening: ['straightening'],
+                point_discard: ['point_discard'],
+                phosphating: ['phosphating'],
+                hardness: ['hardness', 'hardness_unit'],
+                length: ['pcs_length_unit'],
+                coating: ['coating'],
+                fs_bundle_weight: ['fs_bundle_weight', 'fs_bundle_unit'],
+                remarks: ['item_remarks']
+            };
+
+            $('.itemsListing').toggleClass('d-none', !productType);
+            $('#saleOrderItems').closest('table').find('[data-field]').each(function () {
+                $(this).toggle(visibleFields.includes($(this).data('field')));
+            });
+
+            $('#saleOrderItems [data-item-row]').each(function () {
+                let row = $(this);
+                row.find('[data-field]').each(function () {
+                    let field = $(this).data('field');
+                    let visible = visibleFields.includes(field);
+                    let requiredNames = requiredByField[field] || [];
+
+                    $(this).toggle(visible);
+                    $(this).find('input, select, textarea').each(function () {
+                        let input = $(this);
+                        let name = input.attr('name') || '';
+                        let inputField = name.match(/\[([^\]]+)\]$/)?.[1];
+                        input.prop('disabled', false).prop('required', visible && requiredNames.includes(inputField));
+
+                        if (!visible) {
+                            if (input.is(':radio, :checkbox')) {
+                                input.prop('checked', false);
+                            } else {
+                                input.val('');
+                            }
+                        }
+                    });
+                });
+
+                let sizeOption = row.find('[name$="[size_id]"]');
+                let sizeText = row.find('[name$="[size_unit]"]');
+                sizeOption.prop('required', false);
+                sizeText.prop('required', !sizeOption.val() && !sizeText.val());
+
+            });
+        },
+
+        bindRow: function (row) {
+            this.productTypeChange();
+        },
+
+        addRow: function () {
+            let template = $('#saleOrderItemTemplate').html();
+
+            let html = template.replaceAll(
+                '__INDEX__',
+                String(handleSaleOrderItems.nextIndex++)
+            );
+
+            let row = $(html.trim());
+
+            $('#saleOrderItems').append(row);
+
+            handleSaleOrderItems.bindRow(row);
+        },
+
+        removeRow: function () {
+            let row = $(this).closest('[data-item-row]');
+
+            row.remove();
+
+            if (!$('#saleOrderItems [data-item-row]').length) {
+                handleSaleOrderItems.addRow();
+            }
+        }
+    };
+
+    handleSaleOrderItems.init();
+}
+
+function initializeInlineOptionCreate() {
+    if (!$('#inlineOptionCreateModal').length) {
+        $('body').append('<div class="modal fade" id="inlineOptionCreateModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form id="inlineOptionCreateForm"><div class="modal-header"><h5 class="modal-title">Add option</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><div class="alert alert-danger d-none" data-inline-option-error role="alert"></div><label class="form-label" for="inlineOptionCreateName">Name</label><input type="text" class="form-control" id="inlineOptionCreateName" required maxlength="50"></div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Add</button></div></form></div></div></div>');
+    }
+
+    const modalElement = document.getElementById('inlineOptionCreateModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+    $(document).on('focusin.inlineOptionCreate', 'select[data-inline-add]', function () {
+        this.dataset.previousValue = this.value;
+    });
+
+    $(document).on('change.inlineOptionCreate', 'select[data-inline-add]', function () {
+        if (this.value !== '__add__') {
+            this.dataset.previousValue = this.value;
+            return;
+        }
+
+        const select = this;
+        const $form = $('#inlineOptionCreateForm');
+        const label = select.dataset.addLabel;
+
+        select.value = select.dataset.previousValue || '';
+        $(select).trigger('change.select2');
+        $form.attr('action', select.dataset.addUrl);
+        $form.data('select', select).data('type', select.dataset.inlineAdd);
+        $form.find('.modal-title').text(`Add ${label}`);
+        $form.find('label[for="inlineOptionCreateName"]').text(`${label} name`);
+        $('#inlineOptionCreateName').attr('name', select.dataset.addField).val('');
+        $form.find('[data-inline-option-error]').addClass('d-none').text('');
+        modal.show();
+        $('#inlineOptionCreateName').trigger('focus');
+    });
+
+    $(document).on('submit.inlineOptionCreate', '#inlineOptionCreateForm', function (event) {
+        event.preventDefault();
+
+        const form = this;
+        const $form = $(form);
+        const select = $form.data('select');
+        const type = $form.data('type');
+        const $submit = $form.find('[type="submit"]');
+        const $error = $form.find('[data-inline-option-error]');
+
+        $submit.prop('disabled', true);
+        $error.addClass('d-none').text('');
+
+        $.ajax({
+            url: $form.attr('action'),
+            method: 'POST',
+            data: $form.serialize(),
+            dataType: 'json',
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (option) {
+                $(`select[data-inline-add="${type}"]`).each(function () {
+                    let existing = Array.from(this.options).find((item) => item.value === String(option.id));
+                    if (!existing) {
+                        existing = new Option(option.text, option.id);
+                        const addOption = this.querySelector('option[value="__add__"]');
+                        this.insertBefore(existing, addOption);
+                    }
+
+                    if (this === select) {
+                        this.value = String(option.id);
+                        this.dataset.previousValue = String(option.id);
+                    }
+
+                    $(this).trigger('change');
+                });
+
+                form.reset();
+                modal.hide();
+            },
+            error: function (xhr) {
+                const errors = xhr.responseJSON?.errors || {};
+                const message = Object.values(errors).flat().join(' ') || 'Unable to add this option.';
+                $error.removeClass('d-none').text(message);
+            },
+            complete: function () {
+                $submit.prop('disabled', false);
+            }
+        });
+    });
+}
+
+if ($('#saleOrderItems').length) {
+    initializeInlineOptionCreate();
+}
+
+/* Required */
+function asterisk()
+{
+    $('[required]').parents('.form-group').find('label.form-label').append('<span class="text-danger"> *</span>');
+}
+asterisk();
+
+// Input type number validations
+$('input[type="number"]').keydown(function(e){
+    return event.keyCode !== 69 ? true : !isNaN(Number(event.key));
+});
+
+// Only numbers allowed
+$(".number_only").keyup(function(e) {
+    var regex = /^[0-9\.]+$/;
+    if (regex.test(this.value) !== true)
+    this.value = this.value.replace(/[^0-9]+/, '');
+});

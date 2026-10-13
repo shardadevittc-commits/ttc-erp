@@ -1,13 +1,31 @@
 @forelse ($listing->items() as $row)
+{{-- @php
+pr($row->toArray());
+@endphp --}}
     <tr>
+        <td><a href="{{ route('saleOrders.view', ['id' => $row->id]) }}" class="fw-medium">#{{ $row->id }}</a></td>
+        <td>{{ _d($row->created_at) ?? '-' }}</td>
+        <td>{{ $row->customer?->company_name ?: '-' }}</td>
+        <td>{{ isset($row->order_qty) && $row->order_qty ? _rz($row->order_qty) : '---' }}</td>
+        <td>---</td>
+        {{-- <td>{{ $row->basic_rate }}</td> --}}
         <td>
-            <a href="{{ route('saleOrders.view', ['id' => $row->id]) }}" class="fw-medium">#{{ $row->id }}</a>
+            @foreach ($row->items as $k => $i)
+                {{ '(' . ($k + 1) . ') ' . _rz($i->sale_item_prices) . ' (' . $i->product->product_name . '-' . $i->size->size_name . ')'." (". _rz($i->item_qty) ." Ton)"." (". $i->grade->grade_name .")"}}
+                <br>
+            @endforeach
         </td>
-        <td>{{ $row->customer?->company_name ?? '-' }}</td>
-        <td>{{ $row->customer_po_no ?: '-' }}</td>
-        <td>{{ $row->items_count }}</td>
-        <td>{{ $row->freight_basis === \App\Models\SaleOrder::FREIGHT_EX ? 'EX' : ($row->freight_basis === \App\Models\SaleOrder::FREIGHT_FOR ? 'FOR' : '-') }}</td>
-        <td>{{ $row->created_at?->format('d M, Y') ?? '-' }}</td>
+        {{-- <td>
+            @foreach ($row->items as $k => $g)
+                {{ '(' . ($k + 1) . ') ' . $g->grade->grade_name }}
+                <br>
+            @endforeach
+        </td> --}}
+        <td>{{ isset($row->total_qty) && $row->total_qty ? _rz($row->total_qty) : '---' }}</td>
+        <td>---</td>
+        <td>{{ isset($row->total_qty) && $row->total_qty ? _rz($row->total_qty) : '---' }}</td>
+        <td>According to the Purchase order</td>
+        {{-- <td></td> --}}
         <td class="d-flex align-items-center gap-2">
             <a href="{{ route('saleOrders.view', ['id' => $row->id]) }}" aria-label="View sale order" title="View">
                 <i class="fas fa-eye text-info"></i>

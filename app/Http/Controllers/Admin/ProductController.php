@@ -73,11 +73,18 @@ class ProductController extends Controller
                 $imagePath = $request->file('image')->store('users', 'public');
             }
 
-            Product::create([
+            $product = Product::create([
                 'product_name' => $validated['product_name'],
                 'status' => (int) $request->status ?? 1,
                 'created_by' => auth()->id(),
             ]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'id' => $product->id,
+                    'text' => $product->product_name,
+                ], 201);
+            }
 
             return redirect()->route('products')->with('success', 'Product added successfully.');
         }
