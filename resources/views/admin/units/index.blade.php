@@ -21,14 +21,14 @@
             </div>
 
             <div class="page-header__actions">
-                <a href="{{ route('brands.add') }}" class="header-btn header-btn--primary"><i class="fas fa-plus"></i> New </a>
-                @include('admin.brands.filters')
+                <a href="{{ route('units.add') }}" class="header-btn header-btn--primary"><i class="fas fa-plus"></i> New </a>
+                @include('admin.units.filters')
             </div>
         </div>
     </div>
 
 
-    
+
 
     <div class="content_area">
         <div class="flex-grow-1 container-p-y">
@@ -42,51 +42,33 @@
                                 <h5 class="mb-0">Here Is Your Units Listing!</h5>
                             </div>
                         </div>
-                        <!--!!!!! DO NOT REMOVE listing-table, mark_all  CLASSES. INCLUDE THIS IN ALL TABLES LISTING USERS !!!!!-->
+
                         <div class="card-body p-0">
                             <div class="table-responsive text-nowrap">
                                 <table class="table listing-table">
                                     <thead class="thead-light">
                                         <tr>
-                                            {{-- <th width="5%">
-                                                <div class="form-check">
-                                                    <input type="checkbox" class="form-check-input mark_all" id="mark_all">
-                                                    <label class="form-check-label" for="mark_all"></label>
-                                                </div>
-                                            </th> --}}
-                                            <th class="sort">
-                                                <!--- MAKE SURE TO USE PROPOER FIELD IN data-field AND PROPOER DIRECTION IN data-sort -->
+                                            <th class="unit_id">
                                                 Id
-                                                {{-- @if(isset($_GET['sort']) && $_GET['sort'] == 'users.id' && isset($_GET['direction']) && $_GET['direction'] == 'asc')
-                                                <i class="fas fa-sort-down active" data-field="users.id" data-sort="asc"></i>
-                                                @elseif(isset($_GET['sort']) && $_GET['sort'] == 'users.id' && isset($_GET['direction']) && $_GET['direction'] == 'desc')
-                                                <i class="fas fa-sort-up active" data-field="users.id" data-sort="desc"></i>
-                                                @else
-                                                <i class="fas fa-sort" data-field="users.id" data-sort="asc"></i>
-                                                @endif --}}
                                             </th>
-                                            <th class="sort">
-                                                Brand Name
-                                                {{-- @if(isset($_GET['sort']) && $_GET['sort'] == 'brands.brand_name' && isset($_GET['direction']) && $_GET['direction'] == 'asc')
-                                                <i class="fas fa-sort-down active" data-field="brands.brand_name" data-sort="asc"></i>
-                                                @elseif(isset($_GET['sort']) && $_GET['sort'] == 'brands.brand_name' && isset($_GET['direction']) && $_GET['direction'] == 'desc')
-                                                <i class="fas fa-sort-up active" data-field="brands.brand_name" data-sort="desc"></i>
-                                                @else
-                                                <i class="fas fa-sort" data-field="brands.brand_name"></i>
-                                                @endif --}}
+                                            <th class="unit_name sort">
+                                                Unit Name
                                             </th>
-                                            <th class="sort">
+                                            <th class="short_name sort">
+                                                Short Name
+                                            </th>
+                                            <th class="unit_status sort">
                                                 Status
-                                                @if(isset($_GET['sort']) && $_GET['sort'] == 'brands.status' && isset($_GET['direction']) && $_GET['direction'] == 'asc')
-                                                <i class="fas fa-sort-down active" data-field="brands.status" data-sort="asc"></i>
-                                                @elseif(isset($_GET['sort']) && $_GET['sort'] == 'brands.status' && isset($_GET['direction']) && $_GET['direction'] == 'desc')
-                                                <i class="fas fa-sort-up active" data-field="brands.status" data-sort="desc"></i>
+                                                @if(isset($_GET['sort']) && $_GET['sort'] == 'units.status' && isset($_GET['direction']) && $_GET['direction'] == 'asc')
+                                                <i class="fas fa-sort-down active" data-field="units.status" data-sort="asc"></i>
+                                                @elseif(isset($_GET['sort']) && $_GET['sort'] == 'units.status' && isset($_GET['direction']) && $_GET['direction'] == 'desc')
+                                                <i class="fas fa-sort-up active" data-field="units.status" data-sort="desc"></i>
                                                 @else
-                                                <i class="fas fa-sort" data-field="brands.status"></i>
+                                                <i class="fas fa-sort" data-field="units.status"></i>
                                                 @endif
                                             </th>
-                                            <th class="sort">
-                                                Created
+                                            <th class="created_by sort">
+                                                Created By
                                             </th>
                                             <th>
                                                 Actions
@@ -95,14 +77,14 @@
                                     </thead>
                                     <tbody class="list table_listing_body">
                                         @if(!empty($listing->items()))
-                                            @include('admin.brands.listingLoop')
+                                            @include('admin.units.listingLoop')
                                         @else
                                         <td align="left" colspan="7">
                                             No records found!
                                         </td>
                                         @endif
                                     </tbody>
-                                    
+
                                     {{-- <tfoot>
                                         <tr>
                                             <th align="left" colspan="20">
@@ -217,7 +199,7 @@
 
         const toast = document.createElement('div');
         toast.className = 'status-toast text-white';
-        
+
         if (type === 'success') {
             toast.style.background = '#065F46';
             toast.innerHTML = `<i class="fa-solid fa-circle-check fs-6 text-white"></i> <span>${message}</span>`;

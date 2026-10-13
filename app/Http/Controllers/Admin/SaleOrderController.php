@@ -77,7 +77,7 @@ class SaleOrderController extends Controller
     public function add(Request $request)
     {
         if($request->isMethod('post')) {
-			
+
             $validated = $request->validate([
                 'size_name' => ['required', 'string', 'max:50', Rule::unique('sizes', 'size_name')->whereNull('deleted_at')],
             ]);
@@ -136,7 +136,7 @@ class SaleOrderController extends Controller
                 if ($request->has('status')) {
                     $data['status'] = (int) $request->status;
                 }
-    
+
                 $size->update($data);
 
                 return redirect()->route('saleOrders')->with('success', 'Sale Order updated successfully.');

@@ -1,5 +1,7 @@
 @extends('layouts.app')
-
+@section('title')
+    {{ isset($saleOrder) ? 'Edit' : 'Add' }} Sale Order | TTC Robotronics - Steel Industry ERP
+@endsection
 @section('content')
 
 <div>

@@ -16,6 +16,10 @@
     // Protected ERP Dashboard & User/Role Management
     Route::middleware(['auth'])->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+        include "Gate/gate.php";
+        include "Weight/weight.php";
+
         include "Dashboards/dashboards.php";
         include "Admin/users.php";
         include "Admin/countries.php";
@@ -27,8 +31,9 @@
         include "Admin/grades.php";
         include "Admin/sizes.php";
         include "Admin/units.php";
-        include "Admin/units.php";
         include "Admin/saleOrders.php";
         include "Admin/customers.php";
+
+        include "Admin/purchase.php";
 
     });

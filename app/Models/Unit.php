@@ -20,6 +20,7 @@ class Unit extends Model
         'unit_name',
         'short_name',
         'created_by',
+        'status',
     ];
 
     protected $casts = [

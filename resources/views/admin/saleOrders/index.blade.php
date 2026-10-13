@@ -40,7 +40,7 @@
                                     <input type="search" class="form-control listing-search" placeholder="Search..." value="{{ request('search', '') }}" aria-label="Search sale orders">
                                 </div>
                             </div>
-                            
+
                         </div>
                         <!--!!!!! DO NOT REMOVE listing-table, mark_all  CLASSES. INCLUDE THIS IN ALL TABLES LISTING USERS !!!!!-->
                         <div class="card-body p-0">
@@ -100,7 +100,7 @@
                                     <tbody class="list table_listing_body">
                                         @include('admin.sizes.listingLoop')
                                     </tbody>
-                                    
+
                                     {{-- <tfoot>
                                         <tr>
                                             <th align="left" colspan="20">

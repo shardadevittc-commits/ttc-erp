@@ -4,8 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Models\VehicleWeighRecord;
+use App\Models\MaterialIn;
+use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -55,7 +60,35 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        return view('dashboard.gate', compact('user'));
+        $today = Carbon::today();
+
+        // Today's vehicle entries
+        $vehicleInToday = MaterialIn::whereDate('created_at', $today)->count();
+
+        // Today's weighments
+        $weighmentsToday = VehicleWeighRecord::whereDate('created_at', $today)->count();
+
+        // Latest vehicle entries
+        $recentVehicles = MaterialIn::with('customer')
+            ->latest('id')
+            ->take(5)
+            ->get();
+
+        // Vehicle entries with weighment records
+        $weighedMaterialIds = VehicleWeighRecord::whereNotNull('material_in_id')
+            ->pluck('material_in_id');
+
+        // Entries that have not yet been weighed
+        $pendingWeighment = MaterialIn::whereNotIn('id', $weighedMaterialIds)
+            ->count();
+
+        return view('dashboard.gate', compact(
+            'user',
+            'vehicleInToday',
+            'weighmentsToday',
+            'recentVehicles',
+            'pendingWeighment'
+        ));
     }
 
     /**
@@ -63,9 +96,100 @@ class DashboardController extends Controller
      */
     public function weight()
     {
-        $user = Auth::user();
+        $user = Auth::user();$records = VehicleWeighRecord::query();
 
-        return view('dashboard.weight', compact('user'));
+        $totalVehicles = (clone $records)->count();
+
+        $totalMaterialIn = (clone $records)
+            ->where('formlist', 'Material In')->count();
+
+        $totalMaterialOut = (clone $records)
+            ->where('formlist', 'Material Out')->count();
+
+        $totalReturns = (clone $records)
+            ->where('formlist', 'Return')->count();
+
+        $totalCustomers = Customer::count();
+
+        $recentRecords = (clone $records)
+            ->with('customer')
+            ->latest('created_at')
+            ->take(10)
+            ->get();
+
+        // Last 7 days: number of weighment records per day.
+        $daily = (clone $records)
+            ->where('created_at', '>=', now()->subDays(6)->startOfDay())
+            ->selectRaw('DATE(created_at) as day, COUNT(*) as total')
+            ->groupBy('day')
+            ->orderBy('day')
+            ->pluck('total', 'day');
+
+        $weighmentChartLabels = collect(range(6, 0))
+            ->map(fn ($days) => now()->subDays($days)->format('d M'))
+            ->values();
+
+        $weighmentChartValues = collect(range(6, 0))
+            ->map(fn ($days) => (int) $daily->get(
+                now()->subDays($days)->toDateString(), 0
+            ))
+            ->values();
+
+        $weightChartLabels = (clone $records)
+            ->where('created_at', '>=', now()->subDays(6)->startOfDay())
+            ->selectRaw('DATE(created_at) as day')
+            ->groupBy('day')
+            ->orderBy('day')
+            ->pluck('day')
+            ->map(fn ($day) => \Carbon\Carbon::parse($day)->format('d M'))
+            ->values();
+
+        $weightRows = (clone $records)
+            ->where('created_at', '>=', now()->subDays(6)->startOfDay())
+            ->selectRaw('DATE(created_at) as day,
+                SUM(loadedweight) as loaded,
+                SUM(tareweight) as tare')
+            ->groupBy('day')
+            ->orderBy('day')
+            ->get();
+
+        $loadedWeightValues = $weightRows->pluck('loaded')
+            ->map(fn ($value) => (float) $value)->values();
+
+        $tareWeightValues = $weightRows->pluck('tare')
+            ->map(fn ($value) => (float) $value)->values();
+
+        $todayVehicles = (clone $records)
+            ->whereDate('created_at', today())->count();
+
+        $todayLoadedWeight = (clone $records)
+            ->whereDate('created_at', today())->sum('loadedweight');
+
+        $todayTareWeight = (clone $records)
+            ->whereDate('created_at', today())->sum('tareweight');
+
+        // Supply these arrays to support the Monthly chart filter.
+        $monthChartLabels = [];
+        $monthChartValues = [];
+
+        return view('dashboard.weight', compact(
+            'totalVehicles',
+            'totalMaterialIn',
+            'totalMaterialOut',
+            'totalReturns',
+            'totalCustomers',
+            'recentRecords',
+            'weighmentChartLabels',
+            'weighmentChartValues',
+            'weightChartLabels',
+            'loadedWeightValues',
+            'tareWeightValues',
+            'todayVehicles',
+            'todayLoadedWeight',
+            'todayTareWeight',
+            'monthChartLabels',
+            'monthChartValues'
+        ));
     }
 
     /**

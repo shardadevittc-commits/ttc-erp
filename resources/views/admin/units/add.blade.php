@@ -1,5 +1,7 @@
 @extends('layouts.app')
-
+@section('title')
+    {{ isset($unit) ? 'Edit' : 'Add' }} Unit | TTC Robotronics - Steel Industry ERP
+@endsection
 @section('content')
 
     <div>
@@ -10,14 +12,14 @@
                 <li class="breadcrumb-item active text-danger fw-semibold" aria-current="page">Add Unit</li>
             </ol>
         </nav>
-    </div> 
+    </div>
 
     <div class="page-header">
-        
+
         <div class="page-header__inner">
             <div class="page-header__content">
                 <div class="page-header__title">
-                    <h6>Manage Units</h6>
+                    <h6>{{ isset($unit) ? 'Edit' : 'Add' }} Unit </h6>
                 </div>
             </div>
 
