@@ -1,7 +1,7 @@
 @php
     $role = strtolower(auth()->user()->role->name ?? '');
     $roleId = (int)(auth()->user()->role_id ?? 0);
-    $isGateUser = $roleId === 4;
+    $isGateUser = $roleId === 4 ;
     $isWeightUser = $roleId === 5;
     $productsActive = request()->routeIs('brands*','products*','sizes*','grades*','units*');
     $locationsActive = request()->routeIs('cities*','states*');
@@ -22,9 +22,19 @@
 
             @if($isGateUser)
 
-                <li class="sidebar-item"><a href="{{ route('dashboard.gate') }}" class="sidebar-link {{ request()->routeIs('dashboard.gate') ? 'active' : '' }}"><i class="fa-solid fa-gauge-high nav-icon"></i><span>Dashboard</span></a></li>
+                <li class="sidebar-item">
+                    <a href="{{ route('dashboard.gate') }}" class="sidebar-link {{ request()->routeIs('dashboard.gate') ? 'active' : '' }}">
+                        <i class="fa-solid fa-gauge-high nav-icon"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
 
-                <li class="sidebar-item"><a href="{{ route('gate.index') }}" class="sidebar-link {{ request()->routeIs('gate.index') ? 'active' : '' }}"><i class="fa-solid fa-right-to-bracket nav-icon"></i><span>Vehicle Entry</span></a></li>
+                <li class="sidebar-item">
+                    <a href="{{ route('gate.index') }}" class="sidebar-link {{ request()->routeIs('gate.index') ? 'active' : '' }}">
+                        <i class="fa-solid fa-right-to-bracket nav-icon"></i>
+                        <span>Vehicle Entry</span>
+                    </a>
+                </li>
 
                 <li class="sidebar-item">
                     <a href="#reportsCollapse" class="sidebar-link" data-bs-toggle="collapse" data-bs-target="#reportsCollapse" role="button" aria-expanded="false" aria-controls="reportsCollapse"><i class="fa-solid fa-chart-column nav-icon"></i><span>Reports</span><i class="fa-solid fa-chevron-down submenu-arrow"></i></a>
@@ -34,11 +44,22 @@
                         </ul>
                     </div>
                 </li>
-            @elseif($isWeightUser)
+            @endif
+            @if($isWeightUser)
 
-                <li class="sidebar-item"><a href="{{ route('dashboard.weight') }}" class="sidebar-link {{ request()->routeIs('dashboard.weight') ? 'active' : '' }}"><i class="fa-solid fa-gauge-high nav-icon"></i><span>Dashboard</span></a></li>
+                <li class="sidebar-item">
+                    <a href="{{ route('dashboard.weight') }}" class="sidebar-link {{ request()->routeIs('dashboard.weight') ? 'active' : '' }}">
+                        <i class="fa-solid fa-gauge-high nav-icon"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
 
-                <li class="sidebar-item"><a href="{{ route('weight.index') }}" class="sidebar-link {{ request()->routeIs('weight.index') ? 'active' : '' }}"><i class="fa-solid fa-weight-scale nav-icon"></i><span>Weight Entry</span></a></li>
+                <li class="sidebar-item">
+                    <a href="{{ route('weight.index') }}" class="sidebar-link {{ request()->routeIs('weight.index') ? 'active' : '' }}">
+                        <i class="fa-solid fa-weight-scale nav-icon"></i>
+                        <span>Weight Entry</span>
+                    </a>
+                </li>
 
                 <li class="sidebar-item">
                     <a href="#reportsCollapse" class="sidebar-link" data-bs-toggle="collapse" data-bs-target="#reportsCollapse" role="button" aria-expanded="false" aria-controls="reportsCollapse"><i class="fa-solid fa-chart-column nav-icon"></i><span>Reports</span><i class="fa-solid fa-chevron-down submenu-arrow"></i></a>
@@ -48,24 +69,21 @@
                         </ul>
                     </div>
                 </li>
-            @else
+            @endif
 
-                @if(in_array($role,['admin','sale']))
-                    <li class="sidebar-item"><a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"><i class="fa-solid fa-chart-pie nav-icon"></i><span>Dashboard</span><span class="sidebar-badge text-white" style="background-color:var(--primary-red);">Live</span></a></li>
-                @endif
-
-                @if(in_array($role,['admin','sale']))
-                    <li class="sidebar-item">
-                        <a href="#ordersCollapse" class="sidebar-link {{ $ordersActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#ordersCollapse" role="button" aria-expanded="{{ $ordersActive ? 'true' : 'false' }}" aria-controls="ordersCollapse"><i class="fa-solid fa-cart-shopping nav-icon"></i><span>Manage Orders</span><i class="fa-solid fa-chevron-down submenu-arrow"></i></a>
-                        <div class="collapse {{ $ordersActive ? 'show' : '' }}" id="ordersCollapse">
-                            <ul class="sidebar-submenu-list">
-                                <li class="submenu-item"><a href="{{ route('saleOrders') }}" class="submenu-link {{ request()->routeIs('saleOrders*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Sale Orders</span></a></li>
-                                <li class="submenu-item"><a href="{{ route('purchase') }}" class="submenu-link {{ request()->routeIs('purchase*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Purchase Orders</span></a></li>
-                            </ul>
-                        </div>
-                    </li>
-                @endif
-
+            @if(in_array($role,['admin','sale']))
+                <li class="sidebar-item"><a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"><i class="fa-solid fa-chart-pie nav-icon"></i><span>Dashboard</span><span class="sidebar-badge text-white" style="background-color:var(--primary-red);">Live</span></a></li>
+            
+                <li class="sidebar-item">
+                    <a href="#ordersCollapse" class="sidebar-link {{ $ordersActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#ordersCollapse" role="button" aria-expanded="{{ $ordersActive ? 'true' : 'false' }}" aria-controls="ordersCollapse"><i class="fa-solid fa-cart-shopping nav-icon"></i><span>Manage Orders</span><i class="fa-solid fa-chevron-down submenu-arrow"></i></a>
+                    <div class="collapse {{ $ordersActive ? 'show' : '' }}" id="ordersCollapse">
+                        <ul class="sidebar-submenu-list">
+                            <li class="submenu-item"><a href="{{ route('saleOrders') }}" class="submenu-link {{ request()->routeIs('saleOrders*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Sale Orders</span></a></li>
+                            <li class="submenu-item"><a href="{{ route('purchase') }}" class="submenu-link {{ request()->routeIs('purchase*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Purchase Orders</span></a></li>
+                        </ul>
+                    </div>
+                </li>
+            
                 <li class="sidebar-item"><a href="{{ route('customers') }}" class="sidebar-link {{ request()->routeIs('customers*') ? 'active' : '' }}"><i class="fa-solid fa-users nav-icon"></i><span>Customers</span></a></li>
 
                 <li class="sidebar-item">
@@ -91,22 +109,19 @@
                     </div>
                 </li>
 
-                @if(in_array($role,['admin','sale']))
-                    <li class="sidebar-item">
-                        <a href="#usersCollapse" class="sidebar-link {{ $usersActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#usersCollapse" role="button" aria-expanded="{{ $usersActive ? 'true' : 'false' }}" aria-controls="usersCollapse"><i class="fa-solid fa-users nav-icon"></i><span>Manage Users</span><i class="fa-solid fa-chevron-down submenu-arrow"></i></a>
-                        <div class="collapse {{ $usersActive ? 'show' : '' }}" id="usersCollapse">
-                            <ul class="sidebar-submenu-list">
-                                <li class="submenu-item"><a href="{{ route('users.users') }}" class="submenu-link {{ request()->routeIs('users.users') ? 'active' : '' }}"><span class="submenu-dot"></span><span>All Users</span></a></li>
-                                @if($role === 'admin')
-                                    <li class="submenu-item"><a href="{{ route('users.add') }}" class="submenu-link {{ request()->routeIs('users.add') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Add User / Role</span></a></li>
-                                @endif
-                            </ul>
-                        </div>
-                    </li>
-                @endif
-
+            
+                <li class="sidebar-item">
+                    <a href="#usersCollapse" class="sidebar-link {{ $usersActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#usersCollapse" role="button" aria-expanded="{{ $usersActive ? 'true' : 'false' }}" aria-controls="usersCollapse"><i class="fa-solid fa-users nav-icon"></i><span>Manage Users</span><i class="fa-solid fa-chevron-down submenu-arrow"></i></a>
+                    <div class="collapse {{ $usersActive ? 'show' : '' }}" id="usersCollapse">
+                        <ul class="sidebar-submenu-list">
+                            <li class="submenu-item"><a href="{{ route('users.users') }}" class="submenu-link {{ request()->routeIs('users.users') ? 'active' : '' }}"><span class="submenu-dot"></span><span>All Users</span></a></li>
+                            @if($role === 'admin')
+                                <li class="submenu-item"><a href="{{ route('users.add') }}" class="submenu-link {{ request()->routeIs('users.add') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Add User / Role</span></a></li>
+                            @endif
+                        </ul>
+                    </div>
+                </li>
             @endif
-
         </ul>
     </div>
 
