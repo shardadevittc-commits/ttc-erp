@@ -243,4 +243,16 @@ class PurchaseController extends Controller
 
         return redirect()->route('purchase')->with('success', 'Purchase Order deleted successfully.');
     }
+
+
+    public function indexRM(Request $request)
+    {
+        $listing  = [];
+        $products = [];
+        $sizes  = [];
+        $brands = [];
+        $grades  = [];
+
+        return view('admin.rawMaterials.index', compact('listing','products','sizes','brands', 'grades'));
+    }
 }
