@@ -3,7 +3,7 @@
 @section('title', 'Edit Brand | ' . $unit->unit_name)
 
 @section('content')
-    
+
     <div>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-1" style="font-size: 0.8rem;">
@@ -12,14 +12,14 @@
                 <li class="breadcrumb-item active text-danger fw-semibold" aria-current="page">Edit Brand</li>
             </ol>
         </nav>
-    </div> 
+    </div>
 
     <div class="page-header">
-        
+
         <div class="page-header__inner">
             <div class="page-header__content">
                 <div class="page-header__title">
-                    <h6>Manage Units</h6>
+                    <h6>{{ isset($unit) ? 'Edit' : 'Add' }} Unit </h6>
                 </div>
             </div>
 

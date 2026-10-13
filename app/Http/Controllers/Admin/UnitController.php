@@ -73,7 +73,7 @@ class UnitController extends Controller
 	public function add(Request $request)
     {
         if($request->isMethod('post')) {
-			
+
             $validated = $request->validate([
                 'unit_name' => ['required', 'string', 'max:100'],
             ]);
@@ -85,17 +85,18 @@ class UnitController extends Controller
 
             Unit::create([
                 'unit_name' 	=> $validated['unit_name'],
+                'short_name'    => $validated['unit_name'],
                 'status' 		=> (int) $request->status ?? 1,
                 'created_by' 	=> auth()->id(),
             ]);
 
-            return redirect()->route('units')->with('success', 'Brand added successfully.');
+            return redirect()->route('units')->with('success', 'Unit added successfully.');
         }
 
         return view('admin.units.add');
     }
 
-    
+
     /**
      * Show brand.
      */
@@ -109,39 +110,35 @@ class UnitController extends Controller
      */
     public function edit(Request $request, $id)
     {
-        $brand = Unit::findOrFail($id);
-        $permissions = $brand->permissions;
-        if($brand){
-            if($request->isMethod('post')) {
-                $validated = $request->validate([
-                    'unit_name' => [
-                        'required',
-                        'string',
-                        'max:100',
-                        // 'alpha_dash',
-                        Rule::unique('units', 'unit_name')->ignore($brand->id),
-                    ],
-                ]);
+        $unit = Unit::findOrFail($id);
 
-                $data = [
-                    'unit_name' => $validated['unit_name'],
-                ];
+        if ($request->isMethod('post')) {
 
-                if ($request->has('status')) {
-                    $data['status'] = (int) $request->status;
-                }
-    
-                $brand->update($data);
+            $validated = $request->validate([
+                'unit_name' => [
+                    'required',
+                    'string',
+                    'max:100',
+                    Rule::unique('units', 'unit_name')->ignore($unit->id),
+                ],
+            ]);
 
-                return redirect()->route('brands')->with('success', 'Brand updated successfully.');
+            $data = [
+                'unit_name'  => $validated['unit_name'],
+                'short_name' => $validated['unit_name'],
+                'status'     => $request->has('status') ? (int) $request->status : 0,
+            ];
+//($data);
+            $unit->update($data);
 
-            }
-
-            return view('admin.units.edit', compact('brand'));
-        }else{
-            abort(404);
+            return redirect()
+                ->route('units')
+                ->with('success', 'Unit updated successfully.');
         }
+
+        return view('admin.units.edit', compact('unit'));
     }
+
 
     /**
      * Delete brand.

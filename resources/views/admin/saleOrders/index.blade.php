@@ -53,7 +53,7 @@
                                 <th width="10%">Pending Qty. (Tons).</th>
                                 <th>Status</th>
                                 {{-- <th>Added By</th> --}}
-                                
+
                                 <th>Actions</th>
                             </tr>
                         </thead>

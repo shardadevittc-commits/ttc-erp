@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Sales Dashboard | TTC Robotronics - Steel Industry ERP')
+@section('title', ucfirst(auth()->user()->role['short_name']) . ' Dashboard | TTC Robotronics - Steel Industry ERP')
 
 @section('content')
 
@@ -37,7 +37,7 @@
                 </div>
 
                 <h2 class="hero-title">
-                    Welcome back, {{ $user->first_name ?? 'Sales User' }}! 👋
+                    Welcome back, {{ auth()->user()->first_name ?? 'Sales User' }}! 👋
                 </h2>
 
                 <p class="hero-subtitle">
