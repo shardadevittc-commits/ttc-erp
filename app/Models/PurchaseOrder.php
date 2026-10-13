@@ -27,4 +27,10 @@ class PurchaseOrder extends Model
             'purchase_order_id'
         );
     }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'cust_id');
+    }
+
 }

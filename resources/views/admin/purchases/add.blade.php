@@ -6,1307 +6,635 @@
 
 @section('content')
 
-<div>
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb mb-1" style="font-size: 0.8rem;">
+    @php
+        /*
+    |--------------------------------------------------------------------------
+    | Default values for Add/Edit
+    |--------------------------------------------------------------------------
+    */
 
-            <li class="breadcrumb-item">
-                <a
-                    href="{{ route('dashboard') }}"
-                    class="text-decoration-none text-muted"
-                >
-                    Dashboard
-                </a>
-            </li>
+        $isEdit = isset($purchaseOrder);
 
-            <li class="breadcrumb-item">
-                <a
-                    href="{{ route('purchase') }}"
-                    class="text-decoration-none text-muted"
-                >
-                    Purchase Orders
-                </a>
-            </li>
+        $paymentTerm = old('term', $purchaseOrder->term ?? '');
 
-            <li
-                class="breadcrumb-item active text-danger fw-semibold"
-                aria-current="page"
-            >
-                {{ isset($purchaseOrder) ? 'Edit' : 'Add' }} Purchase Order
-            </li>
+        $paymentParts = preg_split('/\s+/', trim($paymentTerm), 2);
 
-        </ol>
-    </nav>
-</div>
+        $defaultPayType = $paymentParts[0] ?? '';
+        $defaultPayTypeUnit = $paymentParts[1] ?? '';
 
+        $payType = old('payType', $defaultPayType);
+        $payTypeUnit = old('payTypeUnit', $defaultPayTypeUnit);
 
-<!-- Page Header -->
-<div class="page-header">
+        $itemRows = old('items');
 
-    <div class="page-header__inner">
+        if (!is_array($itemRows)) {
+            $itemRows = $isEdit
+                ? $purchaseOrder->items
+                    ->map(function ($item) {
+                        return [
+                            'item_id' => $item->product_id,
+                            'size' => $item->size_id,
+                            'size_unit' => $item->size_unit_id,
+                            'grade' => $item->grade_id,
+                            'length' => $item->length,
+                            'rate' => $item->rate,
+                            'qty' => $item->qty,
+                            'qty_unit' => $item->qty_unit,
+                            'qty_variation' => $item->qty_varaiate,
+                            'remarks' => $item->remarks,
+                        ];
+                    })
+                    ->toArray()
+                : [];
+        }
 
-        <div class="page-header__content">
+        if (empty($itemRows)) {
+            $itemRows = [
+                [
+                    'item_id' => '',
+                    'size' => '',
+                    'size_unit' => '',
+                    'grade' => '',
+                    'length' => 'Standard',
+                    'rate' => '',
+                    'qty' => '',
+                    'qty_unit' => '',
+                    'qty_variation' => '±5%',
+                    'remarks' => '',
+                ],
+            ];
+        }
+    @endphp
 
-            <div class="page-header__title">
-                <h6>
-                    {{ isset($purchaseOrder) ? 'Edit' : 'Add' }} Purchase Order
-                </h6>
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1" style="font-size: 0.8rem;">
+                <li class="breadcrumb-item">
+                    <a href="{{ route('dashboard') }}" class="text-decoration-none text-muted">
+                        Dashboard
+                    </a>
+                </li>
+
+                <li class="breadcrumb-item">
+                    <a href="{{ route('purchase') }}" class="text-decoration-none text-muted">
+                        Purchase Orders
+                    </a>
+                </li>
+
+                <li class="breadcrumb-item active text-danger fw-semibold" aria-current="page">
+                    {{ $isEdit ? 'Edit' : 'Add' }} Purchase Order
+                </li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="page-header">
+        <div class="page-header__inner">
+            <div class="page-header__content">
+                <div class="page-header__title">
+                    <h6>{{ $isEdit ? 'Edit' : 'Add' }} Purchase Order</h6>
+                </div>
             </div>
 
+            <div class="page-header__actions">
+                <a href="{{ route('purchase') }}" class="btn btn-outline-secondary px-3 py-2 fw-semibold rounded-3">
+                    <i class="fa-solid fa-arrow-left me-1"></i>
+                    Back
+                </a>
+            </div>
         </div>
-
-        <div class="page-header__actions">
-
-            <a
-                href="{{ route('purchase') }}"
-                class="btn btn-outline-secondary px-3 py-2 fw-semibold rounded-3"
-            >
-                <i class="fa-solid fa-arrow-left me-1"></i>
-                Back
-            </a>
-
-        </div>
-
     </div>
 
-</div>
-
-
-<div class="container-fluid">
-
-    <!-- Error Message -->
-    @if(session('error'))
-
-        <div class="alert alert-danger">
-            <strong>Oh snap!</strong>
-            {{ session('error') }}
-        </div>
-
-    @endif
-
-
-    <!-- Success Message -->
-    @if(session('success'))
-
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-
-    @endif
-
-
-    <div class="card">
-
-        <div class="card-body">
-
-            <form
-                action="{{ route('purchase.add') }}"
-                method="POST"
-                id="purchaseOrderForm"
-            >
-
-                @csrf
-
-
-                <!-- ========================================= -->
-                <!-- CUSTOMER DETAILS -->
-                <!-- ========================================= -->
-
-                <h6 class="fw-bold text-uppercase mb-3">
-                    Customer Details
-                </h6>
-
-
-                <div class="row">
-
-
-                    <!-- Customer -->
-                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12">
-
-                        <div class="form-group">
-
-                            <label
-                                for="customer"
-                                class="form-label"
-                            >
-                                Customer Name
-                                <span class="text-danger">*</span>
-                            </label>
-
-
-                            <select
-                                class="select2 form-select"
-                                id="customer"
-                                name="customer"
-                                data-placeholder="Select Customer"
-                                data-minimum-results-for-search="-1"
-                            >
-
-                                <option value="">
-                                    --Select Customer--
-                                </option>
-
-
-                                @foreach($customers as $customer)
-
-                                    <option
-                                        value="{{ $customer->id }}"
-                                        @if(old('customer', $purchaseOrder->customer_id ?? '') == $customer->id)
-                                            selected
-                                        @endif
-                                    >
-                                        ({{ $customer->cust_code }}) -
-                                        {{ $customer->company_name }}
-                                    </option>
-
-                                @endforeach
-
-                            </select>
-
-
-                            <label
-                                id="customer-error"
-                                class="error"
-                                for="customer"
-                            >
-
-                                @error('customer')
-                                    {{ $message }}
-                                @enderror
-
-                            </label>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Basic Rate -->
-                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
-
-                        <div class="form-group">
-
-                            <label
-                                for="basicRate"
-                                class="form-label"
-                            >
-                                Basic Rate
-                            </label>
-
-
-                            <input
-                                type="text"
-                                name="basicRate"
-                                id="basicRate"
-                                class="form-control"
-                                value="{{ old('basicRate', $saleOrder->basicRate ?? '') }}"
-                            >
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Ref Sale Order -->
-                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
-
-                        <div class="form-group">
-
-                            <label
-                                for="cust_po"
-                                class="form-label"
-                            >
-                                Ref. Sale Order
-                            </label>
-
-
-                            <input
-                                type="text"
-                                name="cust_po"
-                                id="cust_po"
-                                class="form-control"
-                                value="{{ old('cust_po', $saleOrder->cust_po ?? '') }}"
-                            >
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Freight Basis -->
-                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
-
-                        <div class="form-group">
-
-                            <label class="form-label d-block">
-                                Freight Basis
-                            </label>
-
-
-                            <div class="d-flex align-items-center gap-3 mt-2">
-
-
-                                <div class="form-check">
-
-                                    <input
-                                        class="form-check-input"
-                                        type="radio"
-                                        name="frtBasis"
-                                        id="frtBasisEx"
-                                        value="EX"
-                                        @checked(
-                                            old(
-                                                'frtBasis',
-                                                $saleOrder->frtBasis ?? 'FOR'
-                                            ) == 'EX'
-                                        )
-                                    >
-
-                                    <label
-                                        class="form-check-label"
-                                        for="frtBasisEx"
-                                    >
-                                        EX
-                                    </label>
-
-                                </div>
-
-
-                                <div class="form-check">
-
-                                    <input
-                                        class="form-check-input"
-                                        type="radio"
-                                        name="frtBasis"
-                                        id="frtBasisFor"
-                                        value="FOR"
-                                        @checked(
-                                            old(
-                                                'frtBasis',
-                                                $saleOrder->frtBasis ?? 'FOR'
-                                            ) == 'FOR'
-                                        )
-                                    >
-
-                                    <label
-                                        class="form-check-label"
-                                        for="frtBasisFor"
-                                    >
-                                        FOR
-                                    </label>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Payment Term -->
-                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
-
-                        <div class="form-group">
-
-                            <label class="form-label">
-                                Payment Term
-                            </label>
-
-
-                            <div class="row">
-
-
-                                <div class="col-6">
-
-                                    <input
-                                        type="text"
-                                        name="payType"
-                                        id="payType"
-                                        class="form-control"
-                                        placeholder="Enter value"
-                                        value="{{ old('payType', $saleOrder->payType ?? '') }}"
-                                    >
-
-                                </div>
-
-
-                                <div class="col-6">
-
-                                    <select
-                                        name="payTypeUnit"
-                                        id="payTypeUnit"
-                                        class="form-select"
-                                    >
-
-                                        <option value="">
-                                            Select
-                                        </option>
-
-                                        <option
-                                            value="Days"
-                                            {{ old('payTypeUnit', $saleOrder->payTypeUnit ?? '') == 'Days' ? 'selected' : '' }}
-                                        >
-                                            Days
-                                        </option>
-
-                                        <option
-                                            value="Week"
-                                            {{ old('payTypeUnit', $saleOrder->payTypeUnit ?? '') == 'Week' ? 'selected' : '' }}
-                                        >
-                                            Week
-                                        </option>
-
-                                        <option
-                                            value="Month"
-                                            {{ old('payTypeUnit', $saleOrder->payTypeUnit ?? '') == 'Month' ? 'selected' : '' }}
-                                        >
-                                            Month
-                                        </option>
-
-                                    </select>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Remarks -->
-                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
-
-                        <div class="form-group">
-
-                            <label
-                                for="remarks"
-                                class="form-label"
-                            >
-                                Remarks
-                            </label>
-
-
-                            <input
-                                type="text"
-                                name="remarks"
-                                id="remarks"
-                                class="form-control"
-                                value="{{ old('remarks', $saleOrder->remarks ?? '') }}"
-                            >
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <hr class="my-4">
-
-
-                <!-- ========================================= -->
-                <!-- ADD ITEMS -->
-                <!-- ========================================= -->
-
-                <div class="d-flex align-items-center justify-content-between mb-3">
-
-                    <h6 class="fw-bold text-uppercase mb-0">
-                        Add Items
+    <div class="container-fluid">
+
+        @if (session('error'))
+            <div class="alert alert-danger">
+                <strong>Error!</strong> {{ session('error') }}
+            </div>
+        @endif
+
+        @if (session('success'))
+            <div class="alert alert-success">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <strong>Please correct the following errors:</strong>
+                <ul class="mb-0 mt-2">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <div class="card">
+            <div class="card-body">
+
+                <form action="{{ route('purchase.add') }}" method="POST" id="purchaseOrderForm">
+
+                    @csrf
+                    <input type="hidden" name="purchase_order_id"
+                        value="{{ old('purchase_order_id', $purchaseOrder->id ?? '') }}">
+                    {{-- If your update route uses PUT/PATCH, uncomment and
+                     configure this according to your routes:
+                @if ($isEdit)
+                    @method('PUT')
+                @endif
+                --}}
+
+                    {{-- CUSTOMER DETAILS --}}
+
+                    <h6 class="fw-bold text-uppercase mb-3">
+                        Customer Details
                     </h6>
 
+                    <div class="row">
 
-                    <!-- Add Item Button -->
-                    <button
-                        type="button"
-                        class="btn btn-primary btn-sm rounded-2 d-none"
-                        id="addItemBtn"
-                        title="Add Item"
-                    >
-                        <i class="fa-solid fa-plus"></i>
-                    </button>
+                        {{-- Customer --}}
+                        <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-12">
+                            <div class="form-group mb-3">
+                                <label for="customer" class="form-label">
+                                    Customer Name <span class="text-danger">*</span>
+                                </label>
 
-                </div>
+                                <select class="select2 form-select" id="customer" name="customer"
+                                    data-placeholder="Select Customer">
 
+                                    <option value="">--Select Customer--</option>
 
-                <div
-                    class="table-responsive"
-                    id="itemTableWrapper"
-                >
+                                    @foreach ($customers as $customer)
+                                        <option value="{{ $customer->id }}" @selected((string) old('customer', $purchaseOrder->cust_id ?? '') === (string) $customer->id)>
+                                            ({{ $customer->cust_code }})
+                                            -
+                                            {{ $customer->company_name }}
+                                        </option>
+                                    @endforeach
 
-                    <table
-                        class="table table-bordered table-med itemtable align-middle mb-0"
-                    >
+                                </select>
 
-                        <thead>
+                                @error('customer')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
 
-                            <tr>
+                        {{-- Basic Rate --}}
+                        <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-12">
+                            <div class="form-group mb-3">
+                                <label for="basicRate" class="form-label">
+                                    Basic Rate
+                                </label>
 
-                                <th style="min-width:60px;">
-                                    S. No.
-                                </th>
+                                <input type="number" step="0.01" name="basicRate" id="basicRate" class="form-control"
+                                    value="{{ old('basicRate', $purchaseOrder->b_rate ?? '') }}">
+                            </div>
+                        </div>
 
+                        {{-- Reference Sale Order --}}
+                        <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-12">
+                            <div class="form-group mb-3">
+                                <label for="cust_po" class="form-label">
+                                    Ref. Sale Order
+                                </label>
 
-                                <th style="min-width:180px;">
-                                    Item Name
-                                </th>
+                                <select name="cust_po" id="cust_po" class="form-select">
 
+                                    <option value="">Select Ref. Sale Order</option>
 
-                                <th style="min-width:250px;">
-                                    Size
-                                </th>
+                                    <option value="0" @selected((string) old('cust_po', $purchaseOrder->ref_saleorder_id ?? '') === '0')>
+                                        Open Order
+                                    </option>
 
+                                    @foreach ($saleOrders as $saleOrder)
+                                        <option value="{{ $saleOrder->id }}" @selected((string) old('cust_po', $purchaseOrder->ref_saleorder_id ?? '') === (string) $saleOrder->id)>
+                                            {{ $saleOrder->id }} -
+                                            {{ optional($saleOrder->created_at)->format('d-m-Y') }} -
+                                            ({{ $saleOrder->basic_rate }})
+                                            -
+                                            ({{ optional($saleOrder->customer)->cust_code }}) -
+                                            {{ optional($saleOrder->customer)->company_name }}
+                                        </option>
+                                    @endforeach
 
-                                <th style="min-width:160px;">
-                                    Grade
-                                </th>
+                                </select>
+                            </div>
+                        </div>
 
+                        {{-- Freight Basis --}}
+                        <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-12">
+                            <div class="form-group mb-3">
+                                <label class="form-label d-block">
+                                    Freight Basis
+                                </label>
 
-                                <th style="min-width:130px;">
-                                    Length
-                                </th>
+                                <div class="d-flex align-items-center gap-3 mt-2">
 
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="frtBasis" id="frtBasisEx"
+                                            value="EX" @checked(old('frtBasis', $purchaseOrder->basis ?? 'FOR') === 'EX')>
 
-                                <th style="min-width:130px;">
-                                    Rate
-                                </th>
+                                        <label class="form-check-label" for="frtBasisEx">
+                                            EX
+                                        </label>
+                                    </div>
 
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="frtBasis" id="frtBasisFor"
+                                            value="FOR" @checked(old('frtBasis', $purchaseOrder->basis ?? 'FOR') === 'FOR')>
 
-                                <th style="min-width:230px;">
-                                    Qty
-                                </th>
+                                        <label class="form-check-label" for="frtBasisFor">
+                                            FOR
+                                        </label>
+                                    </div>
 
+                                </div>
+                            </div>
+                        </div>
 
-                                <th style="min-width:120px;">
-                                    Qty Variation
-                                </th>
+                        {{-- Payment Term --}}
+                        <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-12">
+                            <div class="form-group mb-3">
+                                <label class="form-label">Payment Term</label>
 
+                                <div class="row">
+                                    <div class="col-6">
+                                        <input type="number" name="payType" id="payType" class="form-control"
+                                            placeholder="Enter value" value="{{ $payType }}">
+                                    </div>
 
-                                <th style="min-width:220px;">
+                                    <div class="col-6">
+                                        <select name="payTypeUnit" id="payTypeUnit" class="form-select">
+
+                                            <option value="">Select</option>
+
+                                            @foreach (['Days', 'Week', 'Month'] as $unit)
+                                                <option value="{{ $unit }}" @selected(strcasecmp($payTypeUnit, $unit) === 0)>
+                                                    {{ $unit }}
+                                                </option>
+                                            @endforeach
+
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Remarks --}}
+                        <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-12">
+                            <div class="form-group mb-3">
+                                <label for="remarks" class="form-label">
                                     Remarks
-                                </th>
+                                </label>
 
+                                <input type="text" name="remarks" id="remarks" class="form-control"
+                                    value="{{ old('remarks', $purchaseOrder->remarks ?? '') }}">
+                            </div>
+                        </div>
 
-                                <th
-                                    style="width:60px;"
-                                    class="text-center"
-                                >
+                    </div>
 
-                                    <button
-                                        type="button"
-                                        class="btn btn-primary btn-sm rounded-2"
-                                        id="addItemHeaderBtn"
-                                        title="Add Item"
-                                    >
-                                        <i class="fa-solid fa-plus"></i>
-                                    </button>
+                    <hr class="my-4">
 
-                                </th>
+                    {{-- ITEMS --}}
 
-                            </tr>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="fw-bold text-uppercase mb-0">
+                            Add Items
+                        </h6>
+                    </div>
 
-                        </thead>
+                    <div class="table-responsive" id="itemTableWrapper">
+                        <table class="table table-bordered table-med itemtable align-middle mb-0">
 
+                            <thead>
+                                <tr>
+                                    <th style="min-width:60px;">S. No.</th>
+                                    <th style="min-width:180px;">Item Name</th>
+                                    <th style="min-width:250px;">Size</th>
+                                    <th style="min-width:160px;">Grade</th>
+                                    <th style="min-width:130px;">Length</th>
+                                    <th style="min-width:130px;">Rate</th>
+                                    <th style="min-width:230px;">Qty</th>
+                                    <th style="min-width:120px;">Qty Variation</th>
+                                    <th style="min-width:220px;">Remarks</th>
+                                    <th style="width:60px;" class="text-center">
+                                        <button type="button" class="btn btn-primary btn-sm rounded-2"
+                                            id="addItemHeaderBtn" title="Add Item">
+                                            <i class="fa-solid fa-plus"></i>
+                                        </button>
+                                    </th>
+                                </tr>
+                            </thead>
 
-                        <tbody id="itemTableBody">
+                            <tbody id="itemTableBody">
 
-                            <!-- ================================= -->
-                            <!-- DEFAULT FIRST ROW -->
-                            <!-- ================================= -->
+                                @foreach ($itemRows as $index => $itemRow)
+                                    <tr class="item-row">
 
-                            <tr class="item-row">
+                                        {{-- Serial Number --}}
+                                        <td class="serial-no text-center fw-semibold">
+                                            {{ $index + 1 }}
+                                        </td>
 
+                                        {{-- Item --}}
+                                        <td>
+                                            <select name="items[{{ $index }}][item_id]"
+                                                class="form-select item-name">
 
-                                <!-- S.No -->
-                                <td class="serial-no text-center fw-semibold">
-                                    1
-                                </td>
+                                                <option value="">Select Item</option>
 
-
-                                <!-- Item Name -->
-                                <td>
-
-                                    <select
-                                        name="items[0][item_id]"
-                                        class="form-select item-name"
-                                    >
-
-                                        <option value="">
-                                            Select Item
-                                        </option>
-
-
-                                        @foreach($products ?? [] as $item)
-
-                                            <option value="{{ $item->id }}">
-                                                {{ $item->product_name }}
-                                            </option>
-
-                                        @endforeach
-
-                                    </select>
-
-                                </td>
-
-
-                                <!-- Size -->
-                                <td>
-
-                                    <div class="row g-1">
-
-
-                                        <div class="col-7">
-
-                                            <select
-                                                name="items[0][size]"
-                                                class="form-select item-size"
-                                            >
-
-                                                <option value="">
-                                                    Select Size
-                                                </option>
-
-
-                                                @foreach($sizes ?? [] as $size)
-
-                                                    <option value="{{ $size->id }}">
-                                                        {{ $size->size_name }}
+                                                @foreach ($products ?? [] as $item)
+                                                    <option value="{{ $item->id }}" @selected((string) ($itemRow['item_id'] ?? '') === (string) $item->id)>
+                                                        {{ $item->product_name }}
                                                     </option>
-
                                                 @endforeach
 
                                             </select>
+                                        </td>
 
-                                        </div>
+                                        {{-- Size + Size Unit --}}
+                                        <td>
+                                            <div class="row g-1">
 
+                                                <div class="col-7">
+                                                    <select name="items[{{ $index }}][size]"
+                                                        class="form-select item-size">
 
-                                        <div class="col-5">
+                                                        <option value="">Select Size</option>
 
-                                            <select
-                                                name="items[0][size_unit]"
-                                                class="form-select"
-                                            >
+                                                        @foreach ($sizes ?? [] as $size)
+                                                            <option value="{{ $size->id }}"
+                                                                @selected((string) ($itemRow['size'] ?? '') === (string) $size->id)>
+                                                                {{ $size->size_name }}
+                                                            </option>
+                                                        @endforeach
 
-                                                <option value="">
-                                                    --Select Unit--
-                                                </option>
+                                                    </select>
+                                                </div>
 
-                                                @foreach($units ?? [] as $unit)
+                                                <div class="col-5">
+                                                    <select name="items[{{ $index }}][size_unit]"
+                                                        class="form-select">
 
-                                                    <option value="{{ $unit->id }}">
-                                                        {{ $unit->unit_name }}
+                                                        <option value="">--Select Unit--</option>
+
+                                                        @foreach ($units ?? [] as $unit)
+                                                            <option value="{{ $unit->id }}"
+                                                                @selected((string) ($itemRow['size_unit'] ?? '') === (string) $unit->id)>
+                                                                {{ $unit->unit_name }}
+                                                            </option>
+                                                        @endforeach
+
+                                                    </select>
+                                                </div>
+
+                                            </div>
+                                        </td>
+
+                                        {{-- Grade --}}
+                                        <td>
+                                            <select name="items[{{ $index }}][grade]"
+                                                class="form-select item-grade">
+
+                                                <option value="">Select Grade</option>
+
+                                                @foreach ($grades ?? [] as $grade)
+                                                    <option value="{{ $grade->id }}" @selected((string) ($itemRow['grade'] ?? '') === (string) $grade->id)>
+                                                        {{ $grade->grade_name }}
                                                     </option>
-
                                                 @endforeach
 
                                             </select>
-
-                                        </div>
-
-                                    </div>
-
-                                </td>
-
-
-                                <!-- Grade -->
-                                <td>
-
-                                    <select
-                                        name="items[0][grade]"
-                                        class="form-select item-grade"
-                                    >
-
-                                        <option value="">
-                                            Select Grade
-                                        </option>
-
-
-                                        @foreach($grades ?? [] as $grade)
-
-                                            <option value="{{ $grade->id }}">
-                                                {{ $grade->grade_name }}
-                                            </option>
-
-                                        @endforeach
-
-                                    </select>
-
-                                </td>
-
-
-                                <!-- Length -->
-                                <td>
-
-                                    <input
-                                        type="text"
-                                        name="items[0][length]"
-                                        class="form-control"
-                                        value="Standard"
-                                        readonly
-                                    >
-
-                                </td>
-
-
-                                <!-- Rate -->
-                                <td>
-
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        name="items[0][rate]"
-                                        class="form-control"
-                                        placeholder="Rate"
-                                    >
-
-                                </td>
-
-
-                                <!-- Qty -->
-                                <td>
-
-                                    <div class="row g-1">
-
-
-                                        <div class="col-6">
-
-                                            <input
-                                                type="number"
-                                                step="0.001"
-                                                min="0"
-                                                name="items[0][qty]"
-                                                class="form-control"
-                                                placeholder="Qty"
-                                            >
-
-                                        </div>
-
-
-                                        <div class="col-6">
-
-                                            <select
-                                                name="items[0][qty_unit]"
-                                                class="form-select"
-                                            >
-
-                                                <option value="">
-                                                    --Select Unit--
-                                                </option>
-
-                                                <option value="TONS">
-                                                    TONS
-                                                </option>
-
-                                                <option value="PCS">
-                                                    PCS
-                                                </option>
-
-                                                <option value="Litre">
-                                                    Litre
-                                                </option>
-
-                                            </select>
-
-                                        </div>
-
-                                    </div>
-
-                                </td>
-
-
-                                <!-- Qty Variation -->
-                                <td>
-
-                                    <input
-                                        type="text"
-                                        name="items[0][qty_variation]"
-                                        class="form-control text-center"
-                                        value="±5%"
-                                        readonly
-                                    >
-
-                                </td>
-
-
-                                <!-- Remarks -->
-                                <td>
-
-                                    <input
-                                        type="text"
-                                        name="items[0][remarks]"
-                                        class="form-control"
-                                        placeholder="Remarks"
-                                    >
-
-                                </td>
-
-
-                                <!-- Delete -->
-                                <td class="text-center">
-
-                                    <button
-                                        type="button"
-                                        class="btn btn-outline-danger btn-sm delete-item"
-                                        title="Delete Item"
-                                    >
-
-                                        <i class="fa-solid fa-trash"></i>
-
-                                    </button>
-
-                                </td>
-
-                            </tr>
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-
-                <!-- ========================================= -->
-                <!-- FORM BUTTONS -->
-                <!-- ========================================= -->
-
-                <div class="mt-4 d-flex justify-content-end gap-2">
-
-
-                    <a
-                        href="{{ route('purchase') }}"
-                        class="btn btn-outline-secondary px-4"
-                    >
-                        Cancel
-                    </a>
-
-
-                    <button
-                        type="submit"
-                        class="btn btn-primary px-4"
-                    >
-
-                        <i class="fa-solid fa-check me-1"></i>
-
-                        {{ isset($purchaseOrder) ? 'Update' : 'Add' }}
-                        Purchase Order
-
-                    </button>
-
-                </div>
-
-
-            </form>
-
+                                        </td>
+
+                                        {{-- Length --}}
+                                        <td>
+                                            <input type="text" name="items[{{ $index }}][length]"
+                                                class="form-control" value="{{ $itemRow['length'] ?? 'Standard' }}"
+                                                readonly>
+                                        </td>
+
+                                        {{-- Rate --}}
+                                        <td>
+                                            <input type="number" step="0.01" min="0"
+                                                name="items[{{ $index }}][rate]" class="form-control"
+                                                placeholder="Rate" value="{{ $itemRow['rate'] ?? '' }}">
+                                        </td>
+
+                                        {{-- Quantity --}}
+                                        <td>
+                                            <div class="row g-1">
+
+                                                <div class="col-6">
+                                                    <input type="number" step="0.001" min="0"
+                                                        name="items[{{ $index }}][qty]" class="form-control"
+                                                        placeholder="Qty" value="{{ $itemRow['qty'] ?? '' }}">
+                                                </div>
+
+                                                <div class="col-6">
+                                                    <select name="items[{{ $index }}][qty_unit]"
+                                                        class="form-select">
+
+                                                        <option value="">--Select Unit--</option>
+
+                                                        @foreach (['TONS', 'PCS', 'Litre'] as $qtyUnit)
+                                                            <option value="{{ $qtyUnit }}"
+                                                                @selected((string) ($itemRow['qty_unit'] ?? '') === $qtyUnit)>
+                                                                {{ $qtyUnit }}
+                                                            </option>
+                                                        @endforeach
+
+                                                    </select>
+                                                </div>
+
+                                            </div>
+                                        </td>
+
+                                        {{-- Quantity Variation --}}
+                                        <td>
+                                            <input type="text" name="items[{{ $index }}][qty_variation]"
+                                                class="form-control text-center"
+                                                value="{{ $itemRow['qty_variation'] ?? '±5%' }}" readonly>
+                                        </td>
+
+                                        {{-- Remarks --}}
+                                        <td>
+                                            <input type="text" name="items[{{ $index }}][remarks]"
+                                                class="form-control" placeholder="Remarks"
+                                                value="{{ $itemRow['remarks'] ?? '' }}">
+                                        </td>
+
+                                        {{-- Delete --}}
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-outline-danger btn-sm delete-item"
+                                                title="Delete Item">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </td>
+
+                                    </tr>
+                                @endforeach
+
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {{-- FORM BUTTONS --}}
+
+                    <div class="mt-4 d-flex justify-content-end gap-2">
+
+                        <a href="{{ route('purchase') }}" class="btn btn-outline-secondary px-4">
+                            Cancel
+                        </a>
+
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fa-solid fa-check me-1"></i>
+                            {{ $isEdit ? 'Update' : 'Add' }} Purchase Order
+                        </button>
+
+                    </div>
+
+                </form>
+            </div>
         </div>
-
     </div>
 
-</div>
+    {{-- JAVASCRIPT --}}
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
 
-<!-- ========================================= -->
-<!-- JAVASCRIPT -->
-<!-- ========================================= -->
-
-<script>
-
-document.addEventListener('DOMContentLoaded', function () {
-
-
-    const tableBody = document.getElementById('itemTableBody');
-
-    const addItemBtn = document.getElementById('addItemBtn');
-
-    const addItemHeaderBtn = document.getElementById('addItemHeaderBtn');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Update Serial Numbers + Input Names
-    |--------------------------------------------------------------------------
-    */
-
-    function updateRows() {
-
-        const rows = tableBody.querySelectorAll('.item-row');
-
-
-        rows.forEach(function (row, index) {
-
+            const tableBody = document.getElementById('itemTableBody');
+            const addItemHeaderBtn = document.getElementById('addItemHeaderBtn');
 
             /*
             |--------------------------------------------------------------------------
-            | Serial Number
+            | Reindex rows after add/delete
             |--------------------------------------------------------------------------
             */
 
-            const serialNo = row.querySelector('.serial-no');
+            function updateRows() {
+                const rows = tableBody.querySelectorAll('.item-row');
 
-            if (serialNo) {
+                rows.forEach(function(row, index) {
 
-                serialNo.textContent = index + 1;
+                    const serialNo = row.querySelector('.serial-no');
 
+                    if (serialNo) {
+                        serialNo.textContent = index + 1;
+                    }
+
+                    row.querySelectorAll('input, select, textarea').forEach(function(field) {
+
+                        const name = field.getAttribute('name');
+
+                        if (name) {
+                            field.setAttribute(
+                                'name',
+                                name.replace(/items\[\d+\]/, 'items[' + index + ']')
+                            );
+                        }
+                    });
+                });
             }
 
-
             /*
             |--------------------------------------------------------------------------
-            | Update Field Names
+            | Create a new blank row using the first row's available options
             |--------------------------------------------------------------------------
             */
 
-            row.querySelectorAll('input, select').forEach(function (field) {
+            function createItemRow() {
 
+                const firstRow = tableBody.querySelector('.item-row');
+                const newRow = firstRow.cloneNode(true);
 
-                const name = field.getAttribute('name');
+                newRow.querySelectorAll('input').forEach(function(field) {
 
+                    if (field.name.includes('[length]')) {
+                        field.value = 'Standard';
+                    } else if (field.name.includes('[qty_variation]')) {
+                        field.value = '±5%';
+                    } else {
+                        field.value = '';
+                    }
+                });
 
-                if (!name) {
+                newRow.querySelectorAll('select').forEach(function(field) {
+                    field.selectedIndex = 0;
+                });
 
-                    return;
+                return newRow;
+            }
 
-                }
+            /*
+            |--------------------------------------------------------------------------
+            | Add item
+            |--------------------------------------------------------------------------
+            */
 
+            addItemHeaderBtn.addEventListener('click', function() {
 
-                field.setAttribute(
-                    'name',
-                    name.replace(
-                        /items\[\d+\]/,
-                        'items[' + index + ']'
-                    )
-                );
+                tableBody.appendChild(createItemRow());
 
+                updateRows();
             });
 
-        });
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Create New Item Row
-    |--------------------------------------------------------------------------
-    */
-
-    function createItemRow() {
-
-
-        const row = document.createElement('tr');
-
-        row.classList.add('item-row');
-
-
-        row.innerHTML = `
-
-            <!-- S.No -->
-            <td class="serial-no text-center fw-semibold">
-                1
-            </td>
-
-
-            <!-- Item Name -->
-            <td>
-
-                <select
-                    name="items[0][item_id]"
-                    class="form-select item-name"
-                >
-
-                    <option value="">
-                        Select Item
-                    </option>
-
-                    @foreach($products ?? [] as $item)
-
-                        <option value="{{ $item->id }}">
-                            {{ $item->product_name }}
-                        </option>
-
-                    @endforeach
-
-                </select>
-
-            </td>
-
-
-            <!-- Size -->
-            <td>
-
-                <div class="row g-1">
-
-                    <div class="col-7">
-
-                        <select
-                            name="items[0][size]"
-                            class="form-select item-size"
-                        >
-
-                            <option value="">
-                                Select Size
-                            </option>
-
-                            @foreach($sizes ?? [] as $size)
-
-                                <option value="{{ $size->id }}">
-                                    {{ $size->size_name }}
-                                </option>
-
-                            @endforeach
-
-                        </select>
-
-                    </div>
-
-
-                    <div class="col-5">
-
-                        <select
-                            name="items[0][size_unit]"
-                            class="form-select"
-                        >
-
-                            <option value="">
-                                --Select Unit--
-                            </option>
-
-                            @foreach($units ?? [] as $unit)
-
-                                <option value="{{ $unit->id }}">
-                                    {{ $unit->unit_name }}
-                                </option>
-
-                            @endforeach
-
-                        </select>
-
-                    </div>
-
-                </div>
-
-            </td>
-
-
-            <!-- Grade -->
-            <td>
-
-                <select
-                    name="items[0][grade]"
-                    class="form-select item-grade"
-                >
-
-                    <option value="">
-                        Select Grade
-                    </option>
-
-                    @foreach($grades ?? [] as $grade)
-
-                        <option value="{{ $grade->id }}">
-                            {{ $grade->grade_name }}
-                        </option>
-
-                    @endforeach
-
-                </select>
-
-            </td>
-
-
-            <!-- Length -->
-            <td>
-
-                <input
-                    type="text"
-                    name="items[0][length]"
-                    class="form-control"
-                    value="Standard"
-                    readonly
-                >
-
-            </td>
-
-
-            <!-- Rate -->
-            <td>
-
-                <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    name="items[0][rate]"
-                    class="form-control"
-                    placeholder="Rate"
-                >
-
-            </td>
-
-
-            <!-- Qty -->
-            <td>
-
-                <div class="row g-1">
-
-                    <div class="col-6">
-
-                        <input
-                            type="number"
-                            step="0.001"
-                            min="0"
-                            name="items[0][qty]"
-                            class="form-control"
-                            placeholder="Qty"
-                        >
-
-                    </div>
-
-
-                    <div class="col-6">
-
-                        <select
-                            name="items[0][qty_unit]"
-                            class="form-select"
-                        >
-
-                            <option value="">
-                                --Select Unit--
-                            </option>
-
-                            <option value="TONS">
-                                TONS
-                            </option>
-
-                            <option value="PCS">
-                                PCS
-                            </option>
-
-                            <option value="Litre">
-                                Litre
-                            </option>
-
-                        </select>
-
-                    </div>
-
-                </div>
-
-            </td>
-
-
-            <!-- Qty Variation -->
-            <td>
-
-                <input
-                    type="text"
-                    name="items[0][qty_variation]"
-                    class="form-control text-center"
-                    value="±5%"
-                    readonly
-                >
-
-            </td>
-
-
-            <!-- Remarks -->
-            <td>
-
-                <input
-                    type="text"
-                    name="items[0][remarks]"
-                    class="form-control"
-                    placeholder="Remarks"
-                >
-
-            </td>
-
-
-            <!-- Delete -->
-            <td class="text-center">
-
-                <button
-                    type="button"
-                    class="btn btn-outline-danger btn-sm delete-item"
-                    title="Delete Item"
-                >
-
-                    <i class="fa-solid fa-trash"></i>
-
-                </button>
-
-            </td>
-
-        `;
-
-
-        return row;
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Add Item
-    |--------------------------------------------------------------------------
-    */
-
-    function addItem() {
-
-
-        const newRow = createItemRow();
-
-
-        tableBody.appendChild(newRow);
-
-
-        updateRows();
-
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Top Add Button
-    |--------------------------------------------------------------------------
-    */
-
-    addItemBtn.addEventListener(
-        'click',
-        function () {
-
-            addItem();
-
-        }
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Header Add Button
-    |--------------------------------------------------------------------------
-    */
-
-    addItemHeaderBtn.addEventListener(
-        'click',
-        function () {
-
-            addItem();
-
-        }
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Delete Item
-    |--------------------------------------------------------------------------
-    */
-
-    tableBody.addEventListener(
-        'click',
-        function (event) {
-
-
-            const deleteButton =
-                event.target.closest('.delete-item');
-
-
-            if (!deleteButton) {
-
-                return;
-
-            }
-
-
-            const rows =
-                tableBody.querySelectorAll('.item-row');
-
-
             /*
             |--------------------------------------------------------------------------
-            | Keep At Least One Row
+            | Delete item (keep at least one row)
             |--------------------------------------------------------------------------
             */
 
-            if (rows.length === 1) {
+            tableBody.addEventListener('click', function(event) {
 
+                const deleteButton = event.target.closest('.delete-item');
 
-                rows[0]
-                    .querySelectorAll('input, select')
-                    .forEach(function (field) {
+                if (!deleteButton) {
+                    return;
+                }
 
+                const rows = tableBody.querySelectorAll('.item-row');
 
-                        if (field.tagName === 'SELECT') {
+                if (rows.length === 1) {
 
-                            field.selectedIndex = 0;
+                    const row = rows[0];
 
-                        }
+                    row.querySelectorAll('input').forEach(function(field) {
 
-                        else if (
-                            field.name.includes('[length]')
-                        ) {
-
+                        if (field.name.includes('[length]')) {
                             field.value = 'Standard';
-
-                        }
-
-                        else if (
-                            field.name.includes('[qty_variation]')
-                        ) {
-
+                        } else if (field.name.includes('[qty_variation]')) {
                             field.value = '±5%';
-
-                        }
-
-                        else {
-
+                        } else {
                             field.value = '';
-
                         }
-
                     });
 
+                    row.querySelectorAll('select').forEach(function(field) {
+                        field.selectedIndex = 0;
+                    });
 
-                return;
+                    return;
+                }
 
-            }
+                deleteButton.closest('.item-row').remove();
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Delete Row
-            |--------------------------------------------------------------------------
-            */
-
-            deleteButton
-                .closest('.item-row')
-                .remove();
-
+                updateRows();
+            });
 
             /*
             |--------------------------------------------------------------------------
-            | Recalculate Serial Numbers
+            | Initial setup
             |--------------------------------------------------------------------------
             */
 
             updateRows();
 
-        }
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Initial Row Setup
-    |--------------------------------------------------------------------------
-    */
-
-    updateRows();
-
-
-});
-
-</script>
+        });
+    </script>
 
 @endsection

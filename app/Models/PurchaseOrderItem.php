@@ -40,4 +40,24 @@ class PurchaseOrderItem extends Model
             'purchase_order_id'
         );
     }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function size()
+    {
+        return $this->belongsTo(Size::class, 'size_id');
+    }
+
+    public function grade()
+    {
+        return $this->belongsTo(Grade::class, 'grade_id');
+    }
+
+    public function sizeUnit()
+    {
+        return $this->belongsTo(Unit::class, 'size_unit_id');
+    }
 }
