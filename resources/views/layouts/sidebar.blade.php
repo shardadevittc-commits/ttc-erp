@@ -6,7 +6,7 @@
     $productsActive = request()->routeIs('brands*','products*','sizes*','grades*','units*');
     $locationsActive = request()->routeIs('cities*','states*');
     $usersActive = request()->routeIs('users.*');
-    $ordersActive = request()->routeIs('saleOrders*');
+    $ordersActive = request()->routeIs('saleOrders*', 'purchase*');
 @endphp
 
 <aside class="sidebar-vertical" id="sidebarVertical">

@@ -136,4 +136,16 @@ class PurchaseController extends Controller
 
         return view('admin.purchases.add',compact('customers','sizes','units','grades','products'));
     }
+
+
+    public function indexRM(Request $request)
+    {
+        $listing  = [];
+        $products = [];
+        $sizes  = [];
+        $brands = [];
+        $grades  = [];
+
+        return view('admin.rawMaterials.index', compact('listing','products','sizes','brands', 'grades'));
+    }
 }
