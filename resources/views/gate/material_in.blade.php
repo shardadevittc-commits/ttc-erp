@@ -123,12 +123,11 @@
 
                                             <label for="partyname" class="form-label">
                                                 Party Name
-                                                <span class="text-danger">*</span>
                                             </label>
 
                                             <select name="cust_id"
                                                 id="cust_id"
-                                                class="form-select">
+                                                class="form-select" required>
 
                                                 <option value="">
                                                     Select Party
@@ -190,263 +189,84 @@
                                                     {{ $message }}
                                                 </label>
                                             @enderror
-
                                         </div>
                                     </div>
 
                                     {{-- Truck No --}}
                                     <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 mb-3">
                                         <div class="form-group">
-
-                                            <label for="truckno" class="form-label">
-                                                Truck No.
-                                                <span class="text-danger">*</span>
-                                            </label>
-
-                                            <input type="text"
-                                                name="truckno"
-                                                id="truckno"
-                                                class="form-control text-uppercase"
-                                                placeholder="PB10EW1234"
-                                                value="{{ old('truckno', $materialIn->truckno ?? '') }}"
-                                                maxlength="10"
-                                                pattern="[A-Za-z]{2}[0-9]{2}[A-Za-z]{2}[0-9]{4}"
-                                                title="Enter truck number in format PB10EW1234"
-                                                style="text-transform: uppercase;"
-                                                required>
-
-                                            @error('truckno')
-                                                <label class="error">{{ $message }}</label>
-                                            @enderror
-
+                                            <label for="truckno" class="form-label">Truck No.</label>
+                                            <input type="text" name="truckno" id="truckno" class="form-control text-uppercase" placeholder="PB10EW1234" value="{{ old('truckno', $materialIn->truckno ?? '') }}" maxlength="10" pattern="[A-Za-z]{2}[0-9]{2}[A-Za-z]{2}[0-9]{4}" title="Enter truck number in format PB10EW1234" style="text-transform: uppercase;" required>
+                                            @error('truckno')<label class="error">{{ $message }}</label>@enderror
                                         </div>
                                     </div>
-
 
                                     {{-- Vehicle Entry Slip --}}
                                     <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 mb-3">
                                         <div class="form-group">
+                                            <label for="vehicleentryslip" class="form-label">Vehicle Entry Slip</label>
+                                            <input type="file" name="vehicleentryslip" id="vehicleentryslip" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
 
-                                            <label for="vehicleentryslip" class="form-label">
-                                                Vehicle Entry Slip
-                                            </label>
-
-                                            <input type="file"
-                                                name="vehicleentryslip"
-                                                id="vehicleentryslip"
-                                                class="form-control"
-                                                accept=".jpg,.jpeg,.png,.pdf">
-
-                                            @error('vehicleentryslip')
-                                                <label class="error">
-                                                    {{ $message }}
-                                                </label>
-                                            @enderror
-
-                                            <small class="text-muted">
-                                                JPG, JPEG, PNG or PDF
-                                            </small>
-
+                                            @error('vehicleentryslip')<label class="error">{{ $message }}</label>@enderror
+                                            <small class="text-muted">JPG, JPEG, PNG or PDF</small>
                                         </div>
                                     </div>
 
                                     {{-- Transport Name --}}
                                     <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 mb-3">
                                         <div class="form-group">
-
-                                            <label for="transportname" class="form-label">
-                                                Transport Name
-                                            </label>
-
-                                            <input type="text"
-                                                name="transportname"
-                                                id="transportname"
-                                                class="form-control"
-                                                placeholder="Enter Transport Name"
-                                                value="{{ old('transportname', $materialIn->transportname ?? '') }}">
-
-                                            @error('transportname')
-                                                <label class="error">
-                                                    {{ $message }}
-                                                </label>
-                                            @enderror
-
+                                            <label for="transportname" class="form-label">Transport Name</label>
+                                            <input type="text" name="transportname" id="transportname" class="form-control" placeholder="Enter Transport Name" value="{{ old('transportname', $materialIn->transportname ?? '') }}">
+                                            @error('transportname')<label class="error">{{ $message }}</label>@enderror
                                         </div>
                                     </div>
 
                                     {{-- No. Of Persons --}}
                                     <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 mb-3">
                                         <div class="form-group">
-
-                                            <label for="noofpersons" class="form-label">
-                                                No. Of Persons
-                                            </label>
-
-                                            <input type="number"
-                                                name="noofpersons"
-                                                id="noofpersons"
-                                                class="form-control"
-                                                min="0"
-                                                placeholder="Enter No. Of Persons"
-                                                value="{{ old('noofpersons', $materialIn->noofpersons ?? '') }}">
-
-                                            @error('noofpersons')
-                                                <label class="error">
-                                                    {{ $message }}
-                                                </label>
-                                            @enderror
-
+                                            <label for="noofpersons" class="form-label">No. Of Persons</label>
+                                            <input type="number" name="noofpersons" id="noofpersons" class="form-control" min="0" placeholder="Enter No. Of Persons" value="{{ old('noofpersons', $materialIn->noofpersons ?? '') }}">
+                                            @error('noofpersons')<label class="error">{{ $message }}</label>@enderror
                                         </div>
                                     </div>
 
                                     {{-- Driver Name --}}
                                     <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 mb-3">
                                         <div class="form-group">
-
-                                            <label for="drivername" class="form-label">
-                                                Driver Name
-                                            </label>
-
-                                            <input type="text"
-                                                name="drivername"
-                                                id="drivername"
-                                                class="form-control"
-                                                placeholder="Enter Driver Name"
-                                                value="{{ old('drivername', $materialIn->drivername ?? '') }}">
-
-                                            @error('drivername')
-                                                <label class="error">
-                                                    {{ $message }}
-                                                </label>
-                                            @enderror
-
+                                            <label for="drivername" class="form-label">Driver Name</label>
+                                            <input type="text" name="drivername" id="drivername" class="form-control" placeholder="Enter Driver Name" value="{{ old('drivername', $materialIn->drivername ?? '') }}">
+                                            @error('drivername')<label class="error">{{ $message }}</label>@enderror
                                         </div>
                                     </div>
 
                                     {{-- Contact No --}}
                                     <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 mb-3">
                                         <div class="form-group">
-
-                                            <label for="contactno" class="form-label">
-                                                Contact No.
-                                            </label>
-
-                                            <input type="text"
-                                                name="contactno"
-                                                id="contactno"
-                                                class="form-control"
-                                                maxlength="10"
-                                                inputmode="numeric"
-                                                placeholder="Enter Contact No."
-                                                value="{{ old('contactno', $materialIn->contactno ?? '') }}">
-
-                                            @error('contactno')
-                                                <label class="error">
-                                                    {{ $message }}
-                                                </label>
-                                            @enderror
-
+                                            <label for="contactno" class="form-label">Contact No.</label>
+                                            <input type="text" name="contactno" id="contactno" class="form-control number_only" maxlength="10" inputmode="numeric" placeholder="Enter Contact No." value="{{ old('contactno', $materialIn->contactno ?? '') }}">
+                                            @error('contactno')<label class="error">{{ $message }}</label>@enderror
                                         </div>
                                     </div>
-
                                 </div>
 
                                 {{-- Form Actions --}}
                                 <div class="border-top pt-3 mt-3">
                                     <div class="d-flex justify-content-end gap-2">
-
-                                        <a href="{{ url()->previous() }}"
-                                            class="btn btn-outline-secondary">
-                                            <i class="fas fa-times me-1"></i>
+                                        <a href="{{ url()->previous() }}" class="btn btn-outline-secondary"> <i class="fas fa-times me-1"></i>
                                             Cancel
                                         </a>
-
                                         <button type="submit" class="btn btn-primary">
                                             <i class="fas fa-check me-1"></i>
                                             Save
                                         </button>
-
                                     </div>
                                 </div>
-
                             </form>
-
                         </div>
                     </div>
-
                 </div>
             </div>
-
         </div>
     </div>
 
 @endsection
-
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-
-        /*
-        |--------------------------------------------------------------------------
-        | Generate Token
-        |--------------------------------------------------------------------------
-        */
-
-        /*const generateTokenBtn = document.getElementById('generateTokenBtn');
-        const tokenInput = document.getElementById('tokenno');
-
-        if (generateTokenBtn && tokenInput) {
-            generateTokenBtn.addEventListener('click', function () {
-                const now = new Date();
-
-                const day = String(now.getDate()).padStart(2, '0');
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const year = String(now.getFullYear()).slice(-2);
-
-                const date = `${day}${month}${year}`;
-
-                // Temporary sequence for demonstration
-                const sequence = String(
-                    Number(sessionStorage.getItem(`MAT-${date}-sequence`) || 0) + 1
-                ).padStart(3, '0');
-
-                sessionStorage.setItem(`MAT-${date}-sequence`, sequence);
-
-                tokenInput.value = `MAT-${date}-${sequence}`;
-            });
-        }*/
-
-        /*
-        |--------------------------------------------------------------------------
-        | Contact Number - Only Numbers
-        |--------------------------------------------------------------------------
-        */
-
-        const contactInput = document.getElementById('contactno');
-
-        if (contactInput) {
-
-            contactInput.addEventListener('input', function () {
-                this.value = this.value.replace(/\D/g, '');
-            });
-
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Truck Number - Uppercase and No Spaces
-        |--------------------------------------------------------------------------
-        */
-
-        const truckInput = document.getElementById('truckno');
-
-        if (truckInput) {
-            truckInput.addEventListener('input', function () {
-                this.value = this.value.toUpperCase().replace(/\s/g, '');
-            });
-        }
-
-    });
-
-</script>
-@endpush
