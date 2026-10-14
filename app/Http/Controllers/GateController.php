@@ -71,7 +71,7 @@ class GateController extends Controller
 
         $user = Auth::user();
         $custIds = PurchaseOrder::distinct()->pluck('cust_id');
-        $parties = Customer::select([''])->where('status', '1')->whereIn('id', $custIds)->get();
+        $parties = Customer::select(['id','company_name'])->where('status', '1')->whereIn('id', $custIds)->get();
 
         return view('gate.material_in', compact(
             'user',
