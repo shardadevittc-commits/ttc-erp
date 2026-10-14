@@ -3,6 +3,7 @@
     $roleId = (int)(auth()->user()->role_id ?? 0);
     $isGateUser = $roleId === 4 ;
     $isWeightUser = $roleId === 5;
+    $isUnloadUser = $roleId === 6;
     $productsActive = request()->routeIs('brands*','products*','sizes*','grades*','units*');
     $locationsActive = request()->routeIs('cities*','states*');
     $usersActive = request()->routeIs('users.*');
@@ -71,6 +72,15 @@
                 </li>
             @endif
 
+            @if($isUnloadUser)
+                <li class="sidebar-item">
+                    <a href="{{ route('dashboard.unloader') }}" class="sidebar-link {{ request()->routeIs('dashboard.unloader') ? 'active' : '' }}">
+                        <i class="fa-solid fa-gauge-high nav-icon"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+            @endif
+
             @if(in_array($role,['admin','sale']))
                 <li class="sidebar-item"><a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"><i class="fa-solid fa-chart-pie nav-icon"></i><span>Dashboard</span><span class="sidebar-badge text-white" style="background-color:var(--primary-red);">Live</span></a></li>
             
@@ -122,6 +132,8 @@
                     </div>
                 </li>
             @endif
+
+
         </ul>
     </div>
 
