@@ -35,7 +35,7 @@
                 </div>
                 <div class="listing-error d-none alert alert-danger m-3" role="alert"></div>
                 <div class="table-responsive">
-                    <table class="table listing-table">
+                    <table class="table listing-table table-striped table-bordered">
                         <thead>
                             <tr>
                                 <th>#</th>

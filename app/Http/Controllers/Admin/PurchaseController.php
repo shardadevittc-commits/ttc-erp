@@ -10,13 +10,13 @@ use App\Models\PurchaseOrderItem;
 use App\Models\SaleOrder;
 use App\Models\Size;
 use App\Models\Unit;
+use App\Models\Brand;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PurchaseController extends Controller
 {
-
     public function index(Request $request)
     {
         $query = PurchaseOrder::with([
@@ -247,12 +247,66 @@ class PurchaseController extends Controller
 
     public function indexRM(Request $request)
     {
-        $listing  = [];
-        $products = [];
-        $sizes  = [];
-        $brands = [];
-        $grades  = [];
+        $query = PurchaseOrderItem::with([
+                'customer',
+                'purchaseOrder',
+                'product',
+                'size',
+                'grade',
+                'sizeUnit',
+            ]);
 
+            // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                    ->orWhere('basis', 'like', "%{$search}%")
+                    ->orWhere('term', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('company_name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('items.product', function ($productQuery) use ($search) {
+                        $productQuery->where('product_name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'id');
+        $sortOrder = $request->get('sort_order', 'desc');
+
+        $allowedSorts = ['id', 'basis', 'created_at'];
+
+        if (!in_array($sortBy, $allowedSorts)) {
+            $sortBy = 'id';
+        }
+
+        if (!in_array($sortOrder, ['asc', 'desc'])) {
+            $sortOrder = 'desc';
+        }
+
+        $listing = $query->orderBy($sortBy, $sortOrder)->paginate(10)->withQueryString();
+        // pr($listing); die;
+
+        if ($request->ajax()) {
+            return response()->json([
+                'status' => true,
+                'html' => view('admin.rawMaterials.listingLoop', compact('listing'))->render(),
+                'page' => $listing->currentPage(),
+                'counter' => $listing->perPage(),
+                'count' => $listing->total(),
+                'lastPage' => $listing->lastPage(),
+                'pagination' => $listing->links('pagination::bootstrap-5')->toHtml(),
+            ]);
+        }
+
+        $products = Product::query()->where('status', 1)->select(['id', 'product_name', 'status'])->get();
+        $sizes    = Size::query()->where('status', 1)->select(['id', 'size_name', 'created_at'])->get();
+        $brands   = Brand::query()->where('status', 1)->select(['id', 'brand_name','created_at'])->get();
+        $grades   = Grade::query()->where('status', 1)->select(['id', 'grade_name', 'created_at'])->get();
+        
         return view('admin.rawMaterials.index', compact('listing','products','sizes','brands', 'grades'));
     }
 }

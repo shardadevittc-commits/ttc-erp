@@ -14,6 +14,13 @@ function _d($date)
     return $date;
 }
 
+function _dtx($date)
+{
+
+    $date = Carbon::parse($date)->format('d M, Y');
+    return $date;
+}
+
 function _time($time)
 {
     $date = Carbon::parse($time)->format('h:i A');

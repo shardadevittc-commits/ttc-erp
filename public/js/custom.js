@@ -530,7 +530,7 @@ function initializeInlineOptionCreate() {
     });
 }
 
-if ($('#saleOrderItems').length) {
+if ($('#saleOrderItems').length && $('#itemTableBody').length) {
     initializeInlineOptionCreate();
 }
 
