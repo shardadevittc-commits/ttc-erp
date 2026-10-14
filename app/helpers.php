@@ -13,6 +13,13 @@ function _d($date)
     $date = Carbon::parse($date)->format('d-m-Y');
     return $date;
 }
+
+function _dtx($date)
+{
+        
+    $date = Carbon::parse($date)->format('d M, Y');
+    return $date;
+}
         
 function _time($time)
 {

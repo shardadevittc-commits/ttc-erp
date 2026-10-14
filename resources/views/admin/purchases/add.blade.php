@@ -156,20 +156,13 @@
                         {{-- Customer --}}
                         <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-12">
                             <div class="form-group mb-3">
-                                <label for="customer" class="form-label">
-                                    Customer Name <span class="text-danger">*</span>
-                                </label>
-
-                                <select class="select2 form-select" id="customer" name="customer"
-                                    data-placeholder="Select Customer">
-
-                                    <option value="">--Select Customer--</option>
-
+                                <label for="customer" class="form-label"> Customer Name</label>
+                                <select class="select2 form-select" id="customer" name="customer" data-placeholder="Select Customer" required>
+                                    <option value="">Select Customer</option>
                                     @foreach ($customers as $customer)
                                         <option value="{{ $customer->id }}" @selected((string) old('customer', $purchaseOrder->cust_id ?? '') === (string) $customer->id)>
-                                            ({{ $customer->cust_code }})
-                                            -
                                             {{ $customer->company_name }}
+                                            {{ (isset($customer->cust_code) && $customer->cust_code ? " - (". $customer->cust_code . ")"  : '') }}
                                         </option>
                                     @endforeach
 
@@ -188,7 +181,7 @@
                                     Basic Rate
                                 </label>
 
-                                <input type="number" step="0.01" name="basicRate" id="basicRate" class="form-control"
+                                <input type="text" step="0.01" placeholder="Enter Basic Rate" name="basicRate" id="basicRate" class="form-control number_only"
                                     value="{{ old('basicRate', $purchaseOrder->b_rate ?? '') }}">
                             </div>
                         </div>
@@ -200,7 +193,7 @@
                                     Ref. Sale Order
                                 </label>
 
-                                <select name="cust_po" id="cust_po" class="form-select">
+                                <select name="cust_po" id="cust_po" class="form-select" aria-label=".form-select-sm cust_po">
 
                                     <option value="">Select Ref. Sale Order</option>
 
@@ -210,15 +203,14 @@
 
                                     @foreach ($saleOrders as $saleOrder)
                                         <option value="{{ $saleOrder->id }}" @selected((string) old('cust_po', $purchaseOrder->ref_saleorder_id ?? '') === (string) $saleOrder->id)>
-                                            {{ $saleOrder->id }} -
-                                            {{ optional($saleOrder->created_at)->format('d-m-Y') }} -
-                                            ({{ $saleOrder->basic_rate }})
+                                            {{ ($saleOrder->id ? "(". $saleOrder->id .") " : '') }} 
+                                            {{  ($saleOrder->created_at ? "(". _dtx($saleOrder->created_at) .") " : '')}} -
+                                            {{ ($saleOrder->basic_rate ? "(". _rz($saleOrder->basic_rate) .") " : '') }}
                                             -
-                                            ({{ optional($saleOrder->customer)->cust_code }}) -
-                                            {{ optional($saleOrder->customer)->company_name }}
+                                            {{ ($saleOrder->customer ? "(". optional($saleOrder->customer)->company_name .") " : '') }}
                                         </option>
+                                            {{-- ({{ optional($saleOrder->customer)->cust_code }}) - --}}
                                     @endforeach
-
                                 </select>
                             </div>
                         </div>
@@ -226,58 +218,38 @@
                         {{-- Freight Basis --}}
                         <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-12">
                             <div class="form-group mb-3">
-                                <label class="form-label d-block">
-                                    Freight Basis
-                                </label>
-
+                                <label class="form-label d-block">Freight Basis</label>
                                 <div class="d-flex align-items-center gap-3 mt-2">
-
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="frtBasis" id="frtBasisEx"
-                                            value="EX" @checked(old('frtBasis', $purchaseOrder->basis ?? 'FOR') === 'EX')>
-
-                                        <label class="form-check-label" for="frtBasisEx">
-                                            EX
-                                        </label>
+                                        <input class="form-check-input" type="radio" name="frtBasis" id="frtBasisEx" value="EX" @checked(old('frtBasis', $purchaseOrder->basis ?? 'FOR') === 'EX')>
+                                        <label class="form-check-label" for="frtBasisEx">EX</label>
                                     </div>
 
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="frtBasis" id="frtBasisFor"
-                                            value="FOR" @checked(old('frtBasis', $purchaseOrder->basis ?? 'FOR') === 'FOR')>
-
-                                        <label class="form-check-label" for="frtBasisFor">
-                                            FOR
-                                        </label>
+                                        <input class="form-check-input" type="radio" name="frtBasis" id="frtBasisFor" value="FOR" @checked(old('frtBasis', $purchaseOrder->basis ?? 'FOR') === 'FOR')>
+                                        <label class="form-check-label" for="frtBasisFor"> FOR </label>
                                     </div>
-
                                 </div>
                             </div>
                         </div>
 
                         {{-- Payment Term --}}
+                        
                         <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-12">
                             <div class="form-group mb-3">
                                 <label class="form-label">Payment Term</label>
 
-                                <div class="row">
-                                    <div class="col-6">
-                                        <input type="number" name="payType" id="payType" class="form-control"
-                                            placeholder="Enter value" value="{{ $payType }}">
-                                    </div>
-
-                                    <div class="col-6">
-                                        <select name="payTypeUnit" id="payTypeUnit" class="form-select">
-
-                                            <option value="">Select</option>
-
-                                            @foreach (['Days', 'Week', 'Month'] as $unit)
-                                                <option value="{{ $unit }}" @selected(strcasecmp($payTypeUnit, $unit) === 0)>
-                                                    {{ $unit }}
-                                                </option>
-                                            @endforeach
-
-                                        </select>
-                                    </div>
+                                <div class="input-group" style="display: flex; flex-wrap: nowrap;">
+                                    <input type="text" name="payType" id="payType" class="form-control number_only" placeholder="Enter value" value="{{ $payType }}" style="width: 50%; flex: 0 0 50%; border-right: 0; border-radius: 6px 0 0 6px;">
+                                    <select name="payTypeUnit" id="payTypeUnit" class="form-select" style="width: 50%; flex: 0 0 50%; border-radius: 0 6px 6px 0; cursor: pointer;">
+                                        <option value="">Select</option>
+                                        @foreach (['Days', 'Week', 'Month'] as $unit)
+                                            <option value="{{ $unit }}"
+                                                @selected(strcasecmp($payTypeUnit ?? '', $unit) === 0)>
+                                                {{ $unit }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -356,51 +328,73 @@
                                         </td>
 
                                         {{-- Size + Size Unit --}}
-                                        <td>
+                                        {{-- <td>
                                             <div class="row g-1">
-
                                                 <div class="col-7">
-                                                    <select name="items[{{ $index }}][size]"
-                                                        class="form-select item-size">
-
+                                                    <select name="items[{{ $index }}][size]" class="form-select item-size">
                                                         <option value="">Select Size</option>
-
                                                         @foreach ($sizes ?? [] as $size)
                                                             <option value="{{ $size->id }}"
                                                                 @selected((string) ($itemRow['size'] ?? '') === (string) $size->id)>
                                                                 {{ $size->size_name }}
                                                             </option>
                                                         @endforeach
-
                                                     </select>
                                                 </div>
 
                                                 <div class="col-5">
-                                                    <select name="items[{{ $index }}][size_unit]"
-                                                        class="form-select">
-
-                                                        <option value="">--Select Unit--</option>
-
+                                                    <select name="items[{{ $index }}][size_unit]" class="form-select">
+                                                        <option value=""> Select Unit </option>
                                                         @foreach ($units ?? [] as $unit)
                                                             <option value="{{ $unit->id }}"
                                                                 @selected((string) ($itemRow['size_unit'] ?? '') === (string) $unit->id)>
                                                                 {{ $unit->unit_name }}
                                                             </option>
                                                         @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </td> --}}
+                                        <td>
+                                            <div class="d-flex align-items-center border rounded"
+                                                style="height: 38px; overflow: hidden;">
 
+                                                <div style="width: 50%;">
+                                                    <select name="items[{{ $index }}][size]"class="form-select item-size border-0 rounded-0 shadow-none" style="height: 36px;">
+                                                        <option value="">Select Size</option>
+                                                        @foreach ($sizes ?? [] as $size)
+                                                            <option value="{{ $size->id }}"
+                                                                @selected((string) ($itemRow['size'] ?? '') === (string) $size->id)>
+                                                                {{ $size->size_name }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+
+                                                <div style="width: 50%; border-left: 1px solid #dee2e6;">
+                                                    <select name="items[{{ $index }}][size_unit]"
+                                                            class="form-select border-0 rounded-0 shadow-none"
+                                                            style="height: 36px;">
+                                                        <option value="">Select Unit</option>
+                                                        @foreach ($units ?? [] as $unit)
+                                                            <option value="{{ $unit->id }}"
+                                                                @selected((string) ($itemRow['size_unit'] ?? '') === (string) $unit->id)>
+                                                                {{ $unit->unit_name }}
+                                                            </option>
+                                                        @endforeach
                                                     </select>
                                                 </div>
 
                                             </div>
                                         </td>
 
+
                                         {{-- Grade --}}
                                         <td>
-                                            <select name="items[{{ $index }}][grade]"
-                                                class="form-select item-grade">
+                                            <select name="items[{{ $index }}][grade]" class="form-select item-grade">
 
                                                 <option value="">Select Grade</option>
-
+                                                <option value="__add__">+ Add Size</option>
                                                 @foreach ($grades ?? [] as $grade)
                                                     <option value="{{ $grade->id }}" @selected((string) ($itemRow['grade'] ?? '') === (string) $grade->id)>
                                                         {{ $grade->grade_name }}
