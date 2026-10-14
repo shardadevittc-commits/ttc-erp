@@ -3,8 +3,7 @@
     $roleId = (int)(auth()->user()->role_id ?? 0);
     $isGateUser = $roleId === 4 ;
     $isWeightUser = $roleId === 5;
-    $isUnloadUser = $roleId === 6;
-    $productsActive = request()->routeIs('brands*','products*','sizes*','grades*','units*');
+    $productsActive = request()->routeIs('brands*','products*','sizes*','grades*','units*', 'grades.composition*', 'grade_properties*', 'grade_min_max*');
     $locationsActive = request()->routeIs('cities*','states*');
     $usersActive = request()->routeIs('users.*');
     $ordersActive = request()->routeIs('saleOrders*', 'purchase*');
@@ -83,7 +82,7 @@
 
             @if(in_array($role,['admin','sale']))
                 <li class="sidebar-item"><a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"><i class="fa-solid fa-chart-pie nav-icon"></i><span>Dashboard</span><span class="sidebar-badge text-white" style="background-color:var(--primary-red);">Live</span></a></li>
-            
+
                 <li class="sidebar-item">
                     <a href="#ordersCollapse" class="sidebar-link {{ $ordersActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#ordersCollapse" role="button" aria-expanded="{{ $ordersActive ? 'true' : 'false' }}" aria-controls="ordersCollapse"><i class="fa-solid fa-cart-shopping nav-icon"></i><span>Manage Orders</span><i class="fa-solid fa-chevron-down submenu-arrow"></i></a>
                     <div class="collapse {{ $ordersActive ? 'show' : '' }}" id="ordersCollapse">
@@ -93,7 +92,7 @@
                         </ul>
                     </div>
                 </li>
-            
+
                 <li class="sidebar-item"><a href="{{ route('customers') }}" class="sidebar-link {{ request()->routeIs('customers*') ? 'active' : '' }}"><i class="fa-solid fa-users nav-icon"></i><span>Customers</span></a></li>
 
                 <li class="sidebar-item">
@@ -104,6 +103,9 @@
                             <li class="submenu-item"><a href="{{ route('products') }}" class="submenu-link {{ request()->routeIs('products*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Products</span></a></li>
                             <li class="submenu-item"><a href="{{ route('sizes') }}" class="submenu-link {{ request()->routeIs('sizes*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Sizes</span></a></li>
                             <li class="submenu-item"><a href="{{ route('grades') }}" class="submenu-link {{ request()->routeIs('grades*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Grades</span></a></li>
+                            <li class="submenu-item"><a href="{{ route('grades.composition') }}" class="submenu-link {{ request()->routeIs('grades.composition*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Grade Compositions</span></a></li>
+                            <li class="submenu-item"><a href="{{ route('grade_properties') }}" class="submenu-link {{ request()->routeIs('grade_properties*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Grade Properties</span></a></li>
+                            <li class="submenu-item"><a href="{{ route('grade_min_max') }}" class="submenu-link {{ request()->routeIs('grade_min_max*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Grade Min/Max Values</span></a></li>
                             <li class="submenu-item"><a href="{{ route('units') }}" class="submenu-link {{ request()->routeIs('units*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Units</span></a></li>
                         </ul>
                     </div>
@@ -119,7 +121,7 @@
                     </div>
                 </li>
 
-            
+
                 <li class="sidebar-item">
                     <a href="#usersCollapse" class="sidebar-link {{ $usersActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#usersCollapse" role="button" aria-expanded="{{ $usersActive ? 'true' : 'false' }}" aria-controls="usersCollapse"><i class="fa-solid fa-users nav-icon"></i><span>Manage Users</span><i class="fa-solid fa-chevron-down submenu-arrow"></i></a>
                     <div class="collapse {{ $usersActive ? 'show' : '' }}" id="usersCollapse">
