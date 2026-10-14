@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Customer;
 use App\Models\MaterialIn;
+use App\Models\PurchaseOrder;
 use App\Models\VehicleWeighRecord;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -69,7 +70,8 @@ class GateController extends Controller
         }
 
         $user = Auth::user();
-        $parties = Customer::all();
+        $custIds = PurchaseOrder::distinct()->pluck('cust_id');
+        $parties = Customer::select(['id','company_name'])->where('status', '1')->whereIn('id', $custIds)->get();
 
         return view('gate.material_in', compact(
             'user',
