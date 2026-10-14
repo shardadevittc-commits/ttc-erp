@@ -11,6 +11,16 @@
 		</a>
 		<div class="dropdown-item">
 			<div class="form-group mb-0">
+				<label class="form-label">Products</label>
+				<select class="select2 form-select" name="products[]" data-placeholder="Nothing selected" {{-- multiple --}}>
+			      	@foreach($products as $product)
+			      		<option value="{{ $product->id }}" {{ isset($_GET['products']) && in_array($product->id, $_GET['products'])  ? 'selected' : '' }}>{{ $product->grade_name }}</option>
+			  		@endforeach
+			    </select>
+			</div>
+		</div>
+		<div class="dropdown-item">
+			<div class="form-group mb-0">
 				<label class="form-label">Grades</label>
 				<select class="select2 form-select" name="grade[]" data-placeholder="Nothing selected" {{-- multiple --}}>
 			      	@foreach($grades as $c)
@@ -22,10 +32,21 @@
 
 		<div class="dropdown-item">
 			<div class="form-group mb-0">
-				<label class="form-label">Grades</label>
-				<select class="select2 form-select" name="grade[]" data-placeholder="Nothing selected" multiple>
-			      	@foreach($grades as $c)
-			      		<option value="{{ $c->id }}" {{ isset($_GET['grade']) && in_array($c->id, $_GET['grade'])  ? 'selected' : '' }}>{{ $c->grade_name }}</option>
+				<label class="form-label">Sizes</label>
+				<select class="select2 form-select" name="sizes[]" data-placeholder="Nothing selected" {{-- multiple --}}>
+			      	@foreach($sizes as $size)
+			      		<option value="{{ $size->id }}" {{ isset($_GET['sizes']) && in_array($size->id, $_GET['sizes'])  ? 'selected' : '' }}>{{ $c->size_name }}</option>
+			  		@endforeach
+			    </select>
+			</div>
+		</div>
+
+		<div class="dropdown-item">
+			<div class="form-group mb-0">
+				<label class="form-label">Brands</label>
+				<select class="select2 form-select" name="brands[]" data-placeholder="Nothing selected" {{-- multiple --}}>
+			      	@foreach($brands as $brand)
+			      		<option value="{{ $brand->id }}" {{ isset($_GET['brands']) && in_array($brand->id, $_GET['brands'])  ? 'selected' : '' }}>{{ $c->brand_name }}</option>
 			  		@endforeach
 			    </select>
 			</div>
