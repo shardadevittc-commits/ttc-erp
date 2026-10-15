@@ -79,6 +79,12 @@
                         <span>Dashboard</span>
                     </a>
                 </li>
+                <li class="sidebar-item">
+                    <a href="{{ route('unloader.index') }}" class="sidebar-link {{ request()->routeIs('unloader.index') ? 'active' : '' }}">
+                        <i class="fa-solid fa-truck-pickup nav-icon"></i>
+                        <span>Unload Materials</span>
+                    </a>
+                </li>
             @endif
 
             @if(in_array($role,['admin','sale']))

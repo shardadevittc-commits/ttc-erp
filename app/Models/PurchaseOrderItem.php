@@ -62,4 +62,9 @@ class PurchaseOrderItem extends Model
     {
         return $this->belongsTo(Unit::class, 'size_unit_id');
     }
+
+    public function receivings()
+    {
+        return $this->hasMany(PurchaseOrderitemReceiving::class,'purchase_order_item_id','id');
+    }
 }

@@ -242,7 +242,7 @@ $(document).ready(function () {
 });
 
 // Form Validation 08/10/2026
-/* function set_validation(setValidation)
+function set_validation(setValidation)
 {
     if($(setValidation).length)
     {
@@ -274,8 +274,29 @@ $(document).ready(function () {
 }
 
 set_validation('.form-validation');
-set_validation('.form-validation1'); */
+set_validation('.form-validation1');
 
+
+/* Required field message */
+$(document).on('input change blur', 'input, select, textarea', function () {
+    let field = $(this);
+    let error = field.next('.error-msg');
+
+    if (field.prop('required') && !String(field.val() || '').trim()) {
+        if (!error.length) {
+            field.after(
+                $('<span class="error-msg text-muted">This field is required</span>')
+                .css({
+                    'color': 'red',
+                    'font-size': '12px',
+                    'display': 'block'
+                })
+            );
+        }
+    } else {
+        error.remove();
+    }
+});
 
 // Common Model  Submit throught ajax
 if($('.ajax-modal-form').length) {
@@ -552,3 +573,25 @@ $(".number_only").keyup(function(e) {
     if (regex.test(this.value) !== true)
     this.value = this.value.replace(/[^0-9]+/, '');
 });
+
+// Unloader select append 
+if($('.item-select').length){
+    $(document).on('change', '.item-select', function () {
+
+        let selectedOption = $(this).find(':selected');
+        let row = $(this).closest('tr');
+
+        let itemId = $(this).val();
+        let productName = selectedOption.data('product');
+        let size = selectedOption.data('size');
+        let gradeId = selectedOption.data('grade');
+        let pendingQty = selectedOption.data('pending-qty');
+        let rate = selectedOption.data('rate');
+
+        row.find('.po-rate').val(rate ?? '');
+        row.find('.pending-qty').val(pendingQty ?? '');
+        row.find('.item-grade').val(gradeId ?? '');
+        row.find('.item-size').val(size ?? '');
+
+    });
+}

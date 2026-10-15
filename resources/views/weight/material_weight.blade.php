@@ -323,7 +323,6 @@
 
                                         <label for="rstno" class="form-label">
                                             RST No.
-                                            <span class="required-star">*</span>
                                         </label>
 
                                         <input type="text"
@@ -351,7 +350,7 @@
                                             <span id="weightLabel">
                                                 {{ $weightLabel }}
                                             </span>
-                                            <span class="required-star">*</span>
+                                            {{-- <span class="required-star">*</span> --}}
                                         </label>
 
                                         <input type="number"
