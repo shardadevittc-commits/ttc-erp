@@ -6,21 +6,21 @@ function _dt($datetime)
 	$dateTime = Carbon::parse($datetime)->format('d-m-Y h:i A');
     return $dateTime;
 }
-    
+
 function _d($date)
 {
-        
+
     $date = Carbon::parse($date)->format('d-m-Y');
     return $date;
 }
 
 function _dtx($date)
 {
-        
+
     $date = Carbon::parse($date)->format('d M, Y');
     return $date;
 }
-        
+
 function _time($time)
 {
     $date = Carbon::parse($time)->format('h:i A');
@@ -36,7 +36,7 @@ function sanitizePhone($phone)
     $phone = str_replace([$number[0], '-'], '', count($number) > 1 ? $number[1] : $phone);
     $phone = str_replace("/[0-9]/g", '', $phone);
     $phone = trim($phone);
-    
+
     if($phone && substr($phone, 0, 1) == '1')
     {
         $phone = substr($phone, 1, strlen($phone));
