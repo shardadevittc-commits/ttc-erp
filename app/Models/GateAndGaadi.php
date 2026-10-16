@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class MaterialIn extends Model
+class GateAndGaadi extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'material_ins';
+    protected $table = 'gate_and_gaadi';
 
     protected $fillable = [
         'tokenno',

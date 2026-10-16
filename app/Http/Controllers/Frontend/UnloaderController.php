@@ -8,6 +8,7 @@ use App\Models\VehicleWeighRecord;
 use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseOrderitemReceiving;
 use App\Models\Grade;
+use App\Models\Admin\ReturnMaterialToClient;
 use Illuminate\Support\Facades\DB;
 
 class UnloaderController extends Controller
@@ -19,6 +20,111 @@ class UnloaderController extends Controller
     {
         $listing = VehicleWeighRecord::with('customer')->get();
         return view('unloader.index', compact('listing'));
+    }
+
+    public function returnDetails($vehicleId)
+    {
+        $vehicle = VehicleWeighRecord::with('customer')->findOrFail($vehicleId);
+        $receivedItems = $this->receivedItemsForVehicle($vehicle)->get();
+
+        return response()->json([
+            'vehicle' => [
+                'id' => $vehicle->id,
+                'truckno' => $vehicle->truckno,
+                'customer_name' => $vehicle->customer->company_name ?? '---',
+            ],
+            'items' => $receivedItems->map(function ($receiving) {
+                $purchaseOrderItem = $receiving->purchaseOrderItem;
+
+                return [
+                    'product' => $purchaseOrderItem->product->product_name ?? '---',
+                    'grade' => $receiving->grade->grade_name ?? '---',
+                    'size' => $receiving->size->size_name ?? '---',
+                    'received_qty' => $receiving->received_qty,
+                    'received_price' => $receiving->received_price,
+                    'generated_heat_no' => $receiving->genrated_heat_no,
+                    'furnace_heat_no' => $receiving->furnance_heat_no,
+                ];
+            })->values(),
+        ]);
+    }
+
+    public function returnMaterial(Request $request)
+    {
+        $validated = $request->validate([
+            'vehicle_id' => ['required', 'integer', 'exists:vehicle_weigh_records,id'],
+            'return_reason' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $vehicle = VehicleWeighRecord::findOrFail($validated['vehicle_id']);
+        $receivedItems = $this->receivedItemsForVehicle($vehicle)->get();
+
+        if ($receivedItems->isEmpty()) {
+            return response()->json([
+                'message' => 'No received materials were found for this vehicle and customer.',
+            ], 422);
+        }
+
+        $purchaseOrderDetails = $receivedItems->map(function ($receiving) {
+            $purchaseOrderItem = $receiving->purchaseOrderItem;
+
+            return [
+                'purchase_order_item_id' => $receiving->purchase_order_item_id,
+                'product_id' => $purchaseOrderItem->product_id ?? null,
+                'product_name' => $purchaseOrderItem->product->product_name ?? null,
+                'grade_id' => $receiving->grade_id,
+                'grade_name' => $receiving->grade->grade_name ?? null,
+                'size_id' => $receiving->size_id,
+                'size_name' => $receiving->size->size_name ?? null,
+                'po_item_qty' => $receiving->po_item_qty,
+                'received_qty' => $receiving->received_qty,
+                'order_price' => $receiving->order_price,
+                'received_price' => $receiving->received_price,
+                'furnance_heat_no' => $receiving->furnance_heat_no,
+                'genrated_heat_no' => $receiving->genrated_heat_no,
+                'lab_test' => $receiving->lab_test,
+                'item_remarks' => $receiving->item_remarks,
+            ];
+        })->values()->all();
+
+        $return = DB::transaction(function () use ($validated, $vehicle, $receivedItems, $purchaseOrderDetails) {
+            return ReturnMaterialToClient::create([
+                'vehicle_id' => $vehicle->id,
+                'customer_id' => $vehicle->cust_id,
+                'weight_id' => $receivedItems->first()->weight_id,
+                'purchase_orders_details' => $purchaseOrderDetails,
+                'return_reason' => $validated['return_reason'],
+                'truckno' => $vehicle->truckno,
+                'created_by' => auth()->id(),
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Materials returned successfully.',
+            'return_id' => $return->id,
+        ]);
+    }
+
+    private function receivedItemsForVehicle(VehicleWeighRecord $vehicle)
+    {
+        return PurchaseOrderitemReceiving::with([
+            'grade',
+            'size',
+            'purchaseOrderItem.product',
+        ])
+            ->where('customer_id', $vehicle->cust_id)
+            ->where(function ($query) use ($vehicle) {
+                $query->where('weight_id', $vehicle->id)
+                    ->orWhere('vehical_id', $vehicle->id);
+
+                if ($vehicle->vehicle_id) {
+                    $query->orWhere('vehical_id', $vehicle->vehicle_id);
+                }
+            })
+            ->whereHas('purchaseOrderItem', function ($query) use ($vehicle) {
+                $query->where('cust_id', $vehicle->cust_id);
+            })
+            ->orderBy('id');
     }
 
     public function unloadMaterials(Request $request, $vehicleId = null)

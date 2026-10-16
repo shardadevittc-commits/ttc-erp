@@ -151,7 +151,7 @@
                                             {{-- Common hidden fields --}}
                                             
                                             <input type="hidden" name="weight_id[]" value="{{ $vehicalDetails->id  }}">
-                                            <input type="hidden" name="vehical_id[]" value="{{ $vehicalDetails->material_in_id }}">
+                                            <input type="hidden" name="vehical_id[]" value="{{ $vehicalDetails->vehicle_id }}">
                                             <input type="hidden" name="customer_id[]" value="{{ $vehicalDetails->cust_id }}">
                                             <input type="hidden" name="size_id[]" class="item-size">
 

@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Customer;
-use App\Models\MaterialIn;
+use App\Models\GateAndGaadi;
 use App\Models\VehicleWeighRecord;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +16,7 @@ class WeightController extends Controller
     {
         $parties = Customer::orderBy('id')->get();
 
-        $materialEntries = MaterialIn::with('customer')
+        $materialEntries = GateAndGaadi::with('customer')
             ->whereIn('formlist', [
                 'Material In',
                 'Material Out',
@@ -28,7 +28,7 @@ class WeightController extends Controller
 
         $materialEntries->getCollection()->each(function ($entry) {
             $weighRecord = DB::table('vehicle_weigh_records')
-                ->where('material_in_id', $entry->id)
+                ->where('vehicle_id', $entry->id)
                 ->where('cust_id', $entry->cust_id)
                 ->first();
 
@@ -77,7 +77,7 @@ class WeightController extends Controller
             ]);
 
             $data = [
-                'material_in_id' => $request->input('vehicle_id'),
+                'vehicle_id' => $request->input('vehicle_id'),
                 'truckno' => $request->truckno,
                 'cust_id' => $request->cust_id,
                 'formlist' => $request->formlist,
@@ -125,12 +125,12 @@ class WeightController extends Controller
         $formlist = $request->query('formlist', 'Material In');
 
         // Material record
-        $materialIn = $id ? MaterialIn::find($id) : null;
+        $materialIn = $id ? GateAndGaadi::find($id) : null;
 
         $vehicleWeighRecord = null;
 
         if ($id) {
-            $vehicleWeighRecord = VehicleWeighRecord::where('material_in_id', $id)
+            $vehicleWeighRecord = VehicleWeighRecord::where('vehicle_id', $id)
                 ->when($custId, function ($query) use ($custId) {
                     $query->where('cust_id', $custId);
                 })
@@ -164,9 +164,4 @@ class WeightController extends Controller
             'parties',
         ));
     }
-
-
-
-
-
 }

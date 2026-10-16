@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Customer;
-use App\Models\MaterialIn;
+use App\Models\GateAndGaadi;
 use App\Models\PurchaseOrder;
 use App\Models\VehicleWeighRecord;
 use Illuminate\Http\Request;
@@ -17,8 +17,8 @@ class GateController extends Controller
     public function index(Request $request)
     {
         $parties = Customer::orderBy('id')->get();
-        $materialIns = MaterialIn::with('customer')->latest('id')->paginate(10)->withQueryString();
-        $weighedIds = VehicleWeighRecord::whereNotNull('material_in_id')->pluck('material_in_id')->toArray();
+        $materialIns = GateAndGaadi::with('customer')->latest('id')->paginate(10)->withQueryString();
+        $weighedIds = VehicleWeighRecord::whereNotNull('vehicle_id')->pluck('vehicle_id')->toArray();
         return view('gate.index', compact('parties', 'materialIns', 'weighedIds'));
     }
 
@@ -27,7 +27,7 @@ class GateController extends Controller
         $id = $request->input('id') ?? $request->query('id');
 
         $materialIn = $id
-            ? MaterialIn::findOrFail($id)
+            ? GateAndGaadi::findOrFail($id)
             : null;
 
         if ($request->isMethod('post')) {
@@ -64,7 +64,7 @@ class GateController extends Controller
             // Sirf new entry ke case mein record create hoga
             $validated['created_by'] = Auth::id();
 
-            MaterialIn::create($validated);
+            GateAndGaadi::create($validated);
 
             return redirect()->route('gate.index')
                 ->with('success', 'Vehicle entry added successfully.');
@@ -84,7 +84,7 @@ class GateController extends Controller
 
     public function delete($id)
     {
-        $materialIn = MaterialIn::findOrFail($id);
+        $materialIn = GateAndGaadi::findOrFail($id);
 
         $materialIn->delete();
 
