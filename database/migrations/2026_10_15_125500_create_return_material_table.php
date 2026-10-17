@@ -13,7 +13,7 @@ return new class extends Migration
             $table->unsignedBigInteger('vehicle_id')->index();
             $table->unsignedBigInteger('customer_id')->index();
             $table->unsignedBigInteger('weight_id')->nullable()->index();
-            $table->json('purchase_orders_details');
+            $table->json('purchase_orders_details')->nullable();
             $table->text('return_reason');
             $table->string('vehicle_no', 20)->nullable();
             $table->unsignedBigInteger('created_by')->nullable();

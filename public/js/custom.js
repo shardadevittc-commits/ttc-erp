@@ -601,7 +601,9 @@ const returnModalElement = document.getElementById('returnMaterialModal');
 
     if (returnModalElement) {
         const returnModal = bootstrap.Modal.getOrCreateInstance(returnModalElement);
+        console.log("returnModal" , returnModal);
         const $returnForm = $('#returnMaterialForm');
+        console.log("returnForm", $returnForm);
 
         $(document).on('click', '.js-return-material', function () {
             const $button = $(this);
@@ -613,7 +615,7 @@ const returnModalElement = document.getElementById('returnMaterialModal');
             $('#returnCustomerName, #returnVehicleNumber, #returnTokenNumber').text('---');
             $('#returnReason').removeClass('is-invalid');
             $('#returnReasonError, #returnFormError').text('');
-            $('#submitMaterialReturn').prop('disabled', true);
+            // $('#submitMaterialReturn').prop('disabled', true);
             $items.html('<tr><td colspan="7" class="text-center">Loading received materials...</td></tr>');
             returnModal.show();
 
