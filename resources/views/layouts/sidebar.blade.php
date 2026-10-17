@@ -3,6 +3,7 @@
     $roleId = (int)(auth()->user()->role_id ?? 0);
     $isGateUser = $roleId === 4 ;
     $isWeightUser = $roleId === 5;
+    $isUnloadUser = $roleId === 6;
     $productsActive = request()->routeIs('brands*','products*','sizes*','grades*','units*', 'grades.composition*', 'grade_properties*', 'grade_min_max*');
     $locationsActive = request()->routeIs('cities*','states*');
     $usersActive = request()->routeIs('users.*');
@@ -78,6 +79,12 @@
                         <span>Dashboard</span>
                     </a>
                 </li>
+                <li class="sidebar-item">
+                    <a href="{{ route('unloader.index') }}" class="sidebar-link {{ request()->routeIs('unloader.index') ? 'active' : '' }}">
+                        <i class="fa-solid fa-truck-pickup nav-icon"></i>
+                        <span>Unload Materials</span>
+                    </a>
+                </li>
             @endif
 
             @if(in_array($role,['admin','sale']))
@@ -93,7 +100,25 @@
                     </div>
                 </li>
 
-                <li class="sidebar-item"><a href="{{ route('customers') }}" class="sidebar-link {{ request()->routeIs('customers*') ? 'active' : '' }}"><i class="fa-solid fa-users nav-icon"></i><span>Customers</span></a></li>
+                <li class="sidebar-item">
+                    <a href="{{ route('customers') }}" class="sidebar-link {{ request()->routeIs('customers*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-users nav-icon"></i>
+                        <span>Customers</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{{ route('rawMaterials') }}" class="sidebar-link {{ request()->routeIs('rawMaterials*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-boxes-stacked nav-icon"></i>
+                        <span>RM Stock</span>
+                    </a>
+                </li>
+
+                <li class="sidebar-item">
+                    <a href="{{ route('vehicleHistories') }}" class="sidebar-link {{ request()->routeIs('vehicleHistories*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-truck nav-icon"></i>
+                        <span>Vehicle History</span>
+                    </a>
+                </li>
 
                 <li class="sidebar-item">
                     <a href="#productsCollapse" class="sidebar-link {{ $productsActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#productsCollapse" role="button" aria-expanded="{{ $productsActive ? 'true' : 'false' }}" aria-controls="productsCollapse"><i class="fa-solid fa-boxes nav-icon"></i><span>Manage Products</span><i class="fa-solid fa-chevron-down submenu-arrow"></i></a>
@@ -134,8 +159,6 @@
                     </div>
                 </li>
             @endif
-
-
         </ul>
     </div>
 

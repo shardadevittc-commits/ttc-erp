@@ -5,14 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class VehicleWeighRecord extends Model
+class Weight extends Model
 {
     use SoftDeletes;
 
     protected $table = 'vehicle_weigh_records';
 
     protected $fillable = [
-        'material_in_id',
+        'vehicle_id',
         'truckno',
         'cust_id',
         'formlist',
@@ -37,6 +37,6 @@ class VehicleWeighRecord extends Model
 
     public function materialIn()
     {
-        return $this->belongsTo(MaterialIn::class, 'material_in_id', 'id');
+        return $this->belongsTo(GateAndGaadi::class, 'vehicle_id', 'id');
     }
 }
