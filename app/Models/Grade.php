@@ -42,4 +42,10 @@ class Grade extends Model
     {
         return $this->hasMany(SaleOrderItem::class, 'grade_id');
     }
+
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(GradeReaction::class, 'grade_id');
+    }
+
 }

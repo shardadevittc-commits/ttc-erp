@@ -203,7 +203,7 @@
 
                                     @foreach ($saleOrders as $saleOrder)
                                         <option value="{{ $saleOrder->id }}" @selected((string) old('cust_po', $purchaseOrder->ref_saleorder_id ?? '') === (string) $saleOrder->id)>
-                                            {{ ($saleOrder->id ? "(". $saleOrder->id .") " : '') }} 
+                                            {{ ($saleOrder->id ? "(". $saleOrder->id .") " : '') }}
                                             {{  ($saleOrder->created_at ? "(". _dtx($saleOrder->created_at) .") " : '')}} -
                                             {{ ($saleOrder->basic_rate ? "(". _rz($saleOrder->basic_rate) .") " : '') }}
                                             -
@@ -234,7 +234,7 @@
                         </div>
 
                         {{-- Payment Term --}}
-                        
+
                         <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-12">
                             <div class="form-group mb-3">
                                 <label class="form-label">Payment Term</label>
@@ -360,8 +360,9 @@
                                                 style="height: 38px; overflow: hidden;">
 
                                                 <div style="width: 50%;">
-                                                    <select name="items[{{ $index }}][size]"class="form-select item-size border-0 rounded-0 shadow-none" style="height: 36px;">
+                                                    <select name="items[{{ $index }}][size]"class="form-select item-size border-0 rounded-0 shadow-none" style="height: 36px;" data-inline-add="size" data-add-url="{{ route('sizes.add') }}" data-add-field="size_name" data-add-label="Size">
                                                         <option value="">Select Size</option>
+                                                        <option value="__add__">+ Add Size</option>
                                                         @foreach ($sizes ?? [] as $size)
                                                             <option value="{{ $size->id }}"
                                                                 @selected((string) ($itemRow['size'] ?? '') === (string) $size->id)>
@@ -391,7 +392,7 @@
 
                                         {{-- Grade --}}
                                         <td>
-                                            <select name="items[{{ $index }}][grade]" class="form-select item-grade">
+                                            <select name="items[{{ $index }}][grade]" class="form-select item-grade" data-inline-add="grade" data-add-url="{{ route('grades.add') }}" data-add-field="grade_name" data-add-label="Grade">
 
                                                 <option value="">Select Grade</option>
                                                 <option value="__add__">+ Add Size</option>

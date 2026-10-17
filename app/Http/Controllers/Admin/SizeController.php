@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
 
 class SizeController extends Controller
 {
-  
+
     public function index(Request $request)
     {
         $query = Size::query()->with(['grade', 'brand', 'unit']);
@@ -64,8 +64,9 @@ class SizeController extends Controller
 
     public function add(Request $request)
     {
+        //echo"<pre>";print_r($request->all());die;
         if($request->isMethod('post')) {
-			
+
             $validated = $request->validate([
                 'size_name' => ['required', 'string', 'max:50', Rule::unique('sizes', 'size_name')->whereNull('deleted_at')],
             ]);
@@ -125,7 +126,7 @@ class SizeController extends Controller
                 if ($request->has('status')) {
                     $data['status'] = (int) $request->status;
                 }
-    
+
                 $size->update($data);
 
                 return redirect()->route('sizes')->with('success', 'Size updated successfully.');

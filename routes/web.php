@@ -19,6 +19,7 @@
 
         include "Gate/gate.php";
         include "Weight/weight.php";
+        include "Lab/lab.php";
 
         include "Dashboards/dashboards.php";
         include "Admin/users.php";

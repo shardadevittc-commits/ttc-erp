@@ -137,7 +137,7 @@ $(function () {
             console.log('GST API Response:', response);
             const fields = response.fields || {};
             const data = response.data || {};
-            
+
            if (data) {
                 $form.find('[name="company_name"]').val(data.tradeNam || '');
                 $form.find('[name="customer_name"]').val(data.lgnm || '');
@@ -551,7 +551,7 @@ function initializeInlineOptionCreate() {
     });
 }
 
-if ($('#saleOrderItems').length) {
+if ($('#saleOrderItems, #itemTableBody').length) {
     initializeInlineOptionCreate();
 }
 
