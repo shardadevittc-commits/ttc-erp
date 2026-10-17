@@ -22,7 +22,7 @@ Route::get('/weight/dashboard', [DashboardController::class, 'weight'])
     ->name('dashboard.weight');
 
 // Unloader
-Route::get('/unloader/dashboard', [DashboardController::class, 'unloader'])
+Route::get('/unloader', [DashboardController::class, 'unloader'])
     ->name('dashboard.unloader');
 
 // Dispatch

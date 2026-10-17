@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\VehicleWeighRecord;
-use App\Models\MaterialIn;
+use App\Models\GateAndGaadi;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -63,23 +63,23 @@ class DashboardController extends Controller
         $today = Carbon::today();
 
         // Today's vehicle entries
-        $vehicleInToday = MaterialIn::whereDate('created_at', $today)->count();
+        $vehicleInToday = GateAndGaadi::whereDate('created_at', $today)->count();
 
         // Today's weighments
         $weighmentsToday = VehicleWeighRecord::whereDate('created_at', $today)->count();
 
         // Latest vehicle entries
-        $recentVehicles = MaterialIn::with('customer')
+        $recentVehicles = GateAndGaadi::with('customer')
             ->latest('id')
             ->take(5)
             ->get();
 
         // Vehicle entries with weighment records
-        $weighedMaterialIds = VehicleWeighRecord::whereNotNull('material_in_id')
-            ->pluck('material_in_id');
+        $weighedMaterialIds = VehicleWeighRecord::whereNotNull('vehicle_id')
+            ->pluck('vehicle_id');
 
         // Entries that have not yet been weighed
-        $pendingWeighment = MaterialIn::whereNotIn('id', $weighedMaterialIds)
+        $pendingWeighment = GateAndGaadi::whereNotIn('id', $weighedMaterialIds)
             ->count();
 
         return view('dashboard.gate', compact(
@@ -100,7 +100,7 @@ class DashboardController extends Controller
 
         $totalVehicles = (clone $records)->count();
 
-        $totalMaterialIn = (clone $records)
+        $totalGateAndGaadi = (clone $records)
             ->where('formlist', 'Material In')->count();
 
         $totalMaterialOut = (clone $records)
@@ -174,7 +174,7 @@ class DashboardController extends Controller
 
         return view('dashboard.weight', compact(
             'totalVehicles',
-            'totalMaterialIn',
+            'totalGateAndGaadi',
             'totalMaterialOut',
             'totalReturns',
             'totalCustomers',

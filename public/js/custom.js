@@ -242,7 +242,7 @@ $(document).ready(function () {
 });
 
 // Form Validation 08/10/2026
-/* function set_validation(setValidation)
+function set_validation(setValidation)
 {
     if($(setValidation).length)
     {
@@ -274,8 +274,29 @@ $(document).ready(function () {
 }
 
 set_validation('.form-validation');
-set_validation('.form-validation1'); */
+set_validation('.form-validation1');
 
+
+/* Required field message */
+$(document).on('input change blur', 'input, select, textarea', function () {
+    let field = $(this);
+    let error = field.next('.error-msg');
+
+    if (field.prop('required') && !String(field.val() || '').trim()) {
+        if (!error.length) {
+            field.after(
+                $('<span class="error-msg text-muted">This field is required</span>')
+                .css({
+                    'color': 'red',
+                    'font-size': '12px',
+                    'display': 'block'
+                })
+            );
+        }
+    } else {
+        error.remove();
+    }
+});
 
 // Common Model  Submit throught ajax
 if($('.ajax-modal-form').length) {
@@ -552,3 +573,128 @@ $(".number_only").keyup(function(e) {
     if (regex.test(this.value) !== true)
     this.value = this.value.replace(/[^0-9]+/, '');
 });
+
+// Unloader select append 
+if($('.item-select').length){
+    $(document).on('change', '.item-select', function () {
+
+        let selectedOption = $(this).find(':selected');
+        let row = $(this).closest('tr');
+
+        let itemId = $(this).val();
+        let productName = selectedOption.data('product');
+        let size = selectedOption.data('size');
+        let gradeId = selectedOption.data('grade');
+        let pendingQty = selectedOption.data('pending-qty');
+        let rate = selectedOption.data('rate');
+
+        row.find('.po-rate').val(rate ?? '');
+        row.find('.pending-qty').val(pendingQty ?? '');
+        row.find('.item-grade').val(gradeId ?? '');
+        row.find('.item-size').val(size ?? '');
+
+    });
+}
+
+if($('#returnMaterialModal').length){
+const returnModalElement = document.getElementById('returnMaterialModal');
+
+    if (returnModalElement) {
+        const returnModal = bootstrap.Modal.getOrCreateInstance(returnModalElement);
+        const $returnForm = $('#returnMaterialForm');
+
+        $(document).on('click', '.js-return-material', function () {
+            const $button = $(this);
+            const $items = $('#returnReceivedItems');
+
+            $returnForm[0].reset();
+            $returnForm.attr('action', $button.data('submit-url'));
+            $('#returnVehicleId').val('');
+            $('#returnCustomerName, #returnVehicleNumber, #returnTokenNumber').text('---');
+            $('#returnReason').removeClass('is-invalid');
+            $('#returnReasonError, #returnFormError').text('');
+            $('#submitMaterialReturn').prop('disabled', true);
+            $items.html('<tr><td colspan="7" class="text-center">Loading received materials...</td></tr>');
+            returnModal.show();
+
+            $.ajax({
+                url: $button.data('details-url'),
+                type: 'GET',
+                dataType: 'json'
+            }).done(function (response) {
+                $('#returnVehicleId').val(response.vehicle.id);
+                $('#returnCustomerName').text(response.vehicle.customer_name || '---');
+                $('#returnVehicleNumber').text(response.vehicle.truckno || '---');
+                $('#returnTokenNumber').text(response.vehicle.id || '---');
+                $items.empty();
+
+                if (!response.items.length) {
+                    $items.html('<tr><td colspan="7" class="text-center">No received materials found for this vehicle and customer.</td></tr>');
+                    return;
+                }
+
+                response.items.forEach(function (item) {
+                    const $row = $('<tr>');
+                    [
+                        item.product,
+                        item.grade,
+                        item.size,
+                        item.received_qty,
+                        item.received_price,
+                        item.generated_heat_no,
+                        item.furnace_heat_no
+                    ].forEach(function (value) {
+                        $('<td>').text(value || '---').appendTo($row);
+                    });
+                    $items.append($row);
+                });
+
+                $('#submitMaterialReturn').prop('disabled', false);
+            }).fail(function () {
+                $items.html('<tr><td colspan="7" class="text-center text-danger">Unable to load received materials. Please try again.</td></tr>');
+                $('#returnFormError').text('Unable to load vehicle details.');
+            });
+        });
+
+        $returnForm.on('submit', function (event) {
+            event.preventDefault();
+
+            const $button = $('#submitMaterialReturn');
+            const $reason = $('#returnReason');
+            const reason = $.trim($reason.val());
+
+            $reason.removeClass('is-invalid');
+            $('#returnReasonError, #returnFormError').text('');
+
+            if (!reason) {
+                $reason.addClass('is-invalid');
+                $('#returnReasonError').text('Reason for Return is required.');
+                $reason.trigger('focus');
+                return;
+            }
+
+            $button.prop('disabled', true);
+            $.ajax({
+                url: $returnForm.attr('action'),
+                type: 'POST',
+                dataType: 'json',
+                data: $returnForm.serialize()
+            }).done(function (response) {
+                returnModal.hide();
+                window.location.reload();
+            }).fail(function (xhr) {
+                const response = xhr.responseJSON || {};
+                const errors = response.errors || {};
+
+                if (errors.return_reason) {
+                    $reason.addClass('is-invalid');
+                    $('#returnReasonError').text(errors.return_reason[0]);
+                } else {
+                    $('#returnFormError').text(response.message || 'Unable to submit the return. Please try again.');
+                }
+            }).always(function () {
+                $button.prop('disabled', false);
+            });
+        });
+    }
+}
