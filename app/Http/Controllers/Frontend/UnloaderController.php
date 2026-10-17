@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\VehicleWeighRecord;
+use App\Models\Weight;
 use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseOrderitemReceiving;
 use App\Models\Grade;
@@ -18,13 +18,13 @@ class UnloaderController extends Controller
      */
     public function index()
     {
-        $listing = VehicleWeighRecord::with('customer')->get();
+        $listing = Weight::with('customer')->get();
         return view('unloader.index', compact('listing'));
     }
 
     public function returnDetails($vehicleId)
     {
-        $vehicle = VehicleWeighRecord::with('customer')->findOrFail($vehicleId);
+        $vehicle = Weight::with('customer')->findOrFail($vehicleId);
         $receivedItems = $this->receivedItemsForVehicle($vehicle)->get();
 
         return response()->json([
@@ -52,11 +52,11 @@ class UnloaderController extends Controller
     public function returnMaterial(Request $request)
     {
         $validated = $request->validate([
-            'vehicle_id' => ['required', 'integer', 'exists:vehicle_weigh_records,id'],
+            'vehicle_id' => ['required', 'integer', 'exists:weigh,id'],
             'return_reason' => ['required', 'string', 'max:2000'],
         ]);
 
-        $vehicle = VehicleWeighRecord::findOrFail($validated['vehicle_id']);
+        $vehicle = Weight::findOrFail($validated['vehicle_id']);
         $receivedItems = $this->receivedItemsForVehicle($vehicle)->get();
 
         if ($receivedItems->isEmpty()) {
@@ -105,7 +105,7 @@ class UnloaderController extends Controller
         ]);
     }
 
-    private function receivedItemsForVehicle(VehicleWeighRecord $vehicle)
+    private function receivedItemsForVehicle(Weight $vehicle)
     {
         return PurchaseOrderitemReceiving::with([
             'grade',
@@ -130,7 +130,7 @@ class UnloaderController extends Controller
     public function unloadMaterials(Request $request, $vehicleId = null)
     {
         if($vehicleId){
-            $vehicalDetails = VehicleWeighRecord::with('customer')->findOrFail($vehicleId);
+            $vehicalDetails = Weight::with('customer')->findOrFail($vehicleId);
 
             // Pehle receiving quantities ka total calculate karein
             $receivedTotals = PurchaseOrderitemReceiving::select('purchase_order_item_id')

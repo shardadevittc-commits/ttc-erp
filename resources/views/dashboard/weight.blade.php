@@ -408,7 +408,7 @@
                 <tbody>
                     @forelse(($recentVehicles ?? collect()) as $vehicle)
                         @php
-                            $record = $vehicle->vehicleWeighRecords ?? null;
+                            $record = $vehicle->weight ?? null;
 
                             $loaded = (float) ($record->loadedweight ?? 0);
                             $tare = (float) ($record->tareweight ?? 0);

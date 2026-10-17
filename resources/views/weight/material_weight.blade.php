@@ -401,7 +401,7 @@
                                                 </a>
                                             </div>
 
-                                        @elseif (!empty($vehicleWeighRecord))
+                                        @elseif (!empty($weigh))
 
                                             {{-- Record exists but slip is not added --}}
                                             <span class="text-primary d-block mb-2">

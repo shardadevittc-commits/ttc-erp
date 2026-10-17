@@ -6,7 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Customer;
 use App\Models\GateAndGaadi;
-use App\Models\VehicleWeighRecord;
+use App\Models\Weight;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -27,13 +27,13 @@ class WeightController extends Controller
             ->withQueryString();
 
         $materialEntries->getCollection()->each(function ($entry) {
-            $weighRecord = DB::table('vehicle_weigh_records')
+            $weighRecord = DB::table('weigh')
                 ->where('vehicle_id', $entry->id)
                 ->where('cust_id', $entry->cust_id)
                 ->first();
 
             $entry->setAttribute(
-                'vehicle_weigh_records',
+                'weigh',
                 $weighRecord ? (array) $weighRecord : null
             );
         });
@@ -110,7 +110,7 @@ class WeightController extends Controller
             }
 
             // Save record
-            VehicleWeighRecord::create($data);
+            Weight::create($data);
 
             return redirect()->route('weight.index') ->with('success', 'Vehicle weight record saved successfully.');
         }
@@ -127,10 +127,10 @@ class WeightController extends Controller
         // Material record
         $materialIn = $id ? GateAndGaadi::find($id) : null;
 
-        $vehicleWeighRecord = null;
+        $weight = null;
 
         if ($id) {
-            $vehicleWeighRecord = VehicleWeighRecord::where('vehicle_id', $id)
+            $weight = Weight::where('vehicle_id', $id)
                 ->when($custId, function ($query) use ($custId) {
                     $query->where('cust_id', $custId);
                 })
@@ -139,11 +139,11 @@ class WeightController extends Controller
         }
 
         if ($materialIn) {
-            $materialIn->loadedweight       = $vehicleWeighRecord->loadedweight ?? $materialIn->loadedweight ?? null;
-            $materialIn->tareweight         = $vehicleWeighRecord->tareweight ?? $materialIn->tareweight ?? null;
-            $materialIn->weighmentslip      = $vehicleWeighRecord->weighmentslip ?? $materialIn->weighmentslip ?? null;
-            $materialIn->rstno              = $vehicleWeighRecord->rstno ?? $materialIn->rstno ?? null;
-            $materialIn->vehicle_weighId    = $vehicleWeighRecord->id ?? $materialIn->vehicle_weighId ?? null;
+            $materialIn->loadedweight       = $weight->loadedweight ?? $materialIn->loadedweight ?? null;
+            $materialIn->tareweight         = $weight->tareweight ?? $materialIn->tareweight ?? null;
+            $materialIn->weighmentslip      = $weight->weighmentslip ?? $materialIn->weighmentslip ?? null;
+            $materialIn->rstno              = $weight->rstno ?? $materialIn->rstno ?? null;
+            $materialIn->vehicle_weighId    = $weight->id ?? $materialIn->vehicle_weighId ?? null;
         }
         //echo"<pre>";print_r($materialIn->toArray());die;
         return view('weight.material_weight', compact(
