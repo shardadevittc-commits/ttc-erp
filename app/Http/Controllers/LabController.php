@@ -10,7 +10,7 @@ use App\Models\GradeCategory;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Customer;
-use App\Models\Weigh;
+use App\Models\Weight;
 use App\Models\PurchaseOrderItem;
 use App\Models\LabResult;
 use Illuminate\Http\Request;
@@ -83,8 +83,8 @@ class LabController extends Controller
         $materialInId = 1;
         $customerId = 1;
 
-        $weighRecord = Weigh::where('id', $vehicleId)
-            ->where('material_in_id', $materialInId)
+        $weighRecord = Weight::where('id', $vehicleId)
+            ->where('vehicle_id', $materialInId)
             ->where('cust_id', $customerId)
             ->first();
 
