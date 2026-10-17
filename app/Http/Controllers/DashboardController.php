@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Role;
 use App\Models\User;
-use App\Models\VehicleWeighRecord;
+use App\Models\Weight;
 use App\Models\GateAndGaadi;
 use App\Models\Customer;
 use Illuminate\Http\Request;
@@ -66,7 +66,7 @@ class DashboardController extends Controller
         $vehicleInToday = GateAndGaadi::whereDate('created_at', $today)->count();
 
         // Today's weighments
-        $weighmentsToday = VehicleWeighRecord::whereDate('created_at', $today)->count();
+        $weighmentsToday = Weight::whereDate('created_at', $today)->count();
 
         // Latest vehicle entries
         $recentVehicles = GateAndGaadi::with('customer')
@@ -75,7 +75,7 @@ class DashboardController extends Controller
             ->get();
 
         // Vehicle entries with weighment records
-        $weighedMaterialIds = VehicleWeighRecord::whereNotNull('vehicle_id')
+        $weighedMaterialIds = Weight::whereNotNull('vehicle_id')
             ->pluck('vehicle_id');
 
         // Entries that have not yet been weighed
@@ -96,7 +96,7 @@ class DashboardController extends Controller
      */
     public function weight()
     {
-        $user = Auth::user();$records = VehicleWeighRecord::query();
+        $user = Auth::user();$records = Weight::query();
 
         $totalVehicles = (clone $records)->count();
 

@@ -7,7 +7,7 @@ use App\Models\User;
 use App\Models\Customer;
 use App\Models\GateAndGaadi;
 use App\Models\PurchaseOrder;
-use App\Models\VehicleWeighRecord;
+use App\Models\Weight;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +18,7 @@ class GateController extends Controller
     {
         $parties = Customer::orderBy('id')->get();
         $materialIns = GateAndGaadi::with('customer')->latest('id')->paginate(10)->withQueryString();
-        $weighedIds = VehicleWeighRecord::whereNotNull('vehicle_id')->pluck('vehicle_id')->toArray();
+        $weighedIds = Weight::whereNotNull('vehicle_id')->pluck('vehicle_id')->toArray();
         return view('gate.index', compact('parties', 'materialIns', 'weighedIds'));
     }
 
