@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
 
             // Existing material record reference
-            $table->unsignedBigInteger('material_in_id')->nullable()->index();
+            $table->unsignedBigInteger('vehicle_id')->nullable()->index();
 
             // Vehicle and party details
             $table->string('truckno', 20);

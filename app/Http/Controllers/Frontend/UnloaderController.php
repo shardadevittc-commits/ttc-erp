@@ -8,7 +8,7 @@ use App\Models\Weight;
 use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseOrderitemReceiving;
 use App\Models\Grade;
-use App\Models\Admin\ReturnMaterialToClient;
+use App\Models\ReturnMaterial;
 use Illuminate\Support\Facades\DB;
 
 class UnloaderController extends Controller
@@ -86,15 +86,15 @@ class UnloaderController extends Controller
                 'item_remarks' => $receiving->item_remarks,
             ];
         })->values()->all();
-
-        $return = DB::transaction(function () use ($validated, $vehicle, $receivedItems, $purchaseOrderDetails) {
-            return ReturnMaterialToClient::create([
+    /* , $purchaseOrderDetails */
+        $return = DB::transaction(function () use ($validated, $vehicle, $receivedItems) {
+            return ReturnMaterial::create([
                 'vehicle_id' => $vehicle->id,
                 'customer_id' => $vehicle->cust_id,
                 'weight_id' => $receivedItems->first()->weight_id,
-                'purchase_orders_details' => $purchaseOrderDetails,
+                // 'purchase_orders_details' => $purchaseOrderDetails,
                 'return_reason' => $validated['return_reason'],
-                'truckno' => $vehicle->truckno,
+                'vehicle_no' => $vehicle->truckno,
                 'created_by' => auth()->id(),
             ]);
         });

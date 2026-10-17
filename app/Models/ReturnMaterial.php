@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Models\Admin;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class ReturnMaterialToClient extends Model
+class ReturnMaterial extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'return_material_to_client';
+    protected $table = 'return_materials';
 
     protected $fillable = [
         'vehicle_id',
@@ -22,6 +22,6 @@ class ReturnMaterialToClient extends Model
     ];
 
     protected $casts = [
-        'purchase_orders_details' => 'array',
+        'other_data' => 'array',
     ];
 }

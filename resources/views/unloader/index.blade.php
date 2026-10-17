@@ -300,7 +300,7 @@
                         </div>
                     </div>
 
-                    <h6>Received Materials</h6>
+                    {{-- <h6>Received Materials</h6>
                     <div class="table-responsive mb-3">
                         <table class="table table-bordered table-sm align-middle">
                             <thead>
@@ -318,14 +318,14 @@
                                 <tr><td colspan="7" class="text-center">Loading received materials...</td></tr>
                             </tbody>
                         </table>
-                    </div>
+                    </div> --}}
 
                     <label for="returnReason" class="form-label">Reason for Return <span class="text-danger">*</span></label>
                     <textarea class="form-control" id="returnReason" name="return_reason" rows="4" maxlength="2000" required></textarea>
                     <div class="invalid-feedback" id="returnReasonError"></div>
                     <div class="text-danger small mt-2" id="returnFormError" role="alert"></div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer mb-2">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-danger" id="submitMaterialReturn">Submit Return</button>
                 </div>
