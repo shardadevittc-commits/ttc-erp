@@ -27,13 +27,13 @@ class WeightController extends Controller
             ->withQueryString();
 
         $materialEntries->getCollection()->each(function ($entry) {
-            $weighRecord = DB::table('vehicle_weigh_records')
+            $weighRecord = DB::table('weigh')
                 ->where('vehicle_id', $entry->id)
                 ->where('cust_id', $entry->cust_id)
                 ->first();
 
             $entry->setAttribute(
-                'vehicle_weigh_records',
+                'weigh',
                 $weighRecord ? (array) $weighRecord : null
             );
         });

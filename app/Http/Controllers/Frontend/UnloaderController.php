@@ -52,7 +52,7 @@ class UnloaderController extends Controller
     public function returnMaterial(Request $request)
     {
         $validated = $request->validate([
-            'vehicle_id' => ['required', 'integer', 'exists:vehicle_weigh_records,id'],
+            'vehicle_id' => ['required', 'integer', 'exists:weigh,id'],
             'return_reason' => ['required', 'string', 'max:2000'],
         ]);
 
