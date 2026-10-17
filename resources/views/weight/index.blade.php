@@ -254,7 +254,7 @@
         <div class="page-header__inner">
             <div class="page-header__content">
                 <div class="page-header__title">
-                    <h6>Manage Weight Entries</h6>
+                    <h6>Manage Weight Management</h6>
                 </div>
             </div>
 
@@ -270,7 +270,7 @@
                     </div>
                     <div class="legend-item">
                         <span class="legend-color legend-return"></span>
-                        Return
+                        Scrap
                     </div>
                 </div>
             </div>
@@ -452,7 +452,7 @@
                     <h5>
                         <i class="fas fa-recycle"
                            style="color:#dc3545;margin-right:7px;"></i>
-                        Return Vehicles
+                        Scrap Vehicles
                         <span class="vehicle-count">
                             {{ $scrapVehicles->count() }}
                         </span>
