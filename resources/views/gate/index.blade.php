@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Manage Vehicle Entries | TTC Robotronics')
+@section('title', 'Manage Vehicle Management | TTC Robotronics')
 
 @section('content')
 

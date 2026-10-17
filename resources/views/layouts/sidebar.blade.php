@@ -1,8 +1,11 @@
 @php
     $role = strtolower(auth()->user()->role->name ?? '');
     $roleId = (int)(auth()->user()->role_id ?? 0);
-    $isGateUser = $roleId === 4 ;
+    $isGateUser   = $roleId === 4 ;
     $isWeightUser = $roleId === 5;
+    $isUnloadUser = $roleId === 6;
+    $isLabUser    = $roleId === 8;
+
     $productsActive = request()->routeIs('brands*','products*','sizes*','grades*','units*', 'grades.composition*', 'grade_properties*', 'grade_min_max*');
     $locationsActive = request()->routeIs('cities*','states*');
     $usersActive = request()->routeIs('users.*');
@@ -32,7 +35,7 @@
                 <li class="sidebar-item">
                     <a href="{{ route('gate.index') }}" class="sidebar-link {{ request()->routeIs('gate.index') ? 'active' : '' }}">
                         <i class="fa-solid fa-right-to-bracket nav-icon"></i>
-                        <span>Vehicle Entry</span>
+                        <span>Vehicle Management</span>
                     </a>
                 </li>
 
@@ -57,7 +60,7 @@
                 <li class="sidebar-item">
                     <a href="{{ route('weight.index') }}" class="sidebar-link {{ request()->routeIs('weight.index') ? 'active' : '' }}">
                         <i class="fa-solid fa-weight-scale nav-icon"></i>
-                        <span>Weight Entry</span>
+                        <span>Weight Management</span>
                     </a>
                 </li>
 
@@ -76,6 +79,22 @@
                     <a href="{{ route('dashboard.unloader') }}" class="sidebar-link {{ request()->routeIs('dashboard.unloader') ? 'active' : '' }}">
                         <i class="fa-solid fa-gauge-high nav-icon"></i>
                         <span>Dashboard</span>
+                    </a>
+                </li>
+            @endif
+
+            @if($isLabUser)
+                <li class="sidebar-item">
+                    <a href="{{ route('dashboard.lab') }}" class="sidebar-link {{ request()->routeIs('dashboard.lab') ? 'active' : '' }}">
+                        <i class="fa-solid fa-gauge-high nav-icon"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+
+                <li class="sidebar-item">
+                    <a href="{{ route('lab.index') }}" class="sidebar-link {{ request()->routeIs('lab.index') ? 'active' : '' }}">
+                        <i class="fa-solid fa-right-to-bracket nav-icon"></i>
+                        <span>Lab Management</span>
                     </a>
                 </li>
             @endif
