@@ -5,6 +5,7 @@
     $isWeightUser = $roleId === 5;
     $isUnloadUser = $roleId === 6;
     $isLabUser    = $roleId === 8;
+    $isProdUser   = $roleId === 9;
 
     $productsActive = request()->routeIs('brands*','products*','sizes*','grades*','units*', 'grades.composition*', 'grade_properties*', 'grade_min_max*');
     $locationsActive = request()->routeIs('cities*','states*');
@@ -22,9 +23,7 @@
 
     <div class="sidebar-nav-container">
         <ul class="sidebar-menu-list">
-
             @if($isGateUser)
-
                 <li class="sidebar-item">
                     <a href="{{ route('dashboard.gate') }}" class="sidebar-link {{ request()->routeIs('dashboard.gate') ? 'active' : '' }}">
                         <i class="fa-solid fa-gauge-high nav-icon"></i>
@@ -48,6 +47,7 @@
                     </div>
                 </li>
             @endif
+            
             @if($isWeightUser)
 
                 <li class="sidebar-item">
@@ -142,14 +142,54 @@
                     <a href="#productsCollapse" class="sidebar-link {{ $productsActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#productsCollapse" role="button" aria-expanded="{{ $productsActive ? 'true' : 'false' }}" aria-controls="productsCollapse"><i class="fa-solid fa-boxes nav-icon"></i><span>Manage Products</span><i class="fa-solid fa-chevron-down submenu-arrow"></i></a>
                     <div class="collapse {{ $productsActive ? 'show' : '' }}" id="productsCollapse">
                         <ul class="sidebar-submenu-list">
-                            <li class="submenu-item"><a href="{{ route('brands') }}" class="submenu-link {{ request()->routeIs('brands*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Brands</span></a></li>
-                            <li class="submenu-item"><a href="{{ route('products') }}" class="submenu-link {{ request()->routeIs('products*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Products</span></a></li>
-                            <li class="submenu-item"><a href="{{ route('sizes') }}" class="submenu-link {{ request()->routeIs('sizes*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Sizes</span></a></li>
-                            <li class="submenu-item"><a href="{{ route('grades') }}" class="submenu-link {{ request()->routeIs('grades*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Grades</span></a></li>
-                            <li class="submenu-item"><a href="{{ route('grades.composition') }}" class="submenu-link {{ request()->routeIs('grades.composition*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Grade Compositions</span></a></li>
-                            <li class="submenu-item"><a href="{{ route('grade_properties') }}" class="submenu-link {{ request()->routeIs('grade_properties*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Grade Properties</span></a></li>
-                            <li class="submenu-item"><a href="{{ route('grade_min_max') }}" class="submenu-link {{ request()->routeIs('grade_min_max*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Grade Min/Max Values</span></a></li>
-                            <li class="submenu-item"><a href="{{ route('units') }}" class="submenu-link {{ request()->routeIs('units*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Units</span></a></li>
+                            <li class="submenu-item">
+                                <a href="{{ route('brands') }}" class="submenu-link {{ request()->routeIs('brands*') ? 'active' : '' }}">
+                                    <span class="submenu-dot"></span>
+                                    <span>Brands</span>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="{{ route('products') }}" class="submenu-link {{ request()->routeIs('products*') ? 'active' : '' }}">
+                                    <span class="submenu-dot"></span>
+                                    <span>Products</span>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="{{ route('sizes') }}" class="submenu-link {{ request()->routeIs('sizes*') ? 'active' : '' }}">
+                                    <span class="submenu-dot"></span>
+                                    <span>Sizes</span>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="{{ route('grades') }}" class="submenu-link {{ request()->routeIs('grades*') ? 'active' : '' }}">
+                                    <span class="submenu-dot"></span>
+                                    <span>Grades</span>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="{{ route('grades.composition') }}" class="submenu-link {{ request()->routeIs('grades.composition*') ? 'active' : '' }}">
+                                    <span class="submenu-dot"></span>
+                                    <span>Grade Compositions</span>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="{{ route('grade_properties') }}" class="submenu-link {{ request()->routeIs('grade_properties*') ? 'active' : '' }}">
+                                    <span class="submenu-dot"></span>
+                                    <span>Grade Properties</span>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="{{ route('grade_min_max') }}" class="submenu-link {{ request()->routeIs('grade_min_max*') ? 'active' : '' }}">
+                                    <span class="submenu-dot"></span>
+                                    <span>Grade Min/Max Values</span>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="{{ route('units') }}" class="submenu-link {{ request()->routeIs('units*') ? 'active' : '' }}">
+                                    <span class="submenu-dot"></span>
+                                    <span>Units</span>
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </li>
@@ -158,12 +198,21 @@
                     <a href="#locationsCollapse" class="sidebar-link {{ $locationsActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#locationsCollapse" role="button" aria-expanded="{{ $locationsActive ? 'true' : 'false' }}" aria-controls="locationsCollapse"><i class="fa-solid fa-location-dot nav-icon"></i><span>Manage Locations</span><i class="fa-solid fa-chevron-down submenu-arrow"></i></a>
                     <div class="collapse {{ $locationsActive ? 'show' : '' }}" id="locationsCollapse">
                         <ul class="sidebar-submenu-list">
-                            <li class="submenu-item"><a href="{{ route('cities') }}" class="submenu-link {{ request()->routeIs('cities*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Cities</span></a></li>
-                            <li class="submenu-item"><a href="{{ route('states') }}" class="submenu-link {{ request()->routeIs('states*') ? 'active' : '' }}"><span class="submenu-dot"></span><span>States</span></a></li>
+                            <li class="submenu-item">
+                                <a href="{{ route('cities') }}" class="submenu-link {{ request()->routeIs('cities*') ? 'active' : '' }}">
+                                    <span class="submenu-dot"></span>
+                                    <span>Cities</span>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="{{ route('states') }}" class="submenu-link {{ request()->routeIs('states*') ? 'active' : '' }}">
+                                    <span class="submenu-dot"></span>
+                                    <span>States</span>
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </li>
-
 
                 <li class="sidebar-item">
                     <a href="#usersCollapse" class="sidebar-link {{ $usersActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#usersCollapse" role="button" aria-expanded="{{ $usersActive ? 'true' : 'false' }}" aria-controls="usersCollapse"><i class="fa-solid fa-users nav-icon"></i><span>Manage Users</span><i class="fa-solid fa-chevron-down submenu-arrow"></i></a>
@@ -176,6 +225,35 @@
                         </ul>
                     </div>
                 </li>
+            @endif
+
+            @if($isProdUser)
+            @php
+            $productsActive = request()->routeIs('productions*',);
+            @endphp
+            <li class="sidebar-item">
+                <a href="#productsCollapse" class="sidebar-link {{ $productsActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#productsCollapse" role="button" aria-expanded="{{ $productsActive ? 'true' : 'false' }}" aria-controls="productsCollapse">
+                    <i class="fa-solid fa-boxes nav-icon"></i>
+                    <span>Work Order</span>
+                    <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                </a>
+                <div class="collapse {{ $productsActive ? 'show' : '' }}" id="productsCollapse">
+                    <ul class="sidebar-submenu-list">
+                        <li class="submenu-item">
+                            <a href="{{ route('productions') }}" class="submenu-link {{ request()->routeIs('productions*') ? 'active' : '' }}">
+                                <span class="submenu-dot"></span>
+                                <span>Pending Work Order's</span>
+                            </a>
+                        </li>
+                        {{-- <li class="submenu-item">
+                            <a href="{{ route('productions') }}" class="submenu-link {{ request()->routeIs('productions*') ? 'active' : '' }}">
+                                <span class="submenu-dot"></span>
+                                <span>Pending Work Order's</span>
+                            </a>
+                        </li> --}}
+                    </ul>
+                </div>
+            </li>
             @endif
         </ul>
     </div>
