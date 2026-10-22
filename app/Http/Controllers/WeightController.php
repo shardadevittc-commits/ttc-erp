@@ -21,8 +21,7 @@ class WeightController extends Controller
         $materialEntries = GateAndGaadi::with('customer')->whereIn('formlist', ['Material In', 'Material Out', 'Return',])->latest('id')->paginate(10)->withQueryString();
 
         $materialEntries->getCollection()->each(function ($entry) {
-            $weighRecord = DB::table('weigh')
-                ->where('vehicle_id', $entry->id)
+            $weighRecord = Weight::where('vehicle_id', $entry->id)
                 ->where('cust_id', $entry->cust_id)
                 ->first();
 

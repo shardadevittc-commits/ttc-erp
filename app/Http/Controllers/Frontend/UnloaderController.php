@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Weight;
+use App\Models\GateAndGaadi;
 use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseOrderitemReceiving;
 use App\Models\Grade;
@@ -18,7 +19,18 @@ class UnloaderController extends Controller
      */
     public function index()
     {
-        $listing = Weight::with('customer')->get();
+        // $listing = Weight::with('customer')->get();
+        $listing = Weight::with('customer:id,cust_code,company_name,status')
+            ->select('weights.*')
+            ->selectRaw("CASE WHEN EXISTS (SELECT 1 FROM poitem_receiving WHERE poitem_receiving.vehical_id = weights.vehicle_id)
+                THEN 1 ELSE 0 END AS return_material_status")
+            ->whereNotIn('id', function ($query) {
+                $query->select('weight_id')
+                    ->from('return_materials')
+                    ->whereNotNull('weight_id');
+            })
+            ->get();
+
         return view('unloader.index', compact('listing'));
     }
 
@@ -52,20 +64,20 @@ class UnloaderController extends Controller
     public function returnMaterial(Request $request)
     {
         $validated = $request->validate([
-            'vehicle_id' => ['required', 'integer', 'exists:weigh,id'],
+            'vehicle_id' => ['required', 'integer', 'exists:weights,id'],
             'return_reason' => ['required', 'string', 'max:2000'],
         ]);
 
         $vehicle = Weight::findOrFail($validated['vehicle_id']);
-        $receivedItems = $this->receivedItemsForVehicle($vehicle)->get();
+       /*  $receivedItems = $this->receivedItemsForVehicle($vehicle)->get();
 
         if ($receivedItems->isEmpty()) {
             return response()->json([
                 'message' => 'No received materials were found for this vehicle and customer.',
             ], 422);
-        }
+        } */
 
-        $purchaseOrderDetails = $receivedItems->map(function ($receiving) {
+        /* $purchaseOrderDetails = $receivedItems->map(function ($receiving) {
             $purchaseOrderItem = $receiving->purchaseOrderItem;
 
             return [
@@ -85,19 +97,26 @@ class UnloaderController extends Controller
                 'lab_test' => $receiving->lab_test,
                 'item_remarks' => $receiving->item_remarks,
             ];
-        })->values()->all();
-    /* , $purchaseOrderDetails */
+        })->values()->all(); */
+        /* , $purchaseOrderDetails */
+        $receivedItems = null;
         $return = DB::transaction(function () use ($validated, $vehicle, $receivedItems) {
             return ReturnMaterial::create([
-                'vehicle_id' => $vehicle->id,
+                'vehicle_id' => $vehicle->vehicle_id,
                 'customer_id' => $vehicle->cust_id,
-                'weight_id' => $receivedItems->first()->weight_id,
+                'weight_id' => $vehicle->id,
+                // 'weight_id' => $receivedItems->first()->weight_id,
                 // 'purchase_orders_details' => $purchaseOrderDetails,
                 'return_reason' => $validated['return_reason'],
                 'vehicle_no' => $vehicle->truckno,
                 'created_by' => auth()->id(),
             ]);
         });
+
+        if($return->id){
+            Weight::where('id', $vehicle->id)->update(['return_material_id' => $return->id]);
+            GateAndGaadi::where('id', $vehicle->vehicle_id)->update(['return_material_id' => $return->id]);
+        }
 
         return response()->json([
             'message' => 'Materials returned successfully.',
