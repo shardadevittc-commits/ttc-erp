@@ -5,6 +5,7 @@
     $isWeightUser = $roleId === 5;
     $isUnloadUser = $roleId === 6;
     $isLabUser    = $roleId === 8;
+    $isDispatchUser = $roleId === 7;
     $isProdUser   = $roleId === 9;
 
     $productsActive = request()->routeIs('brands*','products*','sizes*','grades*','units*', 'grades.composition*', 'grade_properties*', 'grade_min_max*');
@@ -47,7 +48,7 @@
                     </div>
                 </li>
             @endif
-            
+
             @if($isWeightUser)
 
                 <li class="sidebar-item">
@@ -101,6 +102,21 @@
                     <a href="{{ route('lab.index') }}" class="sidebar-link {{ request()->routeIs('lab.index') ? 'active' : '' }}">
                         <i class="fa-solid fa-right-to-bracket nav-icon"></i>
                         <span>Lab Management</span>
+                    </a>
+                </li>
+            @endif
+
+            @if($isDispatchUser)
+                <li class="sidebar-item">
+                    <a href="{{ route('dashboard.dispatch') }}" class="sidebar-link {{ request()->routeIs('dashboard.dispatch') ? 'active' : '' }}">
+                        <i class="fa-solid fa-gauge-high nav-icon"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{{ route('dispatch.index') }}" class="sidebar-link {{ request()->routeIs('dispatch.index') ? 'active' : '' }}">
+                        <i class="fa-solid fa-right-to-bracket nav-icon"></i>
+                        <span>Dispatch Management</span>
                     </a>
                 </li>
             @endif

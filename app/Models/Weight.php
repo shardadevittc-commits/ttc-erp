@@ -21,6 +21,11 @@ class Weight extends Model
         'tareweight',
         'vehicleentryslip',
         'weighmentslip',
+        'material_weight',
+        'unload_tare_weight',
+        'unload_loaded_weight',
+        'first_weight',
+        'second_weight',
         'created_by',
     ];
 

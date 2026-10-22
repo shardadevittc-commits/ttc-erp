@@ -663,12 +663,12 @@
                         vehicle_id: currentLabItem.vehicle_id ?? null,
                         weight_id: currentLabItem.weight_id ?? null,
                         formlist: Array.isArray(currentLabItem.formlist)
-    ? currentLabItem.formlist
-    : (
-        currentLabItem.formlist
-            ? [currentLabItem.formlist]
-            : []
-    ),
+                            ? currentLabItem.formlist
+                            : (
+                                currentLabItem.formlist
+                                    ? [currentLabItem.formlist]
+                                    : []
+                            ),
                         cust_id: currentLabItem.cust_id ?? currentLabItem.customer_id ?? null,
                         purchase_order_item_id: purchaseOrderItemId,
                         size_id: currentLabItem.size_id ?? null,

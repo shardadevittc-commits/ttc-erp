@@ -20,6 +20,7 @@
         include "Gate/gate.php";
         include "Weight/weight.php";
         include "Lab/lab.php";
+        include "Dispatch/dispatch.php";
 
         include "Dashboards/dashboards.php";
         include "Admin/users.php";
@@ -35,7 +36,7 @@
         include "Admin/saleOrders.php";
         include "Admin/customers.php";
         include "Admin/rawMaterials.php";
-        
+
         include "Frontend/unloader.php";
         include "Frontend/productions.php";
 

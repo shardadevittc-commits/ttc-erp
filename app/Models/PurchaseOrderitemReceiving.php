@@ -45,4 +45,9 @@ class PurchaseOrderitemReceiving extends Model
     {
         return $this->belongsTo(Grade::class, 'grade_id');
     }
+
+    public function weight()
+    {
+        return $this->belongsTo(Weight::class, 'weight_id');
+    }
 }
