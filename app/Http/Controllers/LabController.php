@@ -185,12 +185,15 @@ class LabController extends Controller
                     // Dynamic composition and grade properties
                     'grade_reactions' => $gradeProperties,
 
+                    // static
+                    'production_id' => 1,
+
                     'created_at' => now(),
 
                     'updated_at' => now(),
                 ];
             }
-
+        //echo"<pre>";print_r($unloaderData);die;
         return view('lab.index', compact('unloaderData'));
     }
 

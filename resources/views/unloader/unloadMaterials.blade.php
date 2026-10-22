@@ -1,6 +1,20 @@
 @extends('layouts.app')
 @section('title', 'Unload Raw Material | TTC Robotronics - Steel Industry ERP')
 @section('content')
+<style>
+    .blink-blue {
+        background-color: #dc3545 !important;
+        color: #fff !important;
+        border-color: #dc3545 !important;
+        animation: blinkRed 1s infinite;
+    }
+
+    @keyframes blinkRed {
+        50% {
+            opacity: 0.5;
+        }
+    }
+</style>
 <div class="page-header">
     <div class="page-header__inner">
         <div class="page-header__content">
@@ -8,6 +22,20 @@
                 <h6>Manage Unload materials</h6>
             </div>
         </div>
+
+        @if($poItemsReceived && count($poItemsReceived) > 0)
+            <div class="page-header__actions">
+
+                @php
+                    $item = $poItemsReceived[0];
+                    $weight = $item['weight'] ?? [];
+                @endphp
+
+                @if(($weight['second_weight'] ?? '') === 'pending')
+                    <a href="{{ route('material_weight', ['id' => $item['weight_id'], 'cust_id' => $item['customer_id'], 'vehicle_id' => $item['vehical_id'], 'formlist' => $weight['formlist'],]) }}" class="header-btn header-btn--primary blink-blue"> Add Material Weight </a>
+                @endif
+            </div>
+        @endif
 
         <div class="page-header__actions">
             <a href="{{ route('unloader.index') }}" class="header-btn header-btn--primary"> Back </a>
@@ -38,7 +66,7 @@
                                         <th scope="col">Party Name</th>
                                         <th scope="col">Vehicle No.</th>
                                         <th scope="col">Entry Type</th>
-                                    </tr>    
+                                    </tr>
                                     </thead>
                                     <tbody>
                                     {{-- @php
@@ -52,12 +80,12 @@
                                         </tr>
                                     </tbody>
                                 </table>
-                            </div>  
+                            </div>
                         </div>
 					</div>
 				</div>
 			</div>
-            
+
             {{-- @php
             pr($poItemsReceived); die;
             @endphp --}}
@@ -84,11 +112,11 @@
                                         <th scope="col">Order Qty</th>
                                         <th scope="col">Lab Require</th>
                                         <th scope="col">Print Card</th>
-                                    </tr>    
+                                    </tr>
                                     </thead>
                                     <tbody>
                                     @foreach ($poItemsReceived as $k => $recItems)
-                                    
+
                                         <tr>
                                             <td>
                                                 @if(@$recItems->purchaseOrderItem->product->product_name)
@@ -109,7 +137,7 @@
                                     @endforeach
                                     </tbody>
                                 </table>
-                            </div>  
+                            </div>
                         </div>
 					</div>
 				</div>
@@ -126,7 +154,7 @@
                             {{ csrf_field() }}
                             <div class="table-responsive">
                                 <table class="table table-bordered {{-- align-middle --}}" id="materialTable">
-                                    
+
                                     <thead style="background-color: #fcebd5;">
                                         <tr>
                                             <th>S. NO.</th>
@@ -145,17 +173,17 @@
                                             </th>
                                         </tr>
                                     </thead>
-                                    
+
                                     <tbody id="materialTableBody">
                                         <tr>
                                             {{-- Common hidden fields --}}
-                                            
+
                                             <input type="hidden" name="weight_id[]" value="{{ $vehicalDetails->id  }}">
                                             <input type="hidden" name="vehical_id[]" value="{{ $vehicalDetails->vehicle_id }}">
                                             <input type="hidden" name="customer_id[]" value="{{ $vehicalDetails->cust_id }}">
                                             <input type="hidden" name="size_id[]" class="item-size">
 
-                                            
+
                                             <td class="serial-no">1</td>
                                             <td>
                                                 <select name="item_name[]" class="form-select item-select text-nowrap" required>
@@ -172,8 +200,8 @@
                                                                 data-grade="{{ $item->grade_id ?? '' }}"
                                                                 data-pending-qty="{{ $item->qty }}"
                                                                 data-rate="{{ $item->rate }}"
-                                                        > 
-                                                        {{ $item->id ." | ". $product.$size ." | ".  $grade ." | ". $item->size->size_name ." | Pending Qty". $item->qty }} 
+                                                        >
+                                                        {{ $item->id ." | ". $product.$size ." | ".  $grade ." | ". $item->size->size_name ." | Pending Qty". $item->qty }}
                                                         </option>
                                                     @endforeach
                                                 </select>
@@ -196,7 +224,7 @@
                                                 <select name="parent_heat[]" class="form-select item-select text-nowrap">
                                                     <option value="2" selected>No</option>
                                                     <option value="1">Yes</option>
-                                                        
+
                                                 </select>
                                             </td>
 
@@ -266,8 +294,8 @@
                     newRow.querySelectorAll('input').forEach(function (input) {
                         if (input.type === 'checkbox') {
                             input.checked = true;
-                        } else if (input.type === 'hidden') 
-                        if (input.name === 'weight_id[]' || input.name === 'vehical_id[]' || input.name === 'customer_id[]') 
+                        } else if (input.type === 'hidden')
+                        if (input.name === 'weight_id[]' || input.name === 'vehical_id[]' || input.name === 'customer_id[]')
                         {
                             // Value change nahi karni
 

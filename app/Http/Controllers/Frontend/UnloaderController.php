@@ -127,15 +127,16 @@ class UnloaderController extends Controller
             ->orderBy('id');
     }
 
-    public function unloadMaterials(Request $request, $vehicleId = null)
+    public function unloadMaterials(Request $request, $weightId = null)
     {
-        if($vehicleId){
-            $vehicalDetails = Weight::with('customer')->findOrFail($vehicleId);
+        if($weightId){
+            $vehicalDetails = Weight::with('customer')->findOrFail($weightId);
+
 
             // Pehle receiving quantities ka total calculate karein
             $receivedTotals = PurchaseOrderitemReceiving::select('purchase_order_item_id')
                 ->selectRaw('SUM(received_qty) as total_received')
-                ->where('vehical_id', $vehicleId)
+                ->where('vehical_id', $vehicalDetails->vehicle_id)
                 ->groupBy('purchase_order_item_id');
 
             // Pending purchase order items
@@ -148,9 +149,9 @@ class UnloaderController extends Controller
                 ->whereRaw('purchase_order_items.qty > COALESCE(recTotal.total_received, 0)')
                 ->select('purchase_order_items.*')
                 ->get();
-
-            // Is vehicle ka receiving data
-            $poItemsReceived = PurchaseOrderitemReceiving::with(['customer','grade','size','purchaseOrderItem.product'])->where('vehical_id', $vehicleId)->get();
+                // Is vehicle ka receiving data
+                $poItemsReceived = PurchaseOrderitemReceiving::with(['customer','grade','size','purchaseOrderItem.product', 'weight'])->where('vehical_id', $vehicalDetails->vehicle_id)->get();
+                // pr($vehicalDetails->vehicle_id); die;
         }
 
         if ($request->isMethod('post')) {
@@ -214,8 +215,9 @@ class UnloaderController extends Controller
         }
 
         $grades = Grade::get();
-        
-        return view('unloader.unloadMaterials', 
+
+        //echo"<pre>";print_r($poItemsReceived->toArray());die;
+        return view('unloader.unloadMaterials',
             compact(
                 'purchaseOrderItems',
                 'vehicalDetails',

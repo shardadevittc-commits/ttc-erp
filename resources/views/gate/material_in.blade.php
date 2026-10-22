@@ -35,7 +35,7 @@
                 <div class="col-xxl-12 col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
 
                     {{-- Error Message --}}
-                    @if (session('error'))
+                    {{-- @if (session('error'))
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             <strong>Oh snap!</strong>
                             {{ session('error') }}
@@ -46,10 +46,10 @@
                                 aria-label="Close">
                             </button>
                         </div>
-                    @endif
+                    @endif --}}
 
                     {{-- Success Message --}}
-                    @if (session('success'))
+                    {{-- @if (session('success'))
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                             {{ session('success') }}
 
@@ -59,7 +59,7 @@
                                 aria-label="Close">
                             </button>
                         </div>
-                    @endif
+                    @endif --}}
 
                     {{-- Material In Card --}}
                     <div class="card">

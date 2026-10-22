@@ -7,6 +7,6 @@ Route::get('/gate', [GateController::class, 'index'])
 
 Route::match(['get', 'post'],'/material_in', [GateController::class, 'add'])
     ->name('material_in');
-    
+
 Route::delete('/material-in/{id}', [GateController::class, 'delete'])
     ->name('material_in.delete');

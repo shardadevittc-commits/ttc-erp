@@ -134,7 +134,7 @@
                                 <span>Token Generated</span>
                                 <span>{{ @$data->created_at ? _dt($data->created_at) : '---' }}</span>
                             </div>
-                            
+
                             <div class="d-flex {{-- justify-content-end --}} align-items-start gap-3 mb-3 mt-1">
                                 <div class="d-flex flex-column align-items-center text-center">
                                     <button type="button"
@@ -159,7 +159,7 @@
                                 </div>
 
                             </div>
-                            
+
 
                             <h6 class="party-name">{{ @$data->customer ? $data->customer->company_name : '---' }}</h6>
 
