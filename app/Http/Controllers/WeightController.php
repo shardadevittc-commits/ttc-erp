@@ -27,8 +27,7 @@ class WeightController extends Controller
             ->withQueryString();
 
         $materialEntries->getCollection()->each(function ($entry) {
-            $weighRecord = DB::table('weigh')
-                ->where('vehicle_id', $entry->id)
+            $weighRecord = Weight::where('vehicle_id', $entry->id)
                 ->where('cust_id', $entry->cust_id)
                 ->first();
 

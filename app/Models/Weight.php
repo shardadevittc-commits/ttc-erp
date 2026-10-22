@@ -9,7 +9,7 @@ class Weight extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'weigh';
+    protected $table = 'weights';
 
     protected $fillable = [
         'vehicle_id',
