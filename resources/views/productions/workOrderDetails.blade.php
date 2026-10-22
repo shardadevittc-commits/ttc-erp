@@ -1,5 +1,6 @@
 <form action="" method="POST" id="workOrderDetailsForm">
     @csrf
+    <input type="hidden" name="submission_token" id="workOrderSubmissionToken">
     <div class="row g-3 mb-3">
         <div class="col-md-4">
             <label class="form-label">Party Name</label>
@@ -13,6 +14,8 @@
             <label class="form-label">Grade</label>
             <input type="text" class="form-control" id="workOrderGrade" disabled>
         </div>
+
+        <input type="hidden" class="form-control" id="workOrderOperation" disabled>
     </div>
 
     <div class="row g-3 mb-3">
@@ -35,8 +38,10 @@
     <div class="row g-3 mb-3">
         <div class="col-md-4">
             <label class="form-label">RM Heat No.</label>
-            <input type="text" class="form-control" value="-" disabled>
+            <input type="text" class="form-control" id="workOrderHeatNo" disabled>
         </div>
+
+        <input type="hidden" class="form-control" id="workOrderVehicleId" disabled>
         <div class="col-md-4">
             <label for="workOrderSendRmQty" class="form-label">Send RM Qty (Tons)</label>
             <input type="number" min="0" step="0.01" class="form-control" name="send_rm_qty" id="workOrderSendRmQty" required>
@@ -56,10 +61,8 @@
     </div>
 
     <div class="mb-3">
-        <label for="workOrderRemarks" class="form-label">Instruction (from Sale Order)</label>
-        <textarea class="form-control" name="remarks" id="workOrderRemarks" rows="2" maxlength="255"
-            placeholder="Instruction from Sale Order"></textarea>
-        <div class="invalid-feedback" data-error-for="remarks"></div>
+        <label for="workOrderInstruction" class="form-label">Instruction (from Sale Order)</label>
+        <textarea class="form-control" id="workOrderInstruction" rows="2" disabled></textarea>
     </div>
 
     <div class="alert alert-danger d-none mt-3 mb-0" id="workOrderFormError" role="alert"></div>

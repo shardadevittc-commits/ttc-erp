@@ -38,9 +38,13 @@
                 data-party="{{ $item->saleOrder?->customer?->company_name ?: 'Customer not available' }}"
                 data-product-details="{{ implode(' - ', array_filter([$item->product?->product_name, $item->grade?->grade_name, $item->size?->size_name, $saleItemPrice, $itemQty])) }}"
                 data-grade="{{ $item->grade?->grade_name ?: '-' }}"
+                data-instruction="{{ $item->saleOrder?->remarks ?? '' }}"
                 data-received-count="{{ $item->received_item_count }}"
                 data-received-qty="{{ number_format($item->received_qty_total, 2, '.', '') }}"
                 data-available-qty="{{ number_format($item->available_qty_total, 2, '.', '') }}"
+                data-rm-heat-no="{{ $item->rm_heat_no ?? '' }}"
+                data-vehicle-id="{{ $item->vehicle_id ?? '' }}"
+                data-operation="{{ $item->work_operation ?? '' }}"
                 data-order-qty="{{ $item->item_qty ?? 0 }}"
                 style="font-size: 11px; padding: 10px 5px; line-height: 1;">
                 Send for Work

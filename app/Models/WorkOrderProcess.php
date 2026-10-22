@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class WorkOrder extends Model
+class WorkOrderProcess extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'work_orders';
+    protected $table = 'work_orders_and_process';
 
     const DELETED_AT = 'delete_at';
 
@@ -29,6 +29,22 @@ class WorkOrder extends Model
         'total_operation_perfome',
         'status',
         'created_by',
+        'shot_blasting',
+        'acid_pickling',
+        'pointing',
+        'fs_size',
+        'fs_size_unit',
+        'fs_observed_size',
+        'fs_observed_unit',
+        'poin_discard',
+        'straightening',
+        'fs_bundle_weight',
+        'fs_bundle_unit',
+        'total_full_bundle_count',
+        'lose_bundle_weight',
+        'lose_bundle_count',
+        'current_operation',
+        'submission_token',
     ];
 
     protected $casts = [
@@ -42,6 +58,16 @@ class WorkOrder extends Model
         'material_send_for_work' => 'decimal:3',
         'pending_raw_material' => 'decimal:3',
         'created_by' => 'integer',
+        'shot_blasting' => 'integer',
+        'acid_pickling' => 'integer',
+        'pointing' => 'integer',
+        'poin_discard' => 'integer',
+        'straightening' => 'integer',
+        'fs_bundle_weight' => 'decimal:3',
+        'total_full_bundle_count' => 'integer',
+        'lose_bundle_weight' => 'decimal:3',
+        'lose_bundle_count' => 'integer',
+        'current_operation' => 'integer',
     ];
 
     // Relationship with Sale Order
