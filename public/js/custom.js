@@ -556,10 +556,18 @@ if ($('#saleOrderItems, #itemTableBody').length) {
 }
 
 /* Required */
-function asterisk()
+/* function asterisk()
 {
     $('[required]').parents('.form-group').find('label.form-label').append('<span class="text-danger"> *</span>');
 }
+asterisk(); */
+function asterisk() {
+    $('[required]').each(function () {
+        $(this).closest('.form-group, .col-md-2, .col-md-3, .col-md-4').find('label.form-label, label.col-form-label').first()
+            .append('<span class="text-danger"> *</span>');
+    });
+}
+
 asterisk();
 
 // Input type number validations

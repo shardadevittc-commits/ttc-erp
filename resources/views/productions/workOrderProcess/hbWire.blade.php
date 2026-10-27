@@ -103,8 +103,8 @@
                         <div class="accordion-body">
                             <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 1]) }}">
                                 @csrf
-                                <input type="hidden" name="workStatus" value="operation1">
-                                <input type="hidden" name="oprtion1" value="Operation 1">
+                                {{-- <input type="hidden" name="workStatus" value="operation1">
+                                <input type="hidden" name="oprtion1" value="Operation 1"> --}}
                                 <div class="row">
                                     <div class="col-md-12">
                                         <div class="form-check ps-0">
@@ -156,9 +156,9 @@
                             <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 2]) }}">
                                 @csrf
                                 <input type="hidden" name="workStatus" value="operation2">
-                                <input type="hidden" name="oprtion1" value="Operation 1">
+                                {{-- <input type="hidden" name="oprtion1" value="Operation 1">
                                 <input type="hidden" name="oprtion2" value="Operation 2">
-                                <input type="hidden" name="processtype" value="wire_drawing">
+                                <input type="hidden" name="processtype" value="wire_drawing"> --}}
                                 <div class="row">
                                     <div class="col-md-3">
                                         <label class="col-form-label">FS Bundle Weight (From SO)</label>
@@ -197,7 +197,7 @@
                                     @endphp
                                     <div class="col-md-2">
                                         <label class="col-form-label">Bundle</label>
-                                        <input type="number" class="form-control" id="pcsfsbndle" name="pcsfsbndle" placeholder="Enter Final bundle Count" required>
+                                        <input type="text" class="form-control number_only" id="pcsfsbndle" name="pcsfsbndle" value="{{ $fullBundles }}" placeholder="Enter Final bundle Count" required>
                                     </div>
                                     <div class="col-md-3">
                                         <label class="col-form-label text-wrap text-size">Bundles * Weight = Prop Weight</label>
@@ -273,26 +273,22 @@
                                     <div class="col-md-12 mt-3">
                                         <div class="fheading">Finish Material Info</div>
                                         <div class="row">
-                                        <div class="col-md-2 mt-3">
-                                            <label class="col-form-label text-size">Send RM Qty (Kg.)</label>
-                                            <input type="text" class="form-control" value="{{ $workOrder->material_send_for_work ? _rz(($workOrder->material_send_for_work*1000)) . ' Kgs' : '' }}" disabled>
-                                        </div>
-                                        <div class="col-md-2 mt-3">
-                                            <label class="col-form-label text-size">Non. Reco. Scrap Qty (Kg.)</label>
-                                            <input type="text" class="form-control" value="{{ $totalNonRecScrap ? $totalNonRecScrap . ' Kgs' : '0' }}" disabled>
-                                        </div>
-                                        <div class="col-md-2 mt-3">
-                                            <label class="col-form-label text-size">Misc. Scrap Qty (Kg.)</label>
-                                            <input type="text" step="0.001" min="0" id="reco_scrap" value="{{ $totalRecScrap ? $totalRecScrap . ' Kgs' : '0'}}" class="form-control number_only">
-                                        </div>
-                                        <div class="col-md-3 mt-3">
-                                            <label class="col-form-label text-size">Finish Qty (Kg.)</label>
-                                            <input type="text" id="finish_qty" class="form-control" value="{{ $finishedMaterial ? $finishedMaterial . ' Kgs' : '0' }}" disabled>
-                                        </div>
-                                        <div class="col-md-3 mt-3">
-                                            <label class="col-form-label text-size">Bundle Qty</label>
-                                            <input type="text" class="form-control" value="0" disabled>
-                                        </div>
+                                            <div class="col-md-3 mt-3">
+                                                <label class="col-form-label text-size">Send RM Qty (Kg.)</label>
+                                                <input type="text" class="form-control" value="{{ $workOrder->material_send_for_work ? _rz(($workOrder->material_send_for_work*1000)) : '' }}" disabled>
+                                            </div>
+                                            <div class="col-md-3 mt-3">
+                                                <label class="col-form-label text-size">Non. Reco. Scrap Qty (Kg.)</label>
+                                                <input type="text" class="form-control" value="{{ $totalNonRecScrap ? $totalNonRecScrap : '0' }}" disabled>
+                                            </div>
+                                            <div class="col-md-3 mt-3">
+                                                <label class="col-form-label text-size">Misc. Scrap Qty (Kg.)</label>
+                                                <input type="text" step="0.001" min="0" max="{{ $remainingWeight }}" name="misc" id="reco_scrap" value="{{ $totalRecScrap ? $totalRecScrap : '0'}}" class="form-control number_only">
+                                            </div>
+                                            <div class="col-md-3 mt-3">
+                                                <label class="col-form-label text-size">Finish Qty (Kg.)</label>
+                                                <input type="text" id="finish_qty" class="form-control" name="finish_qty" value="{{ $finishedMaterial ? $finishedMaterial  : '0' }}" >
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -305,8 +301,7 @@
     </div>
 </div>
 
-<script>
-    document.querySelectorAll('#accordionFlushExample form').forEach((form) => {
+    {{-- document.querySelectorAll('#accordionFlushExample form').forEach((form) => {
         form.addEventListener('submit', () => {
             const loader = document.getElementById('productionOperationLoader');
             const submitButton = form.querySelector('[type="submit"]');
@@ -318,7 +313,50 @@
             loader.classList.add('is-visible');
             loader.setAttribute('aria-hidden', 'false');
         });
-    });
+
+        suppose kro user ne hbwire kai operation1 acid_pickling select kiya hai or operation2 mai full review kro code 
+        material_send_for_work = 15.300 kg
+        1 st stage pr scrap nikala 0.5% = 76.5 kg
+        raw material = 15223.5 kg
+        ab operation2 mai **misc** scrap nikalana hai ab isme suppose kro 
+        fs_bundle_weight = 850 kg
+        total_full_bundle_count = 17 (14450 kg)
+        lose_bundle_weight = 773.5 kg
+        lose_bundle_count =  1
+        ab suppose kro mis scrap user ne total_full_bundle_count = 16 input mai fill kar diya or misc = 400 kg 
+        16 * 850 kg = 13600 kg
+        13600 kg - 400 kg = 13200 kg
+        misc = 15223.5 kg - 13200 kg = 2023.5 kg
+
+        example 2
+        ab suppose kro mis scrap user ne total_full_bundle_count = 18 input mai fill kar diya or misc = 400 kg 
+        18 * 850 kg = 15300 kg lekin apne paas operation1 kai baad 15223.5 kg raw material hai toh isse jada nhi liya ja sakta hai 
+        ab usker ne misc daal diya 223.5 kg 
+        15223.5 kg - 223.5 kg(misc) = 15000 kg
+        17(total_full_bundle_count) * 850 = 14450 kg
+        1(lose_bundle_count) * 550(lose_bundle_weight) = 550 kg 
+
+        ab iske according misc scrap nikalega jisme hame percentage bhi count kr kai WorkOrderLoss mai entery karni hai or WorkOrderProcess mai bhi entry karni hai 
+        code ko acche se review kr lo kuch jada change nhi ho ge hbWireProduction function mai chages ho ge 
+        structure follow karna 
+
+        
+    }); --}}
+<script>
+        let totalFinish = {{ $finishedMaterial ?? 0 }};
+        let maxMisc = {{ $remainingWeight ?? 0 }};
+
+        document.getElementById('reco_scrap').addEventListener('input', function () {
+            let misc = parseFloat(this.value) || 0;
+            misc = parseFloat(misc.toFixed(3));
+
+            if (misc > maxMisc) misc = maxMisc;
+            if (misc < 0) misc = 0;
+
+            this.value = misc;
+
+            document.getElementById('finish_qty').value = Math.max(0, totalFinish - misc).toFixed(3);
+        });
 </script>
 
 @endsection

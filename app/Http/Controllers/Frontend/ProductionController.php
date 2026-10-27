@@ -512,6 +512,9 @@ class ProductionController extends Controller
      */
     private function hbWireProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
     {
+        pr($workOrder->toArray());
+        pr($request->toArray()); 
+        die;
         
         $finalOperation = 2;
         abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
@@ -556,7 +559,7 @@ class ProductionController extends Controller
                 case 2:
                         $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
                         $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'];
-                        $this->calculateBundles($lockedWorkOrder);
+                        $this->calculateBundles($request, $lockedWorkOrder);
                     break;
             }
     
@@ -601,7 +604,7 @@ class ProductionController extends Controller
     /**
      * Full aur loose bundles sale-order unit mein calculate karta hai (full bundle round-up nahi hota).
      */
-    private function calculateBundles(WorkOrderProcess $workOrder): void
+    private function calculateBundles(Request $request,WorkOrderProcess $workOrder): void
     {
         $bundleWeight = (float) $workOrder->fs_bundle_weight;
         if ($bundleWeight <= 0) {
