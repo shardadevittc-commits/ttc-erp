@@ -28,10 +28,72 @@ class ProductionController extends Controller
      */
     public function index(Request $request)
     {
-        // Load production items with the related data needed by the listing.
-        $query = SaleOrderItem::query()
-            ->with(['saleOrder.customer', 'product', 'grade', 'size'])
-            ->whereHas('saleOrder');
+        $productionHistory = $request->routeIs('production-history');
+
+        if ($productionHistory) {
+            $query = WorkOrderProcess::query()
+                ->with([
+                    'saleOrder.customer',
+                    'saleOrderItem.saleOrder.customer',
+                    'saleOrderItem.product',
+                    'saleOrderItem.grade',
+                    'saleOrderItem.size',
+                ])
+                ->where(function (Builder $statusQuery) {
+                    $statusQuery->where('status', 'completed')
+                        ->orWhere(function (Builder $activeQuery) {
+                            $this->applyInProgressWorkOrderFilter($activeQuery);
+                        });
+                })
+                ->whereHas('saleOrderItem.saleOrder');
+        } else {
+            // Load production items with the related data needed by the listing.
+            $query = SaleOrderItem::query()
+                ->with(['saleOrder.customer', 'product', 'grade', 'size'])
+                ->whereHas('saleOrder')
+                ->whereExists(function ($receivingQuery) {
+                    $receivingQuery
+                        ->selectRaw('1')
+                        ->from('poitem_receiving as receiving')
+                        ->join(
+                            'purchase_order_items as purchase_items',
+                            'purchase_items.id',
+                            '=',
+                            'receiving.purchase_order_item_id'
+                        )
+                        ->whereColumn('purchase_items.ref_saleorder_id', 'sale_order_items.sale_order_id')
+                        ->whereColumn('purchase_items.grade_id', 'sale_order_items.grade_id')
+                        ->whereNull('receiving.deleted_at')
+                        ->where(function ($labEligibilityQuery) {
+                            $labEligibilityQuery
+                                ->where('receiving.lab_test', '2')
+                                ->orWhere(function ($requiredLabQuery) {
+                                    $requiredLabQuery
+                                        ->where('receiving.lab_test', '1')
+                                        ->whereExists(function ($labResultQuery) {
+                                            $labResultQuery
+                                                ->selectRaw('1')
+                                                ->from('lab_results')
+                                                ->whereColumn(
+                                                    'lab_results.purchase_order_item_id',
+                                                    'receiving.id'
+                                                );
+                                        });
+                                });
+                        });
+                })
+                ->whereNotExists(function ($completedProductionQuery) {
+                    $completedProductionQuery
+                        ->selectRaw('1')
+                        ->from('work_orders_and_process as completed_production')
+                        ->whereColumn(
+                            'completed_production.sale_order_item_id',
+                            'sale_order_items.id'
+                        )
+                        ->where('completed_production.status', 'completed')
+                        ->whereNull('completed_production.delete_at');
+                });
+        }
 
         // Validate listing inputs before adding them to the query.
         $filters = $request->validate([
@@ -39,16 +101,23 @@ class ProductionController extends Controller
             'created_on' => ['sometimes', 'array'],
             'created_on.0' => ['nullable', 'date_format:Y-m-d'],
             'created_on.1' => ['nullable', 'date_format:Y-m-d'],
-            'status' => ['nullable', 'in:1,2'],
+            'status' => ['nullable', Rule::in($productionHistory
+                ? ['under_process', 'completed']
+                : ['1', '2'])],
         ]);
 
         // Apply search across the sale item and its related order, customer, and product data.
         $search = trim($filters['search'] ?? '');
         if ($search !== '') {
-            $query->where(function ($query) use ($search) {
-                $query->where('sale_order_items.id', 'like', "%{$search}%")
-                    ->orWhere('sale_order_items.sale_order_id', 'like', "%{$search}%")
-                    ->orWhere('sale_order_items.item_remarks', 'like', "%{$search}%")
+            $query->where(function ($query) use ($search, $productionHistory) {
+                $itemQuery = $productionHistory ? 'saleOrderItem' : null;
+                $itemIdColumn = $productionHistory ? 'sale_order_item_id' : 'sale_order_items.id';
+                $saleOrderIdColumn = $productionHistory ? 'sale_order_id' : 'sale_order_items.sale_order_id';
+                $remarksColumn = $productionHistory ? 'j_messages' : 'sale_order_items.item_remarks';
+
+                $query->where($itemIdColumn, 'like', "%{$search}%")
+                    ->orWhere($saleOrderIdColumn, 'like', "%{$search}%")
+                    ->orWhere($remarksColumn, 'like', "%{$search}%")
                     ->orWhereHas('saleOrder', function ($saleOrderQuery) use ($search) {
                         $saleOrderQuery->where('customer_po_no', 'like', "%{$search}%")
                             ->orWhereHas('customer', function ($customerQuery) use ($search) {
@@ -56,13 +125,13 @@ class ProductionController extends Controller
                                     ->orWhere('cust_code', 'like', "%{$search}%");
                             });
                     })
-                    ->orWhereHas('product', function ($productQuery) use ($search) {
+                    ->orWhereHas($itemQuery ? 'saleOrderItem.product' : 'product', function ($productQuery) use ($search) {
                         $productQuery->where('product_name', 'like', "%{$search}%");
                     })
-                    ->orWhereHas('grade', function ($gradeQuery) use ($search) {
+                    ->orWhereHas($itemQuery ? 'saleOrderItem.grade' : 'grade', function ($gradeQuery) use ($search) {
                         $gradeQuery->where('grade_name', 'like', "%{$search}%");
                     })
-                    ->orWhereHas('size', function ($sizeQuery) use ($search) {
+                    ->orWhereHas($itemQuery ? 'saleOrderItem.size' : 'size', function ($sizeQuery) use ($search) {
                         $sizeQuery->where('size_name', 'like', "%{$search}%");
                     });
             });
@@ -93,7 +162,15 @@ class ProductionController extends Controller
 
         // Apply the requested completion filter.
         if (isset($filters['status']) && $filters['status'] !== '') {
-            $query->where('s_marked_completed', (int) $filters['status']);
+            if ($productionHistory) {
+                if ($filters['status'] === 'under_process') {
+                    $this->applyInProgressWorkOrderFilter($query);
+                } else {
+                    $query->where('status', 'completed');
+                }
+            } else {
+                $query->where('s_marked_completed', (int) $filters['status']);
+            }
         }
 
         /* Sorting */
@@ -101,15 +178,9 @@ class ProductionController extends Controller
         $sortBy = $request->get('sort_by', 'id');
         $sortOrder = $request->get('sort_order', 'desc');
 
-        $allowedSortColumns = [
-            'id',
-            'created_at',
-            'item_qty',
-            'dispatch_qty',
-            'dispatched_qty',
-            'pending_qty',
-            's_marked_completed',
-        ];
+        $allowedSortColumns = $productionHistory
+            ? ['id', 'created_at']
+            : ['id', 'created_at', 'item_qty', 'dispatch_qty', 'dispatched_qty', 'pending_qty', 's_marked_completed'];
 
         if (!in_array($sortBy, $allowedSortColumns, true)) {
             $sortBy = 'id';
@@ -126,17 +197,22 @@ class ProductionController extends Controller
         }
 
         $listing = $query
-            ->orderBy('sale_order_items.' . $sortBy, $sortOrder)
+            ->orderBy(
+                ($productionHistory ? 'work_orders_and_process.' : 'sale_order_items.') . $sortBy,
+                $sortOrder
+            )
             ->paginate($perPage)
             ->withQueryString();
 
-        // Add receipt totals and first available lot metadata for the modal.
-        $this->addReceivingTotals($listing->getCollection());
+        if (!$productionHistory) {
+            // Add receipt totals and first available lot metadata for the modal.
+            $this->addReceivingTotals($listing->getCollection());
+        }
 
         /* AJAX Request */
         // Return refreshed table rows for AJAX-driven listing updates.
         if ($request->ajax()) {
-            $html = view('productions.listingLoop', compact('listing'))->render();
+            $html = view('productions.listingLoop', compact('listing', 'productionHistory'))->render();
 
             return response()->json([
                 'status' => true,
@@ -151,9 +227,7 @@ class ProductionController extends Controller
 
         /* Normal Request */
         // Render the full listing for normal page requests.
-        return view('productions.index', [
-            'listing' => $listing,
-        ]);
+        return view('productions.index', compact('listing', 'productionHistory'));
     }
 
     public function sendForWorkMaterial(Request $request, int $saleOrderItemId, $saleOrderId = null)
@@ -180,15 +254,14 @@ class ProductionController extends Controller
         $workOrder = DB::transaction(function () use ($validated, $saleOrderItem, $request) {
             // Serialize submissions for this sale item before checking the idempotency token.
             $lockedSaleOrderItem = SaleOrderItem::query()
-                ->with('saleOrder')
+                ->with('saleOrder.items')
                 ->whereKey($saleOrderItem->id)
                 ->lockForUpdate()
                 ->firstOrFail();
-
             $existingWorkOrder = WorkOrderProcess::query()
                 ->where('submission_token', $validated['submission_token'])
                 ->first();
-
+            
             if ($existingWorkOrder) {
                 if ((int) $existingWorkOrder->sale_order_item_id !== (int) $lockedSaleOrderItem->id) {
                     throw ValidationException::withMessages([
@@ -200,11 +273,11 @@ class ProductionController extends Controller
             }
 
             // Find purchase items linked to this sale order and the item's grade.
-            $purchaseOrderItems = $this->purchaseOrderItemsFor($lockedSaleOrderItem)
+            $purchaseOrderItems = $this->purchaseOrderItemsFor($lockedSaleOrderItem, $lockedSaleOrderItem->saleorder->id)
                 ->where('grade_id', $lockedSaleOrderItem->grade_id)
                 ->orderBy('id')
                 ->get();
-
+           
             if ($purchaseOrderItems->isEmpty()) {
                 throw ValidationException::withMessages([
                     'send_rm_qty' => 'No purchase order items match this sale order item grade.',
@@ -286,7 +359,7 @@ class ProductionController extends Controller
                 'heat_no' => $firstAllocatedReceiving?->genrated_heat_no,
                 'j_messages' => $validated['remarks'] ?? null,
                 'total_operation_perfome' => self::PRODUCT_TYPE_OPERATIONS[$lockedSaleOrderItem->product_type] ?? null,
-                'status' => 'pending',
+                'status' => 'under_process',
                 'current_operation' => 1,
                 'created_by' => $request->user()->id,
                 'submission_token' => $validated['submission_token'],
@@ -319,22 +392,61 @@ class ProductionController extends Controller
             'saleOrderItem.grade',
             'saleOrderItem.size',
             'saleOrderItem.saleOrder.customer',
+            'saleOrderItem.losses',
         ]);
         abort_unless($workOrder->saleOrderItem, 404);
 
-        return view('productions.workOrderProcess.brightBar', [
-            'workOrder' => $workOrder,
-            'saleOrderItem' => $workOrder->saleOrderItem,
-            'currentOperation' => (int) ($workOrder->current_operation ?: 1),
+        if($workOrder->saleOrderItem->product_type === 1){
+            $view = 'productions.workOrderProcess.brightBar';
+        }elseif($workOrder->saleOrderItem->product_type === 2){
+            $view = 'productions.workOrderProcess.hbWire';
+        }elseif($workOrder->saleOrderItem->product_type === 3){
+            $view = 'productions.workOrderProcess.hhbWire';
+        }
+        $totalNonRecScrap = $workOrder->saleOrderItem->losses
+                ->where('scrap_type', 2)
+                ->sum('loss_weight');
+        $totalRecScrap = $workOrder->saleOrderItem->losses
+                ->where('scrap_type', 1)
+                ->sum('loss_weight');
+                // pr($totalLossWeight); die;
+        return view($view, [
+            'workOrder'         => $workOrder,
+            'saleOrderItem'     => $workOrder->saleOrderItem,
+            'currentOperation'  => (int) ($workOrder->current_operation ?: 1),
+            'totalNonRecScrap'  => @$totalNonRecScrap ?? 0,
+            'totalRecScrap'     => @$totalRecScrap ?? 0,
         ]);
     }
 
     public function completeOperation(Request $request, WorkOrderProcess $workOrder, int $operation)
     {
-        abort_unless($operation >= 1 && $operation <= 6, 404);
         $workOrder->loadMissing(['saleOrderItem.product', 'saleOrderItem.size']);
         abort_unless($workOrder->saleOrderItem, 404);
+    
+        // Product type ke hisaab se uska apna function chalega.
+        match ((int) $workOrder->saleOrderItem->product_type) {
+            1 => $this->brightBarProduction($request, $workOrder, $operation),
+            2 => $this->hbWireProduction($request, $workOrder, $operation),
+            3 => $this->hhbWireProduction($request, $workOrder, $operation),
+            default => abort(404),
+        };
+    
+        return redirect()
+            ->route('productions.workflow', ['workOrder' => $workOrder->id])
+            ->with('success', "Operation {$operation} completed successfully.");
+    }
 
+    /**
+     * Bright Bar (product_type = 1): operations 1 to 6.
+     * Validation, save, bundle calculation aur status sab yahin hai.
+     */
+    private function brightBarProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
+    {
+        $finalOperation = 6;
+        abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
+    
+        // Validation
         $validated = match ($operation) {
             1 => $request->validate([
                 'surface_process' => ['required', Rule::in(['shot_blasting', 'acid_pickling'])],
@@ -343,7 +455,7 @@ class ProductionController extends Controller
                 'pointing' => ['required', 'integer', Rule::in([1, 2])],
             ]),
             3 => $request->validate([
-                'fs_observed_size' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
+                'fs_observed_size' => ['required', 'string', 'max:20'],
                 'fs_observed_unit' => ['nullable', 'string', 'max:20'],
             ]),
             4 => $request->validate([
@@ -354,83 +466,177 @@ class ProductionController extends Controller
             ]),
             6 => [],
         };
-
-        DB::transaction(function () use ($workOrder, $operation, $validated) {
-            // Serialize stage completion and reject attempts to skip a required operation.
-            $lockedWorkOrder = WorkOrderProcess::query()
-                ->whereKey($workOrder->id)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $currentOperation = (int) ($lockedWorkOrder->current_operation ?: 1);
-
-            if ($currentOperation > $operation) {
+    
+        DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
+            $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
+    
+            // Operation pehle hi complete ho chuka hai (double submit / refresh).
+            if ($lockedWorkOrder === null) {
                 return;
             }
-
-            if ($currentOperation < $operation) {
-                throw ValidationException::withMessages([
-                    'operation' => 'Complete the previous operation before continuing.',
-                ]);
+    
+            // Save
+            switch ($operation) {
+                case 1:
+                    $lockedWorkOrder->shot_blasting = $validated['surface_process'] === 'shot_blasting' ? 1 : 2;
+                    $lockedWorkOrder->acid_pickling = $validated['surface_process'] === 'acid_pickling' ? 1 : 2;
+                    break;
+                case 2:
+                    $lockedWorkOrder->pointing = (int) $validated['pointing'];
+                    break;
+                case 3:
+                    $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
+                    $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'] ?? null;
+                    break;
+                case 4:
+                    $lockedWorkOrder->poin_discard = (int) $validated['poin_discard'];
+                    break;
+                case 5:
+                    $lockedWorkOrder->straightening = (int) $validated['straightening'];
+                    break;
+                case 6:
+                    $this->calculateBundles($lockedWorkOrder);
+                    break;
             }
-
-            if ($operation === 1) {
-                $lockedWorkOrder->shot_blasting = $validated['surface_process'] === 'shot_blasting' ? 1 : 2;
-                $lockedWorkOrder->acid_pickling = $validated['surface_process'] === 'acid_pickling' ? 1 : 2;
-            } elseif ($operation === 2) {
-                $lockedWorkOrder->pointing = (int) $validated['pointing'];
-            } elseif ($operation === 3) {
-                $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
-                $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'] ?? null;
-            } elseif ($operation === 4) {
-                $lockedWorkOrder->poin_discard = (int) $validated['poin_discard'];
-            } elseif ($operation === 5) {
-                $lockedWorkOrder->straightening = (int) $validated['straightening'];
-            } else {
-                // Calculate bundle totals in the sale-order unit without rounding up full bundles.
-                $bundleWeight = (float) $lockedWorkOrder->fs_bundle_weight;
-                if ($bundleWeight <= 0) {
-                    throw ValidationException::withMessages([
-                        'fs_bundle_weight' => 'The sale order bundle weight must be greater than zero.',
-                    ]);
-                }
-
-                $unit = $this->bundleUnitLabel($lockedWorkOrder->fs_bundle_unit);
-                if ($unit === null) {
-                    throw ValidationException::withMessages([
-                        'fs_bundle_weight' => 'The sale order bundle unit must be KG or Tons.',
-                    ]);
-                }
-                $bundleWeightMilli = (int) round($bundleWeight * 1000);
-                $materialMilli = (int) round((float) $lockedWorkOrder->material_send_for_work * 1000);
-
-                if ($bundleWeightMilli <= 0 || $materialMilli <= 0) {
-                    throw ValidationException::withMessages([
-                        'fs_bundle_weight' => 'A positive material quantity and bundle weight are required.',
-                    ]);
-                }
-
-                if ($unit === 'KG') {
-                    $materialMilli *= 1000;
-                }
-
-                $fullBundles = intdiv($materialMilli, $bundleWeightMilli);
-                $remainingWeight = ($materialMilli % $bundleWeightMilli) / 1000;
-
-                $lockedWorkOrder->fs_bundle_unit = $unit;
-                $lockedWorkOrder->total_full_bundle_count = $fullBundles;
-                $lockedWorkOrder->lose_bundle_weight = $remainingWeight;
-                $lockedWorkOrder->lose_bundle_count = $remainingWeight > 0 ? 1 : 0;
-                $lockedWorkOrder->status = 'completed';
-            }
-
+    
+            calculateProductionScrap($request, $lockedWorkOrder);
+    
+            $lockedWorkOrder->status = $operation === $finalOperation ? 'completed' : 'under_process';
             $lockedWorkOrder->current_operation = $operation + 1;
             $lockedWorkOrder->save();
         });
+    }
+    
+    /**
+     * HB Wire (product_type = 2): operations 1 to 2.
+     */
+    private function hbWireProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
+    {
+        
+        $finalOperation = 2;
+        abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
+    
+        // Validation
+        $validated = match ($operation) {
+            1 => $request->validate([
+                'acid_pickling' => ['nullable', Rule::in(['1'])],
+                'phosphating' => ['nullable', Rule::in(['1'])],
+                'acid_remarks' => ['nullable', 'string', 'max:255'],
+            ]),
+            2 => $request->validate([
+                'fs_observed_size' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
+                'fs_observed_unit' => ['required', Rule::in(['MM', 'THOU'])],
+            ]),
+        };
+    
+        // Acid pickling aur phosphating mein se exactly ek select hona chahiye.
+        if ($operation === 1 && !isset($validated['acid_pickling']) && !isset($validated['phosphating'])) 
+        {
+            throw ValidationException::withMessages([
+                'acid_pickling' => 'Select acid pickling or phosphating before completing this operation.',
+            ]);
+        }
 
-        return redirect()
-            ->route('productions.workflow', ['workOrder' => $workOrder->id])
-            ->with('success', "Operation {$operation} completed successfully.");
+        DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
+            $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
+    
+            if ($lockedWorkOrder === null) {
+                return;
+            }
+    
+            // Save
+            switch ($operation) {
+                case 1:
+                    // 1 = acid pickling, 2 = phosphating
+                    case 1:
+                        // Checkbox select ho to 1, warna 2
+                        $lockedWorkOrder->acid_pickling = isset($validated['acid_pickling']) ? 1 : 2;
+                        $lockedWorkOrder->phosphating   = isset($validated['phosphating']) ? 1 : 2;
+                    break;
+                case 2:
+                        $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
+                        $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'];
+                        $this->calculateBundles($lockedWorkOrder);
+                    break;
+            }
+    
+            calculateProductionScrap($request, $lockedWorkOrder);
+    
+            $lockedWorkOrder->status = $operation === $finalOperation ? 'completed' : 'under_process';
+            $lockedWorkOrder->current_operation = $operation + 1;
+            $lockedWorkOrder->save();
+        });
+    }
+    
+    /**
+     * Transaction ke andar work order lock karta hai.
+     * - Operation pehle ho chuka ho -> null return karta hai.
+     * - Pichla operation baaki ho -> ValidationException.
+     */
+    private function lockWorkOrderAtOperation(WorkOrderProcess $workOrder, int $operation): ?WorkOrderProcess
+    {
+        $lockedWorkOrder = WorkOrderProcess::query()
+            ->whereKey($workOrder->id)
+            ->lockForUpdate()
+            ->firstOrFail();
+    
+        // Loaded relations calculateProductionScrap() jaise helpers ke liye available rahein.
+        $lockedWorkOrder->setRelations($workOrder->getRelations());
+    
+        $currentOperation = (int) ($lockedWorkOrder->current_operation ?: 1);
+    
+        if ($currentOperation > $operation) {
+            return null;
+        }
+    
+        if ($currentOperation < $operation) {
+            throw ValidationException::withMessages([
+                'operation' => 'Complete the previous operation before continuing.',
+            ]);
+        }
+    
+        return $lockedWorkOrder;
+    }
+    
+    /**
+     * Full aur loose bundles sale-order unit mein calculate karta hai (full bundle round-up nahi hota).
+     */
+    private function calculateBundles(WorkOrderProcess $workOrder): void
+    {
+        $bundleWeight = (float) $workOrder->fs_bundle_weight;
+        if ($bundleWeight <= 0) {
+            throw ValidationException::withMessages([
+                'fs_bundle_weight' => 'The sale order bundle weight must be greater than zero.',
+            ]);
+        }
+    
+        $unit = $this->bundleUnitLabel($workOrder->fs_bundle_unit);
+        if ($unit === null) {
+            throw ValidationException::withMessages([
+                'fs_bundle_weight' => 'The sale order bundle unit must be KG or Tons.',
+            ]);
+        }
+    
+        $bundleWeightMilli = (int) round($bundleWeight * 1000);
+        $materialMilli = (int) round((float) $workOrder->material_send_for_work * 1000);
+    
+        if ($bundleWeightMilli <= 0 || $materialMilli <= 0) {
+            throw ValidationException::withMessages([
+                'fs_bundle_weight' => 'A positive material quantity and bundle weight are required.',
+            ]);
+        }
+    
+        // Material tons mein hai; bundle KG mein ho to convert karo.
+        if ($unit === 'KG') {
+            $materialMilli *= 1000;
+        }
+    
+        $remainingWeight = ($materialMilli % $bundleWeightMilli) / 1000;
+    
+        $workOrder->fs_bundle_unit = $unit;
+        $workOrder->total_full_bundle_count = intdiv($materialMilli, $bundleWeightMilli);
+        $workOrder->lose_bundle_weight = $remainingWeight;
+        $workOrder->lose_bundle_count = $remainingWeight > 0 ? 1 : 0;
     }
 
     private function bundleUnitLabel($unit): ?string
@@ -440,6 +646,18 @@ class ProductionController extends Controller
             (string) SaleOrderItem::BUNDLE_TONS, 'ton', 'tons' => 'Tons',
             default => null,
         };
+    }
+
+    private function applyInProgressWorkOrderFilter(Builder $query): void
+    {
+        $query->where(function (Builder $activeQuery) {
+            $activeQuery->whereBetween('current_operation', [1, 6])
+                ->where(function (Builder $activeStatusQuery) {
+                    $activeStatusQuery
+                        ->whereNull('status')
+                        ->orWhere('status', '!=', 'completed');
+                });
+        });
     }
 
     private function addReceivingTotals($saleOrderItems): void
@@ -494,14 +712,11 @@ class ProductionController extends Controller
         if (!$saleOrderItem->sale_order_id) {
             return PurchaseOrderItem::query()->whereRaw('1 = 0');
         }
-
-        // Restrict purchase-order items to the sale order/customer used by production.
         return PurchaseOrderItem::query()
             ->where(function ($query) use ($saleOrderItem, $saleOrderId) {
-                if ($saleOrderItem->saleOrder?->customer_id) {
-                    $query->where('cust_id', $saleOrderItem->saleOrder->customer_id);
+                if ($saleOrderItem->sale_order_id) {
+                    $query->where('ref_saleorder_id', $saleOrderId ?? $saleOrderItem->sale_order_id);
                 }
-                $query->where('ref_saleorder_id', $saleOrderId ?? $saleOrderItem->sale_order_id);
             });
     }
 }

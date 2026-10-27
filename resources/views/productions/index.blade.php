@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Production Listing')
+@section('title', $productionHistory ? 'Production History' : 'Production Listing')
 
 @section('content')
 <div class="page-header">
     <div class="page-header__inner">
         <div class="page-header__content">
             <div class="page-header__title">
-                <h6>Production Listing</h6>
+                <h6>{{ $productionHistory ? 'Production History' : 'Production Listing' }}</h6>
             </div>
         </div>
         <div class="page-header__actions">
@@ -21,7 +21,10 @@
         <div class="alert alert-success d-none" id="productionSuccessMessage" role="status"></div>
         <div class="card listing-block ajax-listing-loop">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Sale Order Items</h5>
+                <h5 class="mb-0">{{ $productionHistory ? 'Production History' : 'Sale Order Items' }}</h5>
+                <a href="{{ route($productionHistory ? 'productions' : 'production-history') }}" class="btn btn-outline-primary btn-sm">
+                    {{ $productionHistory ? 'Pending Work Orders' : 'Production History' }}
+                </a>
                 <div class="input-group input-group-merge" style="max-width: 320px;">
                     <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
                     <input type="search" class="form-control listing-search" placeholder="Search production..." value="{{ request('search', '') }}" aria-label="Search production">
@@ -64,6 +67,7 @@
     </div>
 </div>
 
+@unless ($productionHistory)
 <div class="modal fade" id="workOrderModal" tabindex="-1" aria-labelledby="workOrderModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
@@ -77,8 +81,11 @@
         </div>
     </div>
 </div>
+@endunless
 @endsection
 
 @push('scripts')
+@unless ($productionHistory)
 <script src="{{ asset('js/production-work-orders.js') }}" defer></script>
+@endunless
 @endpush

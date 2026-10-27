@@ -245,7 +245,7 @@
 
             @if($isProdUser)
             @php
-            $productsActive = request()->routeIs('productions*',);
+            $productsActive = request()->routeIs('productions*', 'production-history');
             @endphp
             <li class="sidebar-item">
                 <a href="#productsCollapse" class="sidebar-link {{ $productsActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#productsCollapse" role="button" aria-expanded="{{ $productsActive ? 'true' : 'false' }}" aria-controls="productsCollapse">
@@ -256,17 +256,17 @@
                 <div class="collapse {{ $productsActive ? 'show' : '' }}" id="productsCollapse">
                     <ul class="sidebar-submenu-list">
                         <li class="submenu-item">
-                            <a href="{{ route('productions') }}" class="submenu-link {{ request()->routeIs('productions*') ? 'active' : '' }}">
+                            <a href="{{ route('productions') }}" class="submenu-link {{ request()->routeIs('productions') ? 'active' : '' }}">
                                 <span class="submenu-dot"></span>
                                 <span>Pending Work Order's</span>
                             </a>
                         </li>
-                        {{-- <li class="submenu-item">
-                            <a href="{{ route('productions') }}" class="submenu-link {{ request()->routeIs('productions*') ? 'active' : '' }}">
+                        <li class="submenu-item">
+                            <a href="{{ route('production-history') }}" class="submenu-link {{ request()->routeIs('production-history') ? 'active' : '' }}">
                                 <span class="submenu-dot"></span>
-                                <span>Pending Work Order's</span>
+                                <span>Production History</span>
                             </a>
-                        </li> --}}
+                        </li>
                     </ul>
                 </div>
             </li>
