@@ -7,7 +7,7 @@ function pr($data){
     echo "<pre>";
     print_r($data);
     echo "</pre>";
-    exit;
+    // exit;
 }
 
 define('LARAVEL_START', microtime(true));

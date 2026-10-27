@@ -79,11 +79,11 @@ class PurchaseController extends Controller
                 $purchaseOrder = PurchaseOrder::with('items')->findOrFail($request->query('id'));
             }
 
-            $customers = Customer::all();
-            $sizes = Size::all();
-            $units = Unit::all();
-            $grades = Grade::all();
-            $products = Product::all();
+            $customers  = Customer::where(['supplier'=>1,'status'=>'1'])->orderBy('company_name')->get();
+            $sizes      = Size::where(['status'=>'1'])->orderBy('size_name')->get();
+            $units      = Unit::all();
+            $grades     = Grade::where(['status'=>'1'])->orderBy('grade_name')->get();
+            $products   = Product::where(['product_category'=>'raw_material', 'status'=>'1'])->orderBy('product_name')->get();
 
             $saleOrders = SaleOrder::with('customer')->get();
 

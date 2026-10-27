@@ -66,6 +66,7 @@ class ProductController extends Controller
         {			
             $validated = $request->validate([
                 'product_name' => ['required', 'string', 'max:50', Rule::unique('products', 'product_name')->whereNull('deleted_at')],
+                'product_category' => 'required',
             ]);
 
             $imagePath = null;
@@ -75,6 +76,7 @@ class ProductController extends Controller
 
             $product = Product::create([
                 'product_name' => $validated['product_name'],
+                'product_category' => $validated['product_category'],
                 'status' => (int) $request->status ?? 1,
                 'created_by' => auth()->id(),
             ]);

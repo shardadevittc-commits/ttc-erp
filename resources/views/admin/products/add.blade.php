@@ -40,6 +40,27 @@
                         @error('product_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="col-xxl-6 col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
+                    <label class="form-label"> Product Category <span class="text-danger">*</span></label>
+
+                    <div class="mt-2">
+                        <div class="form-check form-check-inline">
+                            <input type="radio" name="product_category" id="finished_material" class="form-check-input @error('product_category') is-invalid @enderror" value="finished_material"
+                                {{ old('product_category', 'finished_material') == 'finished_material' ? 'checked' : '' }}
+                                required>
+                            <label class="form-check-label" for="finished_material"> Finished Material </label>
+                        </div>
+
+                        <div class="form-check form-check-inline">
+                            <input type="radio" name="product_category" id="raw_material" class="form-check-input @error('product_category') is-invalid @enderror" value="raw_material"
+                                {{ old('product_category') == 'raw_material' ? 'checked' : '' }} required>
+                            <label class="form-check-label" for="raw_material"> Raw Material </label>
+                        </div>
+                    </div>
+                    @error('product_category')
+                        <div class="text-danger small mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+                    <div class="col-xxl-6 col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
                         <div class="form-group">
                             <label class="form-label">Publish/Unpublish Products</label>
                             <div class="form-check form-switch mt-2">

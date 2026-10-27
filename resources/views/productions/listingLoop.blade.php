@@ -1,7 +1,17 @@
 @forelse ($listing->items() as $k => $item)
+    @php
+        $saleOrderItem = $productionHistory ? $item->saleOrderItem : $item;
+        $workOrder = $productionHistory ? $item : null;
+    @endphp
     <tr>
         <td> {{$k+1}} </td>
-        <td> --- </td>
+        <td>
+            @if ($workOrder)
+                {{ $workOrder->id }} / <strong>{{ _dt($workOrder->created_at) }}</strong>
+            @else
+                ---
+            @endif
+        </td>
         {{-- <td>
             @if ($item->saleOrder)
                 <a href="{{ route('saleOrders.view', ['id' => $item->saleOrder->id]) }}" class="fw-medium">
@@ -13,42 +23,57 @@
         </td> --}}
         {{-- <td>{{ $item->saleOrder?->created_at ? _d($item->saleOrder->created_at) : '-' }}</td> --}}
         @php
-        $itemQty = $item->item_qty !== null ? _rz($item->item_qty).' Tons' : '';
-        $saleItemPrice = $item->sale_item_prices !== null ? _rz($item->sale_item_prices) : '';
+        $itemQty = $saleOrderItem->item_qty !== null ? _rz($saleOrderItem->item_qty).' Tons' : '';
+        $saleItemPrice = $saleOrderItem->sale_item_prices !== null ? _rz($saleOrderItem->sale_item_prices) : '';
         @endphp
-        <td>{{ $item->saleOrder?->customer?->company_name ?: '-' }}</td>
+        <td>{{ $saleOrderItem->saleOrder?->customer?->company_name ?: '-' }}</td>
         <td style="white-space: nowrap;">
-            <b class="text-danger d-inline">{{ $item->saleOrder->id }}</b>
-            <b class="d-inline">{{ $item->product?->product_name ? ' - '.$item->product?->product_name : '' }}</b>
-            <b class="d-inline">{{ $item->size?->size_name ? ' - '.$item->size?->size_name : '' }}</b>
+            <b class="text-danger d-inline">{{ $saleOrderItem->saleOrder?->id }}</b>
+            <b class="d-inline">{{ $saleOrderItem->product?->product_name ? ' - '.$saleOrderItem->product?->product_name : '' }}</b>
+            <b class="d-inline">{{ $saleOrderItem->size?->size_name ? ' - '.$saleOrderItem->size?->size_name : '' }}</b>
             <b class="d-inline">{{ $itemQty !== null ? $itemQty : '-' }}</b>
         </td>
-        <td>{{ $item->grade?->grade_name ?: '-' }}</td>
+        <td>{{ $saleOrderItem->grade?->grade_name ?: '-' }}</td>
         <td>
-            {{ $item->size?->size_name ?: ($item->size_unit ?: '-') }}
+            {{ $saleOrderItem->size?->size_name ?: ($saleOrderItem->size_unit ?: '-') }}
         </td>
         <td>{{ $itemQty !== null ? $itemQty : '-' }}</td>
-        <td>Pending</td>
+        <td>
+            @if ($workOrder)
+                <span class="badge {{ $workOrder->status === 'completed' ? 'bg-success' : 'bg-info text-dark' }}">
+                    {{ $workOrder->status === 'completed' ? 'Completed' : 'Under Process' }}
+                </span>
+            @else
+                Pending
+            @endif
+        </td>
         
         {{-- pr($item->toArray()); die; --}}
         <td class="btn-sm">
+            @if ($workOrder)
+                <a href="{{ route('productions.workflow', ['workOrder' => $workOrder->id]) }}"
+                    class="btn {{ $workOrder->status === 'completed' ? 'btn-primary' : 'btn-warning' }} btn-sm">
+                    {{ $workOrder->status === 'completed' ? 'View' : 'Under Process' }}
+                </a>
+            @else
             <button type="button"
                 class="btn btn-success btn-sm send-for-work"
-                data-work-order-url="{{ route('productions.send-for-work', ['sale_order_item_id' => $item->id, 'sale_order_id' => $item->saleOrder->id]) }}"
-                data-party="{{ $item->saleOrder?->customer?->company_name ?: 'Customer not available' }}"
-                data-product-details="{{ implode(' - ', array_filter([$item->product?->product_name, $item->grade?->grade_name, $item->size?->size_name, $saleItemPrice, $itemQty])) }}"
-                data-grade="{{ $item->grade?->grade_name ?: '-' }}"
-                data-instruction="{{ $item->saleOrder?->remarks ?? '' }}"
-                data-received-count="{{ $item->received_item_count }}"
-                data-received-qty="{{ number_format($item->received_qty_total, 2, '.', '') }}"
-                data-available-qty="{{ number_format($item->available_qty_total, 2, '.', '') }}"
-                data-rm-heat-no="{{ $item->rm_heat_no ?? '' }}"
-                data-vehicle-id="{{ $item->vehicle_id ?? '' }}"
-                data-operation="{{ $item->work_operation ?? '' }}"
-                data-order-qty="{{ $item->item_qty ?? 0 }}"
+                data-work-order-url="{{ route('productions.send-for-work', ['sale_order_item_id' => $saleOrderItem->id, 'sale_order_id' => $saleOrderItem->saleOrder->id]) }}"
+                data-party="{{ $saleOrderItem->saleOrder?->customer?->company_name ?: 'Customer not available' }}"
+                data-product-details="{{ implode(' - ', array_filter([$saleOrderItem->product?->product_name, $saleOrderItem->grade?->grade_name, $saleOrderItem->size?->size_name, $saleItemPrice, $itemQty])) }}"
+                data-grade="{{ $saleOrderItem->grade?->grade_name ?: '-' }}"
+                data-instruction="{{ $saleOrderItem->saleOrder?->remarks ?? '' }}"
+                data-received-count="{{ $saleOrderItem->received_item_count }}"
+                data-received-qty="{{ number_format($saleOrderItem->received_qty_total, 2, '.', '') }}"
+                data-available-qty="{{ number_format($saleOrderItem->available_qty_total, 2, '.', '') }}"
+                data-rm-heat-no="{{ $saleOrderItem->rm_heat_no ?? '' }}"
+                data-vehicle-id="{{ $saleOrderItem->vehicle_id ?? '' }}"
+                data-operation="{{ $saleOrderItem->work_operation ?? '' }}"
+                data-order-qty="{{ $saleOrderItem->item_qty ?? 0 }}"
                 style="font-size: 11px; padding: 10px 5px; line-height: 1;">
                 Send for Work
             </button>
+            @endif
         </td>
         {{-- <td>{{ $item->dispatch_qty !== null ? _rz($item->dispatch_qty) : '-' }}</td> --}}
         {{-- <td>{{ $item->dispatched_qty !== null ? _rz($item->dispatched_qty) : '-' }}</td>
@@ -65,6 +90,8 @@
     </tr>
 @empty
     <tr>
-        <td colspan="11" class="text-center py-3">No production items found.</td>
+        <td colspan="11" class="text-center py-3">
+            {{ $productionHistory ? 'No production history found.' : 'No production items found.' }}
+        </td>
     </tr>
 @endforelse
