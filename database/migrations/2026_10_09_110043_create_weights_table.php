@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('vehicle_weigh_records', function (Blueprint $table) {
+        Schema::create('weights', function (Blueprint $table) {
             $table->id();
 
             // Existing material record reference
@@ -38,6 +38,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('vehicle_weigh_records');
+        Schema::dropIfExists('weights');
     }
 };

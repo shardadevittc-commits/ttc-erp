@@ -5,6 +5,9 @@ use App\Http\Controllers\Frontend\ProductionController;
 Route::get('/productions', [ProductionController::class, 'index'])
     ->name('productions');
 
+Route::get('/production-history', [ProductionController::class, 'index'])
+    ->name('production-history');
+
 /* Route::match(['get', 'post'],'/productions/{saleOrderItem}/send-for-work', [ProductionController::class, 'workOrderDetails'])
     ->whereNumber('saleOrderItem')
     ->name('productions.work-order.create'); */

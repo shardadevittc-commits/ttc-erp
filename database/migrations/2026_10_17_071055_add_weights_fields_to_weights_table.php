@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('weigh', function (Blueprint $table) {
+        Schema::table('weights', function (Blueprint $table) {
             $table->decimal('material_weight', 12, 2)->nullable();
 
             $table->decimal('unload_tare_weight', 12, 2)->nullable();
@@ -23,7 +23,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('weigh', function (Blueprint $table) {
+        Schema::table('weights', function (Blueprint $table) {
             $table->dropColumn([
                 'material_weight',
                 'unload_tare_weight',

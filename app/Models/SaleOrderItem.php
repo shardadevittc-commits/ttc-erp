@@ -125,4 +125,9 @@ class SaleOrderItem extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function losses()
+    {
+        return $this->hasMany(WorkOrderLoss::class, 'sale_order_item_id');
+    }
 }

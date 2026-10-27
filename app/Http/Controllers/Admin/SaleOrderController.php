@@ -172,8 +172,8 @@ class SaleOrderController extends Controller
     private function formData(): array
     {
         return [
-            'customers' => Customer::query()->orderBy('company_name')->get(),
-            'products' => Product::query()->with(['grade', 'size'])->orderBy('product_name')->get(),
+            'customers' => Customer::query()->where(['buyer'=> 1,'status'=>'1'])->orderBy('company_name')->get(),
+            'products' => Product::query()->where(['product_category'=>'finished_material'])->with(['grade', 'size'])->orderBy('product_name')->get(),
             'grades' => Grade::query()->orderBy('grade_name')->get(),
             'brands' => Brand::query()->orderBy('brand_name')->get(),
             'sizes' => Size::query()->orderBy('size_name')->get(),

@@ -5,7 +5,7 @@
     <i class="fas fa-filter"></i> Filters
 </a>
 <div class="dropdown-menu dropdown-menu-end">
-    <form action="{{ route('productions') }}" id="filters-form">
+    <form action="{{ route(request()->routeIs('production-history') ? 'production-history' : 'productions') }}" id="filters-form">
         <a href="javascript:;" class="float-end px-2 closeit">
             <i class="fa fa-times-circle"></i>
         </a>
@@ -24,24 +24,24 @@
         <div class="dropdown-divider"></div>
         <div class="dropdown-item">
             <div class="form-group mt-2 mb-0">
-                <label class="form-label">Completion</label>
+                <label class="form-label">{{ request()->routeIs('production-history') ? 'Work Order Status' : 'Completion' }}</label>
                 <div class="form-check">
                     <input class="form-check-input" type="radio" name="status" id="production-all" value="" {{ request('status', '') === '' ? 'checked' : '' }}>
                     <label class="form-check-label" for="production-all">All</label>
                 </div>
                 <div class="form-check">
-                    <input class="form-check-input" type="radio" name="status" id="production-incomplete" value="1" {{ request('status') === '1' ? 'checked' : '' }}>
-                    <label class="form-check-label" for="production-incomplete">Not Completed</label>
+                    <input class="form-check-input" type="radio" name="status" id="production-incomplete" value="{{ request()->routeIs('production-history') ? 'under_process' : '1' }}" {{ request('status') === (request()->routeIs('production-history') ? 'under_process' : '1') ? 'checked' : '' }}>
+                    <label class="form-check-label" for="production-incomplete">{{ request()->routeIs('production-history') ? 'Under Process' : 'Not Completed' }}</label>
                 </div>
                 <div class="form-check">
-                    <input class="form-check-input" type="radio" name="status" id="production-complete" value="2" {{ request('status') === '2' ? 'checked' : '' }}>
+                    <input class="form-check-input" type="radio" name="status" id="production-complete" value="{{ request()->routeIs('production-history') ? 'completed' : '2' }}" {{ request('status') === (request()->routeIs('production-history') ? 'completed' : '2') ? 'checked' : '' }}>
                     <label class="form-check-label" for="production-complete">Completed</label>
                 </div>
             </div>
         </div>
         <div class="dropdown-divider"></div>
         <div class="dropdown-bottom clearfix">
-            <a href="{{ route('productions') }}" class="btn btn-sm btn-danger px-3 float-start">Reset All</a>
+            <a href="{{ route(request()->routeIs('production-history') ? 'production-history' : 'productions') }}" class="btn btn-sm btn-danger px-3 float-start">Reset All</a>
             <button type="submit" class="btn btn-sm px-3 btn-primary float-end">Submit</button>
         </div>
     </form>
