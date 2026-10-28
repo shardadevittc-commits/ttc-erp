@@ -103,21 +103,19 @@
                         <div class="accordion-body">
                             <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 1]) }}">
                                 @csrf
-                                {{-- <input type="hidden" name="workStatus" value="operation1">
-                                <input type="hidden" name="oprtion1" value="Operation 1"> --}}
                                 <div class="row">
                                     <div class="col-md-12">
                                         <div class="form-check ps-0">
 
                                             <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="checkbox" name="acid_pickling" id="hbAcid" value="1" @checked(old('acid_pickling') == '1')>
+                                                <input class="form-check-input" type="checkbox" name="acid_pickling" id="hbAcid" value="1" @checked(old('acid_pickling', $workOrder->acid_pickling ?? '') == '1')>
                                                 <label class="form-check-label fs-6" for="hbAcid">
                                                     ACID Pickling
                                                 </label>
                                             </div>
 
                                             <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="checkbox" name="phosphating" id="hbPhosphating" value="1" @checked(old('phosphating') == '1')>
+                                                <input class="form-check-input" type="checkbox" name="phosphating" id="hbPhosphating" value="1" @checked(old('phosphating', $workOrder->phosphating ?? '') == '1')>
                                                 <label class="form-check-label fs-6" for="hbPhosphating">
                                                     For Phosphating
                                                 </label>
@@ -127,7 +125,7 @@
 
                                     <div class="col-md-12 mt-3">
                                         <label class="col-form-label">Remarks</label>
-                                        <textarea class="form-control" name="acid_remarks">{{ old('acid_remarks') }}</textarea>
+                                        <textarea class="form-control" name="acid_remarks">{{ old('acid_remarks', $workOrder->acid_remarks) }}</textarea>
                                     </div>
                                     @if ($currentOperation === 1)
                                         <div class="col-12 text-end mt-3">
@@ -173,6 +171,7 @@
                                         {{-- pr($saleOrderItem->toArray()); --}}
                                     @php
                                        $finishedMaterial = !empty($workOrder->material_send_for_work) ? _rz(($workOrder->material_send_for_work * 1000) - ($totalNonRecScrap ?? 0)): '0:00 Kgs';
+                                       $finishedqty = !empty($workOrder->material_send_for_work) ? _rz(($workOrder->material_send_for_work * 1000) - (($totalNonRecScrap ?? 0) + ($totalRecScrap ?? 0))) : '0:00 Kgs';
                                        $fullBundle = $finishedMaterial / $saleOrderItem->fs_bundle_weight;
                                       
 
@@ -197,7 +196,7 @@
                                     @endphp
                                     <div class="col-md-2">
                                         <label class="col-form-label">Bundle</label>
-                                        <input type="text" class="form-control number_only" id="pcsfsbndle" name="pcsfsbndle" value="{{ $fullBundles }}" placeholder="Enter Final bundle Count" required>
+                                        <input type="text" class="form-control number_only" id="pcsfsbndle" name="pcsfsbndle" value="{{ $workOrder->total_full_bundle_count + $workOrder->lose_bundle_count }}" placeholder="Enter Final bundle Count Ex {{ $fullBundles }}" required>
                                     </div>
                                     <div class="col-md-3">
                                         <label class="col-form-label text-wrap text-size">Bundles * Weight = Prop Weight</label>
@@ -225,8 +224,8 @@
                                         <div class="col-md-6 mt-3">
                                             <label class="col-form-label">Observed Size</label>
                                             <div class="input-group mb-3">
-                                            <input type="text" name="rmobservedSize" class="form-control">
-                                            <select class="form-select" name="rmobservedSizeUnit" style="max-width:100px;">
+                                            <input type="text" name="rm_observed_size" class="form-control">
+                                            <select class="form-select" name="rm_observed_size_unit" style="max-width:100px;">
                                                 <option value="MM">MM</option>
                                                 <option value="THOU">THOU</option>
                                             </select>
@@ -241,8 +240,8 @@
                                         <div class="col-md-6 mt-3">
                                             <label class="col-form-label">FM Size (Sale)</label>
                                             <div class="input-group mb-3">
-                                            <input type="text" name="fsSize" value="{{ $saleOrderItem->size->size_name }}" class="form-control" readonly>
-                                            <select class="form-select" name="fsSizeUnit" style="max-width:100px;">
+                                            <input type="text" name="fs_size" value="{{ $saleOrderItem->size->size_name }}" class="form-control" readonly>
+                                            <select class="form-select" name="fs_size_unit" style="max-width:100px;">
                                                 <option value="MM">MM</option>
                                                 <option value="THOU">THOU</option>
                                             </select>
@@ -251,10 +250,10 @@
                                         <div class="col-md-6 mt-3">
                                             <label class="col-form-label">Observed Size</label>
                                             <div class="input-group mb-3">
-                                            <input type="text" class="form-control" name="fsobservedSize">
-                                            <select class="form-select" name="fsObservedSizeUnit" style="max-width:100px;">
-                                                <option value="MM">MM</option>
-                                                <option value="THOU">THOU</option>
+                                            <input type="text" class="form-control" name="fs_observed_size" value="{{ $workOrder->fs_observed_size ?? '' }}">
+                                            <select class="form-select" name="fs_observed_unit" style="max-width:100px;">
+                                                <option value="MM" {{ $workOrder->fs_observed_unit == 'MM' ? 'selected' : 'selected' }}>MM</option>
+                                                <option value="THOU" {{ $workOrder->fs_observed_unit == 'THOU' ? 'selected' : 'selected' }}>THOU</option>
                                             </select>
                                             </div>
                                         </div>
@@ -287,7 +286,7 @@
                                             </div>
                                             <div class="col-md-3 mt-3">
                                                 <label class="col-form-label text-size">Finish Qty (Kg.)</label>
-                                                <input type="text" id="finish_qty" class="form-control" name="finish_qty" value="{{ $finishedMaterial ? $finishedMaterial  : '0' }}" >
+                                                <input type="text" id="finish_qty" class="form-control" name="finish_qty" value="{{ $finishedqty ? $finishedqty  : '0' }}" disabled>
                                             </div>
                                         </div>
                                     </div>
@@ -301,47 +300,6 @@
     </div>
 </div>
 
-    {{-- document.querySelectorAll('#accordionFlushExample form').forEach((form) => {
-        form.addEventListener('submit', () => {
-            const loader = document.getElementById('productionOperationLoader');
-            const submitButton = form.querySelector('[type="submit"]');
-
-            if (submitButton) {
-                submitButton.disabled = true;
-            }
-
-            loader.classList.add('is-visible');
-            loader.setAttribute('aria-hidden', 'false');
-        });
-
-        suppose kro user ne hbwire kai operation1 acid_pickling select kiya hai or operation2 mai full review kro code 
-        material_send_for_work = 15.300 kg
-        1 st stage pr scrap nikala 0.5% = 76.5 kg
-        raw material = 15223.5 kg
-        ab operation2 mai **misc** scrap nikalana hai ab isme suppose kro 
-        fs_bundle_weight = 850 kg
-        total_full_bundle_count = 17 (14450 kg)
-        lose_bundle_weight = 773.5 kg
-        lose_bundle_count =  1
-        ab suppose kro mis scrap user ne total_full_bundle_count = 16 input mai fill kar diya or misc = 400 kg 
-        16 * 850 kg = 13600 kg
-        13600 kg - 400 kg = 13200 kg
-        misc = 15223.5 kg - 13200 kg = 2023.5 kg
-
-        example 2
-        ab suppose kro mis scrap user ne total_full_bundle_count = 18 input mai fill kar diya or misc = 400 kg 
-        18 * 850 kg = 15300 kg lekin apne paas operation1 kai baad 15223.5 kg raw material hai toh isse jada nhi liya ja sakta hai 
-        ab usker ne misc daal diya 223.5 kg 
-        15223.5 kg - 223.5 kg(misc) = 15000 kg
-        17(total_full_bundle_count) * 850 = 14450 kg
-        1(lose_bundle_count) * 550(lose_bundle_weight) = 550 kg 
-
-        ab iske according misc scrap nikalega jisme hame percentage bhi count kr kai WorkOrderLoss mai entery karni hai or WorkOrderProcess mai bhi entry karni hai 
-        code ko acche se review kr lo kuch jada change nhi ho ge hbWireProduction function mai chages ho ge 
-        structure follow karna 
-
-        
-    }); --}}
 <script>
         let totalFinish = {{ $finishedMaterial ?? 0 }};
         let maxMisc = {{ $remainingWeight ?? 0 }};

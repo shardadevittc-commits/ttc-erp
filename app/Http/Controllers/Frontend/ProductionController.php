@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseOrderitemReceiving;
 use App\Models\SaleOrderItem;
+use App\Models\WorkOrderLoss;
 use App\Models\WorkOrderProcess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -16,11 +17,11 @@ use Illuminate\Validation\ValidationException;
 class ProductionController extends Controller
 {
     private const PRODUCT_TYPE_OPERATIONS = [
-        1 => 'operation6',
-        2 => 'operation5',
-        3 => 'operation2',
-        4 => 'operation8',
-        5 => 'operation9',
+        1 => 'operation6', /* Bright Bar */
+        2 => 'operation5', /* HB Wire */
+        3 => 'operation5', /* HHB Wire */
+        4 => 'operation8', /* Annealing Bar */
+        5 => 'operation9', /* Bolt Road */
     ];
 
     /**
@@ -512,10 +513,6 @@ class ProductionController extends Controller
      */
     private function hbWireProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
     {
-        pr($workOrder->toArray());
-        pr($request->toArray()); 
-        die;
-        
         $finalOperation = 2;
         abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
     
@@ -527,8 +524,17 @@ class ProductionController extends Controller
                 'acid_remarks' => ['nullable', 'string', 'max:255'],
             ]),
             2 => $request->validate([
-                'fs_observed_size' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
+                'pcsfsbndle' => ['required', 'integer', 'min:0'],
+                'misc' => ['nullable'],
+                'fs_size' => 'required',
+                'fs_size_unit' => ['required', Rule::in(['MM', 'THOU'])],
+                'fs_observed_size' => 'required',
                 'fs_observed_unit' => ['required', Rule::in(['MM', 'THOU'])],
+                
+                'rm_observed_size' => 'required',
+                'rm_observed_unit' => ['required', Rule::in(['MM', 'THOU'])],
+                'rm_size' => 'required',
+                'rm_size_unit' => ['required', Rule::in(['MM', 'THOU'])],
             ]),
         };
     
@@ -557,9 +563,220 @@ class ProductionController extends Controller
                         $lockedWorkOrder->phosphating   = isset($validated['phosphating']) ? 1 : 2;
                     break;
                 case 2:
-                        $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
-                        $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'];
-                        $this->calculateBundles($request, $lockedWorkOrder);
+                        $lockedWorkOrder->fs_observed_size  = $validated['fs_observed_size'];
+                        $lockedWorkOrder->fs_observed_unit  = $validated['fs_observed_unit'];
+                        $lockedWorkOrder->fs_size           = $validated['fs_size'];
+                        $lockedWorkOrder->fs_size_unit      = $validated['fs_size_unit'];
+
+                        $lockedWorkOrder->rm_observed_size  = $validated['rm_observed_size'];
+                        $lockedWorkOrder->rm_observed_unit  = $validated['rm_observed_unit'];
+                        $lockedWorkOrder->rm_size           = $validated['rm_size'];
+                        $lockedWorkOrder->rm_size_unit      = $validated['rm_size_unit'];
+
+                        $bundleUnit = $this->bundleUnitLabel($lockedWorkOrder->fs_bundle_unit);
+                        $bundleWeight = (float) $lockedWorkOrder->fs_bundle_weight;
+                        if ($bundleWeight <= 0 || $bundleUnit === null) {
+                            throw ValidationException::withMessages([
+                                'fs_bundle_weight' => 'A positive bundle weight and a valid bundle unit are required.',
+                            ]);
+                        }
+
+                        $bundleWeightMilliKg = (int) round($bundleWeight * ($bundleUnit === 'KG' ? 1000 : 1_000_000));
+                        $initialWeightMilliKg = (int) round((float) $lockedWorkOrder->material_send_for_work * 1_000_000);
+                        
+                        $nonRecoverableScrapMilliKg = (int) round(
+                            (float) WorkOrderLoss::query()
+                                ->where('work_order_id', $lockedWorkOrder->id)
+                                ->where('scrap_type', 2)
+                                ->sum('loss_weight') * 1000
+                        );
+                        $availableWeightMilliKg = $initialWeightMilliKg - $nonRecoverableScrapMilliKg;
+
+                        if ($bundleWeightMilliKg <= 0 || $availableWeightMilliKg <= 0) {
+                            throw ValidationException::withMessages([
+                                'fs_bundle_weight' => 'A positive quantity of raw material must be available for bundling.',
+                            ]);
+                        }
+
+                        $maxFullBundleCount = intdiv($availableWeightMilliKg, $bundleWeightMilliKg);
+                        $initialLooseWeightMilliKg = $availableWeightMilliKg % $bundleWeightMilliKg;
+                        $requestedFullBundleCount = (int) $validated['pcsfsbndle'];
+                        $miscWeightMilliKg = (int) round((float) ($validated['misc'] ?? 0) * 1000);
+                        $fullBundleCount = min($requestedFullBundleCount, $maxFullBundleCount);
+
+                        if ($requestedFullBundleCount < $maxFullBundleCount) {
+                            $selectedBundlesWeightMilliKg = $fullBundleCount * $bundleWeightMilliKg;
+                            if ($miscWeightMilliKg > $selectedBundlesWeightMilliKg) {
+                                throw ValidationException::withMessages([
+                                    'misc' => 'Miscellaneous scrap cannot exceed the selected bundle weight.',
+                                ]);
+                            }
+
+                            $finishedWeightMilliKg = $selectedBundlesWeightMilliKg - $miscWeightMilliKg;
+                            $looseWeightMilliKg = 0;
+                        } else {
+                            if ($miscWeightMilliKg > $initialLooseWeightMilliKg) {
+                                throw ValidationException::withMessages([
+                                    'misc' => 'Miscellaneous scrap cannot exceed the available loose material.',
+                                ]);
+                            }
+
+                            $looseWeightMilliKg = $initialLooseWeightMilliKg - $miscWeightMilliKg;
+                            $finishedWeightMilliKg = ($fullBundleCount * $bundleWeightMilliKg) + $looseWeightMilliKg;
+                        }
+
+                        $miscScrapMilliKg = $availableWeightMilliKg - $finishedWeightMilliKg;
+
+                        $lockedWorkOrder->fs_bundle_unit = $bundleUnit;
+                        $lockedWorkOrder->total_full_bundle_count = $fullBundleCount;
+                        $lockedWorkOrder->lose_bundle_count = $looseWeightMilliKg > 0 ? 1 : 0;
+                        $lockedWorkOrder->lose_bundle_weight = $bundleUnit === 'KG'
+                            ? $looseWeightMilliKg / 1000
+                            : $looseWeightMilliKg / 1_000_000;
+
+                        if ($miscScrapMilliKg > 0) {
+                            $miscScrapKg = $miscScrapMilliKg / 1000;
+                            $finishedWeightKg = $finishedWeightMilliKg / 1000;
+                            $request->merge([
+                                'processtype' => 'misc',
+                                'workStatus' => 'operation2',
+                                'product_type' => 'hbwire',
+                                'misc' => $miscScrapKg,
+                                'finish_qty' => $finishedWeightKg,
+                            ]);
+                            calculateProductionScrap($request, $lockedWorkOrder);
+                        }
+                    break;
+            }
+
+            if ($operation === 1) {
+                calculateProductionScrap($request, $lockedWorkOrder);
+            }
+
+            $lockedWorkOrder->status = $operation === $finalOperation ? 'completed' : 'under_process';
+            $lockedWorkOrder->current_operation = $operation + 1;
+            $lockedWorkOrder->save();
+        });
+    }
+
+    /**
+     * HHB Wire (product_type = 3): operations 1 to 5.
+     *  1 Acid Pickling | Phosphating
+     *  2 Wire Drawing
+     *  3 Heat Treatment
+     *  4 Acid Pickling | Phosphating (2nd)
+     *  5 Wire Drawing (Final Pass)
+     */
+    private function hhbWireProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
+    {
+        $finalOperation = 5;
+        abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
+    
+        $sizeUnits = Rule::in(['MM', 'THOU']);
+        $hardnessUnits = Rule::in(['BHN', 'HRC']);
+    
+        // Validation (readonly fields jaise SO size/bundle weight request se nahi liye jaate)
+        $validated = match ($operation) {
+            1 => $request->validate([
+                'acid_pickling' => ['nullable', Rule::in(['1'])],
+                'phosphating' => ['nullable', Rule::in(['1'])],
+                'acid_remarks' => ['nullable', 'string', 'max:255'],
+            ]),
+            2 => $request->validate([
+                'final_bundle_count' => ['required', 'integer', 'min:1'],
+               /* 'rm_observed_size' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
+                'rm_observed_unit' => ['required', $sizeUnits],
+                'fs_observed_size' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
+                'fs_observed_unit' => ['required', $sizeUnits],*/
+
+                'fs_size' => 'required',
+                'fs_size_unit' => ['required', $sizeUnits],
+                'fs_observed_size' => 'required',
+                'fs_observed_unit' => ['required', $sizeUnits],
+                
+                'rm_observed_size' => 'required',
+                'rm_observed_unit' => ['required', $sizeUnits],
+                'rm_size' => 'required',
+                'rm_size_unit' => ['required', $sizeUnits],
+            ]),
+            3 => $request->validate([
+                'batch_no' => ['required', 'string', 'max:50'],
+                'hardness_so' => ['nullable', 'numeric', 'min:0', 'decimal:0,3'],
+                'hardness_so_unit' => ['nullable', 'required_with:hardness_so', $hardnessUnits],
+                'hardness_observed' => ['required', 'numeric', 'min:0', 'decimal:0,3'],
+                'hardness_observed_unit' => ['required', $hardnessUnits],
+            ]),
+            4 => $request->validate([
+                'acid_pickling' => ['nullable', Rule::in(['1'])],
+                'phosphating' => ['nullable', Rule::in(['1'])],
+                'batch_no_old' => ['nullable', 'string', 'max:50'],
+                'acid_remarks' => ['nullable', 'string', 'max:255'],
+            ]),
+            5 => $request->validate([
+                'misc_bundle_weight' => ['nullable', 'numeric', 'min:0', 'decimal:0,3'],
+                'manage_misc_scrap' => ['nullable', 'numeric', 'min:0', 'decimal:0,3'],
+                'first_draw_observed_size' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
+                'first_draw_observed_unit' => ['required', $sizeUnits],
+                'final_observed_size' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
+                'final_observed_unit' => ['required', $sizeUnits],
+            ]),
+        };
+    
+        // Operation 1 aur 4: acid pickling aur phosphating mein se exactly ek select hona chahiye.
+        if (in_array($operation, [1, 4], true)
+            && (isset($validated['acid_pickling']) === isset($validated['phosphating']))) {
+            throw ValidationException::withMessages([
+                'acid_pickling' => 'Select either acid pickling or phosphating before completing this operation.',
+            ]);
+        }
+    
+        DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
+            $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
+    
+            // Operation pehle hi complete ho chuka hai (double submit / refresh).
+            if ($lockedWorkOrder === null) {
+                return;
+            }
+    
+            // Save (checkbox: selected = 1, otherwise 2)
+            switch ($operation) {
+                case 1:
+                    $lockedWorkOrder->acid_pickling = isset($validated['acid_pickling']) ? 1 : 2;
+                    $lockedWorkOrder->phosphating = isset($validated['phosphating']) ? 1 : 2;
+                    $lockedWorkOrder->acid_remarks = $validated['acid_remarks'] ?? null;
+                    break;
+    
+                case 2:
+                    $lockedWorkOrder->final_bundle_count = (int) $validated['final_bundle_count'];
+                    $lockedWorkOrder->rm_observed_size = $validated['rm_observed_size'];
+                    $lockedWorkOrder->rm_observed_unit = $validated['rm_observed_unit'];
+                    $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
+                    $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'];
+                    break;
+    
+                case 3:
+                    $lockedWorkOrder->batch_no = $validated['batch_no'];
+                    $lockedWorkOrder->hardness_so = $validated['hardness_so'] ?? null;
+                    $lockedWorkOrder->hardness_so_unit = $validated['hardness_so_unit'] ?? null;
+                    $lockedWorkOrder->hardness_observed = $validated['hardness_observed'];
+                    $lockedWorkOrder->hardness_observed_unit = $validated['hardness_observed_unit'];
+                    break;
+    
+                case 4:
+                    $lockedWorkOrder->second_acid_pickling = isset($validated['acid_pickling']) ? 1 : 2;
+                    $lockedWorkOrder->second_phosphating = isset($validated['phosphating']) ? 1 : 2;
+                    $lockedWorkOrder->second_batch_no = $validated['batch_no_old'] ?? null;
+                    $lockedWorkOrder->second_acid_remarks = $validated['acid_remarks'] ?? null;
+                    break;
+    
+                case 5:
+                    $lockedWorkOrder->misc_bundle_weight = $validated['misc_bundle_weight'] ?? null;
+                    $lockedWorkOrder->misc_scrap = $validated['manage_misc_scrap'] ?? null;
+                    $lockedWorkOrder->final_first_draw_observed_size = $validated['first_draw_observed_size'];
+                    $lockedWorkOrder->final_first_draw_observed_unit = $validated['first_draw_observed_unit'];
+                    $lockedWorkOrder->final_observed_size = $validated['final_observed_size'];
+                    $lockedWorkOrder->final_observed_unit = $validated['final_observed_unit'];
+                    $this->calculateBundles($lockedWorkOrder);
                     break;
             }
     

@@ -36,9 +36,9 @@ class GateController extends Controller
                 'cust_id'          => 'required|exists:customers,id',
                 'formlist'         => 'nullable|string|max:100',
                 'truckno'          => [
-                    'required',
-                    'string',
-                    'regex:/^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$/',
+                    'required'
+                    /* 'string',
+                    'regex:/^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$/' */,
                 ],
                 'vehicleentryslip' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
                 'transportname'    => 'nullable|string|max:255',
