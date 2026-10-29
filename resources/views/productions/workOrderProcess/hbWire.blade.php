@@ -163,8 +163,8 @@
                                         <div class="input-group">
                                         <input type="number" step="0.001" id="fsbndle" class="form-control" name="fsbndle" value="{{ $saleOrderItem->fs_bundle_weight ? _rz($saleOrderItem->fs_bundle_weight) : '' }}" readonly>
                                         <select class="form-select" name="fsbndleUnit" style="max-width:100px;" disabled>
-                                            <option value="KG" {{ $saleOrderItem->fs_bundle_weight == 1 ? 'selected' : '' }} >KG</option>
-                                            <option value="Tons" {{ $saleOrderItem->fs_bundle_weight == 2 ? 'selected' : '' }} >Tons</option>
+                                            <option value="KG" {{ $saleOrderItem->fs_bundle_unit == 1 ? 'selected' : '' }} >KG</option>
+                                            <option value="Tons" {{ $saleOrderItem->fs_bundle_unit == 2 ? 'selected' : '' }} >Tons</option>
                                         </select>
                                         </div>
                                     </div>
@@ -212,7 +212,7 @@
                                         <div class="fheading">Raw Material</div>
                                         <div class="row">
                                         <div class="col-md-6 mt-3">
-                                            <label class="col-form-label">RM Size (Purchase)</label>
+                                            <label class="col-form-label text-danger"> <b> RM Size (Purchase) </b></label>
                                             <div class="input-group mb-3">
                                             <input type="text" class="form-control" value="{{ $saleOrderItem->size->size_name }}" name="rmSize" readonly>
                                             <select class="form-select" name="rmSizeUnit" style="max-width:100px;">
@@ -235,7 +235,7 @@
                                     </div>
 
                                     <div class="col-md-6 mt-3">
-                                        <div class="fheading">Finished Material</div>
+                                        <div class="fheading text-danger"><b> Finished Material </b></div>
                                         <div class="row">
                                         <div class="col-md-6 mt-3">
                                             <label class="col-form-label">FM Size (Sale)</label>

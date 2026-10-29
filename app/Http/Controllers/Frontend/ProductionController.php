@@ -296,9 +296,9 @@ class ProductionController extends Controller
 
             // Ensure the work quantity does not exceed the matching grade's received quantity.
             $receivedCents = $receivings->sum(
-                fn ($receiving) => round((float) $receiving->received_qty * 100)
+                fn ($receiving) => ((float) $receiving->received_qty * 100)
             );
-            $workQuantityThousandths = round((float) $validated['send_work_qty'] * 1000);
+            $workQuantityThousandths = ((float) $validated['send_work_qty'] * 1000);
             if ($workQuantityThousandths > $receivedCents * 10) {
                 throw ValidationException::withMessages([
                     'send_work_qty' => 'The quantity for work cannot exceed the purchase received quantity.',
@@ -306,10 +306,10 @@ class ProductionController extends Controller
             }
 
             // Calculate the remaining usable quantity from each received lot.
-            $requestedCents = round((float) $validated['send_rm_qty'] * 100);
+            $requestedCents = ((float) $validated['send_rm_qty'] * 100);
             $availableCents = $receivings->sum(function ($receiving) {
-                $receivedCents = round((float) $receiving->received_qty * 100);
-                $usedCents = round((float) ($receiving->production_used_qty ?? 0) * 100);
+                $receivedCents = ((float) $receiving->received_qty * 100);
+                $usedCents = ((float) ($receiving->production_used_qty ?? 0) * 100);
 
                 return max(0, $receivedCents - $usedCents);
             });
@@ -328,8 +328,8 @@ class ProductionController extends Controller
                     break;
                 }
 
-                $receivedCents = (int) round((float) $receiving->received_qty * 100);
-                $usedCents = (int) round((float) ($receiving->production_used_qty ?? 0) * 100);
+                $receivedCents = (int) ((float) $receiving->received_qty * 100);
+                $usedCents = (int) ((float) ($receiving->production_used_qty ?? 0) * 100);
                 $rowAvailableCents = max(0, $receivedCents - $usedCents);
                 $allocatedCents = min($remainingCents, $rowAvailableCents);
 
@@ -581,62 +581,60 @@ class ProductionController extends Controller
                             ]);
                         }
 
-                        $bundleWeightMilliKg = (int) round($bundleWeight * ($bundleUnit === 'KG' ? 1000 : 1_000_000));
-                        $initialWeightMilliKg = (int) round((float) $lockedWorkOrder->material_send_for_work * 1_000_000);
+                        $bundleWeightKg = $this->truncateToThreeDecimals($bundleWeight * ($bundleUnit === 'KG' ? 1 : 1000));
+                        $initialWeightKg = $this->truncateToThreeDecimals((float) $lockedWorkOrder->material_send_for_work * 1000);
                         
-                        $nonRecoverableScrapMilliKg = (int) round(
+                        $nonRecoverableScrapKg = $this->truncateToThreeDecimals(
                             (float) WorkOrderLoss::query()
                                 ->where('work_order_id', $lockedWorkOrder->id)
-                                ->where('scrap_type', 2)
-                                ->sum('loss_weight') * 1000
+                                // ->where('scrap_type', 2)
+                                ->sum('loss_weight')
                         );
-                        $availableWeightMilliKg = $initialWeightMilliKg - $nonRecoverableScrapMilliKg;
+                        $availableWeightKg = $this->truncateToThreeDecimals($initialWeightKg - $nonRecoverableScrapKg);
 
-                        if ($bundleWeightMilliKg <= 0 || $availableWeightMilliKg <= 0) {
+                        if ($bundleWeightKg <= 0 || $availableWeightKg <= 0) {
                             throw ValidationException::withMessages([
                                 'fs_bundle_weight' => 'A positive quantity of raw material must be available for bundling.',
                             ]);
                         }
 
-                        $maxFullBundleCount = intdiv($availableWeightMilliKg, $bundleWeightMilliKg);
-                        $initialLooseWeightMilliKg = $availableWeightMilliKg % $bundleWeightMilliKg;
+                        $maxFullBundleCount = (int) floor(($availableWeightKg + 0.000000001) / $bundleWeightKg);
+                        $initialLooseWeightKg = $this->truncateToThreeDecimals($availableWeightKg - ($maxFullBundleCount * $bundleWeightKg));
                         $requestedFullBundleCount = (int) $validated['pcsfsbndle'];
-                        $miscWeightMilliKg = (int) round((float) ($validated['misc'] ?? 0) * 1000);
+                        $miscWeightKg = $this->truncateToThreeDecimals((float) ($validated['misc'] ?? 0));
                         $fullBundleCount = min($requestedFullBundleCount, $maxFullBundleCount);
 
                         if ($requestedFullBundleCount < $maxFullBundleCount) {
-                            $selectedBundlesWeightMilliKg = $fullBundleCount * $bundleWeightMilliKg;
-                            if ($miscWeightMilliKg > $selectedBundlesWeightMilliKg) {
+                            $selectedBundlesWeightKg = $this->truncateToThreeDecimals($fullBundleCount * $bundleWeightKg);
+                            if ($miscWeightKg > $selectedBundlesWeightKg) {
                                 throw ValidationException::withMessages([
                                     'misc' => 'Miscellaneous scrap cannot exceed the selected bundle weight.',
                                 ]);
                             }
 
-                            $finishedWeightMilliKg = $selectedBundlesWeightMilliKg - $miscWeightMilliKg;
-                            $looseWeightMilliKg = 0;
+                            $finishedWeightKg = $this->truncateToThreeDecimals($selectedBundlesWeightKg - $miscWeightKg);
+                            $looseWeightKg = 0;
                         } else {
-                            if ($miscWeightMilliKg > $initialLooseWeightMilliKg) {
+                            if ($miscWeightKg > $initialLooseWeightKg) {
                                 throw ValidationException::withMessages([
                                     'misc' => 'Miscellaneous scrap cannot exceed the available loose material.',
                                 ]);
                             }
 
-                            $looseWeightMilliKg = $initialLooseWeightMilliKg - $miscWeightMilliKg;
-                            $finishedWeightMilliKg = ($fullBundleCount * $bundleWeightMilliKg) + $looseWeightMilliKg;
+                            $looseWeightKg = $this->truncateToThreeDecimals($initialLooseWeightKg - $miscWeightKg);
+                            $finishedWeightKg = $this->truncateToThreeDecimals(($fullBundleCount * $bundleWeightKg) + $looseWeightKg);
                         }
 
-                        $miscScrapMilliKg = $availableWeightMilliKg - $finishedWeightMilliKg;
+                        $miscScrapKg = $this->truncateToThreeDecimals($availableWeightKg - $finishedWeightKg);
 
                         $lockedWorkOrder->fs_bundle_unit = $bundleUnit;
                         $lockedWorkOrder->total_full_bundle_count = $fullBundleCount;
-                        $lockedWorkOrder->lose_bundle_count = $looseWeightMilliKg > 0 ? 1 : 0;
+                        $lockedWorkOrder->lose_bundle_count = $looseWeightKg > 0 ? 1 : 0;
                         $lockedWorkOrder->lose_bundle_weight = $bundleUnit === 'KG'
-                            ? $looseWeightMilliKg / 1000
-                            : $looseWeightMilliKg / 1_000_000;
+                            ? $looseWeightKg
+                            : $this->truncateToThreeDecimals($looseWeightKg / 1000);
 
-                        if ($miscScrapMilliKg > 0) {
-                            $miscScrapKg = $miscScrapMilliKg / 1000;
-                            $finishedWeightKg = $finishedWeightMilliKg / 1000;
+                        if ($miscScrapKg > 0) {
                             $request->merge([
                                 'processtype' => 'misc',
                                 'workStatus' => 'operation2',
@@ -669,6 +667,10 @@ class ProductionController extends Controller
      */
     private function hhbWireProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
     {
+        $data = $request->toArray();
+        pr($data);
+        die;
+        
         $finalOperation = 5;
         abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
     
@@ -684,10 +686,6 @@ class ProductionController extends Controller
             ]),
             2 => $request->validate([
                 'final_bundle_count' => ['required', 'integer', 'min:1'],
-               /* 'rm_observed_size' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
-                'rm_observed_unit' => ['required', $sizeUnits],
-                'fs_observed_size' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
-                'fs_observed_unit' => ['required', $sizeUnits],*/
 
                 'fs_size' => 'required',
                 'fs_size_unit' => ['required', $sizeUnits],
@@ -701,16 +699,16 @@ class ProductionController extends Controller
             ]),
             3 => $request->validate([
                 'batch_no' => ['required', 'string', 'max:50'],
-                'hardness_so' => ['nullable', 'numeric', 'min:0', 'decimal:0,3'],
-                'hardness_so_unit' => ['nullable', 'required_with:hardness_so', $hardnessUnits],
-                'hardness_observed' => ['required', 'numeric', 'min:0', 'decimal:0,3'],
+                'hardness' => 'nullable',
+                'hardness_unit' => ['nullable', 'required_with:hardness', $hardnessUnits],
+                'hardness_observed' => 'required',
                 'hardness_observed_unit' => ['required', $hardnessUnits],
             ]),
             4 => $request->validate([
-                'acid_pickling' => ['nullable', Rule::in(['1'])],
-                'phosphating' => ['nullable', Rule::in(['1'])],
-                'batch_no_old' => ['nullable', 'string', 'max:50'],
-                'acid_remarks' => ['nullable', 'string', 'max:255'],
+                'second_acid_pickling' => ['nullable', Rule::in(['1'])],
+                'second_phosphating' => ['nullable', Rule::in(['1'])],
+                // 'batch_no_old' => ['nullable', 'string', 'max:50'],
+                'second_acid_remarks' => ['nullable', 'string', 'max:255'],
             ]),
             5 => $request->validate([
                 'misc_bundle_weight' => ['nullable', 'numeric', 'min:0', 'decimal:0,3'],
@@ -723,12 +721,20 @@ class ProductionController extends Controller
         };
     
         // Operation 1 aur 4: acid pickling aur phosphating mein se exactly ek select hona chahiye.
-        if (in_array($operation, [1, 4], true)
-            && (isset($validated['acid_pickling']) === isset($validated['phosphating']))) {
+        /* if (in_array($operation, [1, 4], true) && !isset($validated['acid_pickling']) && !isset($validated['phosphating']) || !isset($validated['second_acid_pickling']) && !isset($validated['second_phosphating'])) {
+            throw ValidationException::withMessages([
+                'acid_pickling' => 'Select either Acid Pickling or Phosphating before completing this operation.',
+            ]);
+        } */
+
+        /* if ( in_array($operation, [1, 4], true) && (
+                (!isset($validated['acid_pickling']) && !isset($validated['phosphating'])) ||
+                (!isset($validated['second_acid_pickling']) && !isset($validated['second_phosphating']))
+            )) {
             throw ValidationException::withMessages([
                 'acid_pickling' => 'Select either acid pickling or phosphating before completing this operation.',
             ]);
-        }
+        } */
     
         DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
             $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
@@ -747,26 +753,81 @@ class ProductionController extends Controller
                     break;
     
                 case 2:
-                    $lockedWorkOrder->final_bundle_count = (int) $validated['final_bundle_count'];
-                    $lockedWorkOrder->rm_observed_size = $validated['rm_observed_size'];
-                    $lockedWorkOrder->rm_observed_unit = $validated['rm_observed_unit'];
-                    $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
-                    $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'];
+                    $lockedWorkOrder->fs_observed_size  = $validated['fs_observed_size'];
+                    $lockedWorkOrder->fs_observed_unit  = $validated['fs_observed_unit'];
+                    $lockedWorkOrder->fs_size           = $validated['fs_size'];
+                    $lockedWorkOrder->fs_size_unit      = $validated['fs_size_unit'];
+
+                    $lockedWorkOrder->rm_observed_size  = $validated['rm_observed_size'];
+                    $lockedWorkOrder->rm_observed_unit  = $validated['rm_observed_unit'];
+                    $lockedWorkOrder->rm_size           = $validated['rm_size'];
+                    $lockedWorkOrder->rm_size_unit      = $validated['rm_size_unit'];
+
+                    $bundleUnit = $this->bundleUnitLabel($lockedWorkOrder->fs_bundle_unit);
+                    $bundleWeight = (float) $lockedWorkOrder->fs_bundle_weight;
+                    if ($bundleWeight <= 0 || $bundleUnit === null) {
+                        throw ValidationException::withMessages([
+                            'fs_bundle_weight' => 'A positive bundle weight and a valid bundle unit are required.',
+                        ]);
+                    }
+                    $bundleWeightKg = $this->truncateToThreeDecimals($bundleWeight * ($bundleUnit === 'KG' ? 1 : 1000));
+                    $initialWeightKg = $this->truncateToThreeDecimals((float) $lockedWorkOrder->material_send_for_work * 1000);
+                    $previousScrapKg = $this->truncateToThreeDecimals(
+                        (float) WorkOrderLoss::query()
+                            ->where('work_order_id', $lockedWorkOrder->id)
+                            ->sum('loss_weight')
+                    );
+                    $availableWeightKg = $this->truncateToThreeDecimals($initialWeightKg - $previousScrapKg);
+
+                    if ($bundleWeightKg <= 0 || $availableWeightKg <= 0) {
+                        throw ValidationException::withMessages([
+                            'fs_bundle_weight' => 'A positive quantity of raw material must be available for bundling.',
+                        ]);
+                    }
+
+                    $maxFullBundleCount = (int) floor(($availableWeightKg + 0.000000001) / $bundleWeightKg);
+                    $requestedFullBundleCount = (int) $validated['final_bundle_count'];
+                    $requestedMiscKg = max(0, $this->truncateToThreeDecimals((float) ($request->input('misc') ?? 0)));
+                    $outputWeightKg = $requestedFullBundleCount < $maxFullBundleCount
+                        ? min($requestedFullBundleCount * $bundleWeightKg, $availableWeightKg)
+                        : $availableWeightKg;
+                    $finishedWeightKg = max(0, $this->truncateToThreeDecimals($outputWeightKg - $requestedMiscKg));
+                    $fullBundleCount = (int) floor(($finishedWeightKg + 0.000000001) / $bundleWeightKg);
+                    $looseWeightKg = $this->truncateToThreeDecimals($finishedWeightKg - ($fullBundleCount * $bundleWeightKg));
+                    $miscScrapKg = $this->truncateToThreeDecimals($availableWeightKg - $finishedWeightKg);
+
+                    $lockedWorkOrder->fs_bundle_unit = $bundleUnit;
+                    $lockedWorkOrder->total_full_bundle_count = $fullBundleCount;
+                    $lockedWorkOrder->lose_bundle_count = $looseWeightKg > 0 ? 1 : 0;
+                    $lockedWorkOrder->lose_bundle_weight = $bundleUnit === 'KG'
+                        ? $looseWeightKg
+                        : $this->truncateToThreeDecimals($looseWeightKg / 1000);
+
+                    if ($miscScrapKg > 0) {
+                        $request->merge([
+                            'processtype' => 'misc',
+                            'workStatus' => 'operation2',
+                            'product_type' => 'hbwire',
+                            'misc' => $miscScrapKg,
+                            'finish_qty' => $finishedWeightKg,
+                        ]);
+                        calculateProductionScrap($request, $lockedWorkOrder);
+                    }
                     break;
     
                 case 3:
                     $lockedWorkOrder->batch_no = $validated['batch_no'];
-                    $lockedWorkOrder->hardness_so = $validated['hardness_so'] ?? null;
-                    $lockedWorkOrder->hardness_so_unit = $validated['hardness_so_unit'] ?? null;
+                    $lockedWorkOrder->hardness = $validated['hardness'] ?? $saleOrderItem->hardness;
+                    $lockedWorkOrder->hardness_unit = $validated['hardness_unit'] ?? $saleOrderItem->hardness_unit;
                     $lockedWorkOrder->hardness_observed = $validated['hardness_observed'];
                     $lockedWorkOrder->hardness_observed_unit = $validated['hardness_observed_unit'];
                     break;
     
                 case 4:
-                    $lockedWorkOrder->second_acid_pickling = isset($validated['acid_pickling']) ? 1 : 2;
-                    $lockedWorkOrder->second_phosphating = isset($validated['phosphating']) ? 1 : 2;
-                    $lockedWorkOrder->second_batch_no = $validated['batch_no_old'] ?? null;
-                    $lockedWorkOrder->second_acid_remarks = $validated['acid_remarks'] ?? null;
+                    $lockedWorkOrder->second_acid_pickling = isset($validated['second_acid_pickling']) ? 1 : 2;
+                    $lockedWorkOrder->second_phosphating = isset($validated['second_phosphating']) ? 1 : 2;
+                    // $lockedWorkOrder->second_batch_no = $validated['batch_no_old'] ?? null;
+                    $lockedWorkOrder->second_acid_remarks = $validated['second_acid_remarks'] ?? null;
                     break;
     
                 case 5:
@@ -821,7 +882,7 @@ class ProductionController extends Controller
     /**
      * Full aur loose bundles sale-order unit mein calculate karta hai (full bundle round-up nahi hota).
      */
-    private function calculateBundles(Request $request,WorkOrderProcess $workOrder): void
+    private function calculateBundles(WorkOrderProcess $workOrder): void
     {
         $bundleWeight = (float) $workOrder->fs_bundle_weight;
         if ($bundleWeight <= 0) {
@@ -837,26 +898,51 @@ class ProductionController extends Controller
             ]);
         }
     
-        $bundleWeightMilli = (int) round($bundleWeight * 1000);
-        $materialMilli = (int) round((float) $workOrder->material_send_for_work * 1000);
+        $bundleWeightKg = $this->truncateToThreeDecimals($bundleWeight * ($unit === 'KG' ? 1 : 1000));
+        $materialWeightKg = $this->truncateToThreeDecimals((float) $workOrder->material_send_for_work * 1000);
     
-        if ($bundleWeightMilli <= 0 || $materialMilli <= 0) {
+        if ($bundleWeightKg <= 0 || $materialWeightKg <= 0) {
             throw ValidationException::withMessages([
                 'fs_bundle_weight' => 'A positive material quantity and bundle weight are required.',
             ]);
         }
     
-        // Material tons mein hai; bundle KG mein ho to convert karo.
-        if ($unit === 'KG') {
-            $materialMilli *= 1000;
-        }
-    
-        $remainingWeight = ($materialMilli % $bundleWeightMilli) / 1000;
+        $fullBundleCount = (int) floor(($materialWeightKg + 0.000000001) / $bundleWeightKg);
+        $remainingWeightKg = $this->truncateToThreeDecimals($materialWeightKg - ($fullBundleCount * $bundleWeightKg));
     
         $workOrder->fs_bundle_unit = $unit;
-        $workOrder->total_full_bundle_count = intdiv($materialMilli, $bundleWeightMilli);
-        $workOrder->lose_bundle_weight = $remainingWeight;
-        $workOrder->lose_bundle_count = $remainingWeight > 0 ? 1 : 0;
+        $workOrder->total_full_bundle_count = $fullBundleCount;
+        $workOrder->lose_bundle_weight = $unit === 'KG'
+            ? $remainingWeightKg
+            : $this->truncateToThreeDecimals($remainingWeightKg / 1000);
+        $workOrder->lose_bundle_count = $remainingWeightKg > 0 ? 1 : 0;
+    }
+
+    private function truncateToThreeDecimals(float $value): float
+    {
+        $number = strtolower((string) $value);
+        $negative = str_starts_with($number, '-');
+        $number = ltrim($number, '+-');
+        [$significand, $exponent] = array_pad(explode('e', $number, 2), 2, '0');
+        [$integer, $fraction] = array_pad(explode('.', $significand, 2), 2, '');
+
+        $digits = $integer . $fraction;
+        $decimalPosition = strlen($integer) + (int) $exponent;
+
+        if ($decimalPosition <= 0) {
+            $integer = '0';
+            $fraction = str_repeat('0', -$decimalPosition) . $digits;
+        } elseif ($decimalPosition >= strlen($digits)) {
+            $integer = $digits . str_repeat('0', $decimalPosition - strlen($digits));
+            $fraction = '';
+        } else {
+            $integer = substr($digits, 0, $decimalPosition);
+            $fraction = substr($digits, $decimalPosition);
+        }
+
+        $truncated = $integer . ($fraction === '' ? '' : '.' . substr($fraction, 0, 3));
+
+        return (float) ($negative ? '-' . $truncated : $truncated);
     }
 
     private function bundleUnitLabel($unit): ?string
