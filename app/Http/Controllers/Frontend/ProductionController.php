@@ -410,13 +410,15 @@ class ProductionController extends Controller
         $totalRecScrap = $workOrder->saleOrderItem->losses
                 ->where('scrap_type', 1)
                 ->sum('loss_weight');
-                // pr($totalLossWeight); die;
+        $adjScrap = $workOrder->saleOrderItem->losses
+                ->sum('adjustable_material');
         return view($view, [
             'workOrder'         => $workOrder,
             'saleOrderItem'     => $workOrder->saleOrderItem,
             'currentOperation'  => (int) ($workOrder->current_operation ?: 1),
             'totalNonRecScrap'  => @$totalNonRecScrap ?? 0,
             'totalRecScrap'     => @$totalRecScrap ?? 0,
+            'adjScrap'          => @$adjScrap ?? 0,
         ]);
     }
 
@@ -667,10 +669,6 @@ class ProductionController extends Controller
      */
     private function hhbWireProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
     {
-        $data = $request->toArray();
-        pr($data);
-        die;
-        
         $finalOperation = 5;
         abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
     
@@ -713,9 +711,9 @@ class ProductionController extends Controller
             5 => $request->validate([
                 'misc_bundle_weight' => ['nullable', 'numeric', 'min:0', 'decimal:0,3'],
                 'manage_misc_scrap' => ['nullable', 'numeric', 'min:0', 'decimal:0,3'],
-                'first_draw_observed_size' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
-                'first_draw_observed_unit' => ['required', $sizeUnits],
-                'final_observed_size' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
+                /* 'first_draw_observed_size' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
+                'first_draw_observed_unit' => ['required', $sizeUnits], */
+                'final_observed_size' => 'required',
                 'final_observed_unit' => ['required', $sizeUnits],
             ]),
         };
@@ -831,13 +829,87 @@ class ProductionController extends Controller
                     break;
     
                 case 5:
-                    $lockedWorkOrder->misc_bundle_weight = $validated['misc_bundle_weight'] ?? null;
-                    $lockedWorkOrder->misc_scrap = $validated['manage_misc_scrap'] ?? null;
-                    $lockedWorkOrder->final_first_draw_observed_size = $validated['first_draw_observed_size'];
-                    $lockedWorkOrder->final_first_draw_observed_unit = $validated['first_draw_observed_unit'];
-                    $lockedWorkOrder->final_observed_size = $validated['final_observed_size'];
-                    $lockedWorkOrder->final_observed_unit = $validated['final_observed_unit'];
+                    $lockedWorkOrder->final_fs_observed_size = $validated['final_observed_size'];
+                    $lockedWorkOrder->final_fs_observed_unit = $validated['final_observed_unit'];
                     $this->calculateBundles($lockedWorkOrder);
+                    
+                    $bundleUnit          = $this->bundleUnitLabel($lockedWorkOrder->fs_bundle_unit);
+                    $bundleWeight        = (float) $lockedWorkOrder->fs_bundle_weight;
+                    $bundleWeightKg      = $this->truncateToThreeDecimals($bundleWeight * ($bundleUnit === 'KG' ? 1 : 1000));
+                    
+                    $bundleTotalWeightKg = $this->truncateToThreeDecimals(
+                        ((int) $lockedWorkOrder->total_full_bundle_count * $bundleWeightKg)
+                        + ((float) $lockedWorkOrder->lose_bundle_weight * ($bundleUnit === 'KG' ? 1 : 1000))
+                    );
+                        
+                    $scrapAdjustmentKg = 0.0;
+                    if (isset($validated['manage_misc_scrap'])) {
+                        $recoverableLosses = WorkOrderLoss::query()
+                            ->where('sale_order_item_id', $lockedWorkOrder->sale_order_item_id)
+                            ->where('scrap_type', 1)
+                            ->orderBy('id')
+                            ->lockForUpdate()
+                            ->get();
+                        $recordedScrapKg = $this->truncateToThreeDecimals($recoverableLosses->sum(
+                            fn (WorkOrderLoss $loss) => max(
+                                0,(float) $loss->loss_weight - (float) ($loss->adjustable_material ?? 0)
+                            )
+                        ));
+                        
+                        $requestedScrapKg = $this->truncateToThreeDecimals((float) $validated['manage_misc_scrap']);
+                        $remainingAdjustmentKg = max(0, $this->truncateToThreeDecimals($recordedScrapKg - $requestedScrapKg));
+
+                        foreach ($recoverableLosses as $recoverableLoss) {
+                            if ($remainingAdjustmentKg <= 0) {
+                                break;
+                            }
+
+                            $previousAdjustmentKg = $this->truncateToThreeDecimals((float) ($recoverableLoss->adjustable_material ?? 0));
+                            $adjustableLossKg = max(0, $this->truncateToThreeDecimals((float) $recoverableLoss->loss_weight - $previousAdjustmentKg));
+                            $adjustmentKg = min($remainingAdjustmentKg, $adjustableLossKg);
+
+                            if ($adjustmentKg <= 0) {
+                                continue;
+                            }
+
+                            $recoverableLoss->adjustable_material = $this->truncateToThreeDecimals($previousAdjustmentKg + $adjustmentKg);
+                            $recoverableLoss->weight_after_adjustable_material = $this->truncateToThreeDecimals(
+                                (float) ($recoverableLoss->weight_after_adjustable_material ?? $recoverableLoss->weight_after_loss ?? 0) + $adjustmentKg
+                            );
+                            $recoverableLoss->save();
+
+                            $scrapAdjustmentKg = $this->truncateToThreeDecimals($scrapAdjustmentKg + $adjustmentKg);
+                            $remainingAdjustmentKg = $this->truncateToThreeDecimals($remainingAdjustmentKg - $adjustmentKg);
+                        }
+                    }
+
+                    pr($bundleTotalWeightKg); 
+                    pr($request->toArray()); die;
+
+                    $miscBundleWeightKg = max(0, $this->truncateToThreeDecimals((float) ($validated['misc_bundle_weight'] ?? 0)));
+                    $updatedBundleWeightKg = max(
+                        0,
+                        $this->truncateToThreeDecimals($bundleTotalWeightKg + $scrapAdjustmentKg - $miscBundleWeightKg)
+                    );
+                    $fullBundleCount = (int) floor(($updatedBundleWeightKg + 0.000000001) / $bundleWeightKg);
+                    $looseBundleWeightKg = $this->truncateToThreeDecimals(
+                        $updatedBundleWeightKg - ($fullBundleCount * $bundleWeightKg)
+                    );
+
+                    $lockedWorkOrder->total_full_bundle_count = $fullBundleCount;
+                    $lockedWorkOrder->lose_bundle_count = $looseBundleWeightKg > 0 ? 1 : 0;
+                    $lockedWorkOrder->lose_bundle_weight = $bundleUnit === 'KG'
+                        ? $looseBundleWeightKg
+                        : $this->truncateToThreeDecimals($looseBundleWeightKg / 1000);
+
+                    if ($miscBundleWeightKg > 0) {
+                        $request->merge([
+                            'processtype' => 'misc',
+                            'workStatus' => 'operation5',
+                            'product_type' => 'hhbwire',
+                            'misc' => $miscBundleWeightKg,
+                        ]);
+                    }
                     break;
             }
     

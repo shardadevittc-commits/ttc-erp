@@ -40,9 +40,10 @@
     </td>
     {{-- Qty --}}
     <td data-field="qty">
-        <div class="d-flex gap-1">
-            <input type="number" min="0" step="0.001" class="form-control number_only form-control-sm w-50" name="items[{{ $index }}][item_qty]" value="{{ data_get($item, 'item_qty') }}" required>
-            <select class="form-select form-select-sm w-50" name="items[{{ $index }}][qty_type]" required>
+        <div class="d-flex border rounded overflow-hidden" style="gap: 0;">
+            <input type="text" class="form-control number_only form-control-sm w-50 border-0 rounded-0 shadow-none" style="width: 50%;" name="items[{{ $index }}][item_qty]" value="{{ data_get($item, 'item_qty') }}" required>
+
+            <select class="form-select form-select-sm w-50 border-0 rounded-0 shadow-none" style="width: 50%;" name="items[{{ $index }}][qty_type]" required>
                 <option value="">Unit</option>
                 <option value="1" @selected((string) data_get($item, 'qty_type', '') === '1')>Tons</option>
                 <option value="2" @selected((string) data_get($item, 'qty_type', '') === '2')>KGs</option>
@@ -64,15 +65,33 @@
         </td>
     @endforeach
 
-    <td data-field="hardness">
-        <input class="form-control form-control-sm mb-1" name="items[{{ $index }}][hardness]" value="{{ data_get($item, 'hardness') }}" placeholder="Hardness">
         {{-- <input class="form-control form-control-sm" name="items[{{ $index }}][hardness_unit]" value="{{ data_get($item, 'hardness_unit') }}" placeholder="Unit (BHN, HRC)"> --}}
+    {{-- <td data-field="hardness">
+        <input class="form-control form-control-sm mb-1" name="items[{{ $index }}][hardness]" value="{{ data_get($item, 'hardness') }}" placeholder="Hardness">
         <div class="mt-1">
             <label class="d-block">
             <input type="radio" name="items[{{ $index }}][hardness_unit]" value="BHN" @checked(data_get($item, 'BHN') === 'hardness_unit')> Auto black</label>
             <label class="d-block"><input type="radio" name="items[{{ $index }}][hardness_unit]" value="HRC" @checked(data_get($item, 'hardness_unit') === 'HRC')> Galvanized</label>
         </div>
-    </td>
+    </td> --}}
+    <td data-field="hardness">
+    <div class="d-flex border rounded overflow-hidden">
+        <input type="text"
+               class="form-control form-control-sm border-0 rounded-0 shadow-none"
+               style="width: 50%;"
+               name="items[{{ $index }}][hardness]"
+               value="{{ data_get($item, 'hardness') }}"
+               placeholder="Hardness">
+
+        <select class="form-control form-control-sm border-0 rounded-0 shadow-none"
+                style="width: 50%;"
+                name="items[{{ $index }}][hardness_unit]">
+            <option value="">Unit</option>
+            <option value="BHN" @selected(data_get($item, 'hardness_unit') === 'BHN')>BHN</option>
+            <option value="HRC" @selected(data_get($item, 'hardness_unit') === 'HRC')>HRC</option>
+        </select>
+    </div>
+</td>
 
     <td data-field="length">
         <input class="form-control form-control-sm" name="items[{{ $index }}][pcs_length_unit]" value="{{ data_get($item, 'pcs_length_unit') }}" placeholder="Length">

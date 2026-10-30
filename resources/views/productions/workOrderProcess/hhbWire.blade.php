@@ -473,6 +473,7 @@
                                             <span class="input-group-text">{{ $bundleUnit }}</span>
                                         </div>
                                     </div>
+                                    @if ($currentOperation === 5)
                                     <div class="col-md-4">
                                         <label class="col-form-label" for="hhbMiscBundleWeight"
                                             title="Whatever weight you enter in 'Misc. Bundle Weight (Kgs)' will be deducted directly from the main bundle weight and added to Misc Scrap.">
@@ -501,8 +502,28 @@
                                             ⓘ
                                         </span>
                                         <input type="text" class="form-control number_only" id="hhbManageMiscScrap" placeholder="Enter Adjust Scrap Quantity in Kg EX: 250"
-                                            name="manage_misc_scrap" value="{{ old('manage_misc_scrap', $totalRecScrap) }}">
+                                            name="manage_misc_scrap" value="{{ old('manage_misc_scrap', ($totalRecScrap ?? 0) - ($adjScrap ?? 0)) }}">
                                     </div>
+                                    @else
+                                        @if(isset($adjScrap) && $adjScrap)
+                                        <div class="col-md-4">
+                                            <label class="col-form-label" for="hhbManageMiscScrap" 
+                                                data-bs-toggle="tooltip"
+                                                data-bs-html="true" title="...">
+                                                Adjustable Scrap
+                                            </label>
+                                            <span 
+                                                data-bs-toggle="tooltip"
+                                                data-bs-html="true"
+                                                title="..."
+                                                style="cursor: pointer;">
+                                                ⓘ
+                                            </span>
+                                            <input type="text" class="form-control number_only" id="hhbManageMiscScrap" placeholder="Enter Adjust Scrap Quantity in Kg EX: 250"
+                                                name="manage_misc_scrap" value="{{ $adjScrap ?? 0 }}">
+                                        </div>
+                                        @endif
+                                    @endif
                                 </div>
 
                                 <div class="row">
@@ -548,12 +569,12 @@
                                             <div class="col-md-6 mt-3">
                                                 <label class="col-form-label" for="hhbFinalObservedSize">Observed Size</label>
                                                 <div class="input-group">
-                                                    <input type="number" step="0.001" min="0" class="form-control" id="hhbFinalObservedSize"
+                                                    <input type="text" class="form-control" id="hhbFinalObservedSize"
                                                         name="final_observed_size"
-                                                        value="{{ old('final_observed_size', $workOrder->final_observed_size) }}" required>
+                                                        value="{{ old('final_observed_size', $workOrder->final_fs_observed_size) }}" required>
                                                     <select class="form-select" name="final_observed_unit" aria-label="Final size unit" required>
-                                                        <option value="MM" @selected(old('final_observed_unit', $workOrder->final_observed_unit) === 'MM')>MM</option>
-                                                        <option value="THOU" @selected(old('final_observed_unit', $workOrder->final_observed_unit) === 'THOU')>THOU</option>
+                                                        <option value="MM" @selected(old('final_observed_unit', $workOrder->final_fs_observed_unit) === 'MM')>MM</option>
+                                                        <option value="THOU" @selected(old('final_observed_unit', $workOrder->final_fs_observed_unit) === 'THOU')>THOU</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -593,7 +614,7 @@
 
                                         <div class="col mt-3">
                                             <label class="col-form-label text-nowrap">Finish Qty (Kg.)</label>
-                                            <input type="text" class="form-control" value="{{ _rz($finishedMaterialKg) }}" disabled>
+                                            <input type="text" class="form-control" value="{{ _rz($finishedMaterialKg + ($adjScrap ?? 0)) }}" disabled>
                                         </div>
 
                                         <div class="col mt-3">

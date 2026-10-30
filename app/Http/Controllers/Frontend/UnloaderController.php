@@ -151,7 +151,6 @@ class UnloaderController extends Controller
         if($weightId){
             $vehicalDetails = Weight::with('customer')->findOrFail($weightId);
 
-
             // Pehle receiving quantities ka total calculate karein
             $receivedTotals = PurchaseOrderitemReceiving::select('purchase_order_item_id')
                 ->selectRaw('SUM(received_qty) as total_received')
@@ -170,7 +169,6 @@ class UnloaderController extends Controller
                 ->get();
                 // Is vehicle ka receiving data
                 $poItemsReceived = PurchaseOrderitemReceiving::with(['customer','grade','size','purchaseOrderItem.product', 'weight'])->where('vehical_id', $vehicalDetails->vehicle_id)->get();
-                // pr($vehicalDetails->vehicle_id); die;
         }
 
         if ($request->isMethod('post')) {
