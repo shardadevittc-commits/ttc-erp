@@ -40,7 +40,7 @@
         const receivedQty = Number(button.dataset.receivedQty || 0);
         const availableQty = Number(button.dataset.availableQty || 0);
         const workQty = Math.min(Number(button.dataset.orderQty || 0), receivedQty);
-
+        console.log(button);
         form.action = button.dataset.workOrderUrl;
         document.getElementById('workOrderSubmissionToken').value = createSubmissionToken();
         document.getElementById('workOrderParty').value = button.dataset.party || '';

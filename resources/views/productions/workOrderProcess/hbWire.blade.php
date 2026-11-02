@@ -154,9 +154,6 @@
                             <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 2]) }}">
                                 @csrf
                                 <input type="hidden" name="workStatus" value="operation2">
-                                {{-- <input type="hidden" name="oprtion1" value="Operation 1">
-                                <input type="hidden" name="oprtion2" value="Operation 2">
-                                <input type="hidden" name="processtype" value="wire_drawing"> --}}
                                 <div class="row">
                                     <div class="col-md-3">
                                         <label class="col-form-label">FS Bundle Weight (From SO)</label>

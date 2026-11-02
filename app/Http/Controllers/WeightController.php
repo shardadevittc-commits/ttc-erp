@@ -110,12 +110,7 @@ class WeightController extends Controller
                 ->first();
 
             $po_receiving = PurchaseOrderitemReceiving::query()
-                ->leftJoin(
-                    'purchase_order_items as poi',
-                    'poitem_receiving.purchase_order_item_id',
-                    '=',
-                    'poi.id'
-                )
+                ->leftJoin('purchase_order_items as poi','poitem_receiving.purchase_order_item_id','=','poi.id')
                 ->leftJoin('products as p', 'poi.product_id', '=', 'p.id')
                 ->leftJoin('grades as g', 'poitem_receiving.grade_id', '=', 'g.id')
                 ->leftJoin('sizes as s', 'poitem_receiving.size_id', '=', 's.id')
@@ -164,7 +159,7 @@ class WeightController extends Controller
     {
 
         $validated = $request->validate([
-            'id' => 'required|integer|exists:weigh,id',
+            'id' => 'required|integer|exists:weights,id',
             'vehicle_id' => 'required|integer',
             'cust_id' => 'required|integer',
             'formlist' => 'required|string',
@@ -185,6 +180,7 @@ class WeightController extends Controller
             'actual_qty' => 'required|array',
             'actual_qty.*' => 'required|numeric|min:0',
         ]);
+        // pr($request->toArray()); die;
 //echo"<pre>";print_r($request->all());die;
         $entries = $validated['po_receiving'];
         $actualQty = $validated['actual_qty'];
@@ -195,8 +191,7 @@ class WeightController extends Controller
                 return back()
                     ->withInput()
                     ->withErrors([
-                        "actual_qty.$index" =>
-                            'Actual quantity is required for every material entry.',
+                        "actual_qty.$index" => 'Actual quantity is required for every material entry.',
                     ]);
             }
         }

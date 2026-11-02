@@ -3,6 +3,7 @@
         $saleOrderItem = $productionHistory ? $item->saleOrderItem : $item;
         $workOrder = $productionHistory ? $item : null;
     @endphp
+        {{-- pr($workOrder->toArray()); die; --}}
     <tr>
         <td> {{$k+1}} </td>
         <td>
@@ -12,16 +13,6 @@
                 ---
             @endif
         </td>
-        {{-- <td>
-            @if ($item->saleOrder)
-                <a href="{{ route('saleOrders.view', ['id' => $item->saleOrder->id]) }}" class="fw-medium">
-                    #{{ $item->saleOrder->id }}
-                </a>
-            @else
-                -
-            @endif
-        </td> --}}
-        {{-- <td>{{ $item->saleOrder?->created_at ? _d($item->saleOrder->created_at) : '-' }}</td> --}}
         @php
         $itemQty = $saleOrderItem->item_qty !== null ? _rz($saleOrderItem->item_qty).' Tons' : '';
         $saleItemPrice = $saleOrderItem->sale_item_prices !== null ? _rz($saleOrderItem->sale_item_prices) : '';
@@ -48,7 +39,30 @@
             @endif
         </td>
         
-        {{-- pr($item->toArray()); die; --}}
+            {{-- pr($saleOrderItem->toArray()); die; --}}
+        @php
+            $instructions = [];
+            if (isset($saleOrderItem['spectroCheck']) && $saleOrderItem['spectroCheck']) {
+                $instructions[] = "SPECTRO / XRF Check: " . 'Yes';
+            } 
+            if (isset($saleOrderItem['xrfCheck']) && $saleOrderItem['xrfCheck']) {
+                $instructions[] = "Mechanical Properties Check: " . 'Yes';
+            }
+            if (isset($saleOrderItem['straightening']) && $saleOrderItem['straightening']) {
+                $instructions[] = "Straightening: " . $saleOrderItem['straightening'];
+            } 
+            if (isset($saleOrderItem['point_discard']) && $saleOrderItem['point_discard']) {
+                $instructions[] = "Point Discard: " . $saleOrderItem['point_discard'];
+            }
+            if (isset($saleOrderItem['phosphating']) && $saleOrderItem['phosphating']) {
+                $instructions[] = "Phosphating: " . $saleOrderItem['phosphating'];
+            }
+            if (isset($saleOrderItem['coating']) && $saleOrderItem['coating']) {
+                $instructions[] = "Coating: " . ucwords($saleOrderItem['coating']);
+            }
+            $finalText = implode("\n", $instructions);
+        @endphp
+            
         <td class="btn-sm">
             @if ($workOrder)
                 <a href="{{ route('productions.workflow', ['workOrder' => $workOrder->id]) }}"
@@ -62,7 +76,7 @@
                 data-party="{{ $saleOrderItem->saleOrder?->customer?->company_name ?: 'Customer not available' }}"
                 data-product-details="{{ implode(' - ', array_filter([$saleOrderItem->product?->product_name, $saleOrderItem->grade?->grade_name, $saleOrderItem->size?->size_name, $saleItemPrice, $itemQty])) }}"
                 data-grade="{{ $saleOrderItem->grade?->grade_name ?: '-' }}"
-                data-instruction="{{ $saleOrderItem->saleOrder?->remarks ?? '' }}"
+                data-instruction="{{ $finalText ?? '' }}"
                 data-received-count="{{ $saleOrderItem->received_item_count }}"
                 data-received-qty="{{ number_format($saleOrderItem->received_qty_total, 2, '.', '') }}"
                 data-available-qty="{{ number_format($saleOrderItem->available_qty_total, 2, '.', '') }}"
