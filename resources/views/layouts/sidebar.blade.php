@@ -40,12 +40,10 @@
                 </li>
 
                 <li class="sidebar-item">
-                    <a href="#reportsCollapse" class="sidebar-link" data-bs-toggle="collapse" data-bs-target="#reportsCollapse" role="button" aria-expanded="false" aria-controls="reportsCollapse"><i class="fa-solid fa-chart-column nav-icon"></i><span>Reports</span><i class="fa-solid fa-chevron-down submenu-arrow"></i></a>
-                    <div class="collapse" id="reportsCollapse">
-                        <ul class="sidebar-submenu-list">
-                            <li class="submenu-item"><a href="" class="submenu-link"><span class="submenu-dot"></span><span>History</span></a></li>
-                        </ul>
-                    </div>
+                    <a href="{{ route('gate.history') }}" class="sidebar-link {{ request()->routeIs('gate.history') ? 'active' : '' }}">
+                        <i class="fa-solid fa-clock-rotate-left nav-icon"></i>
+                        <span>History</span>
+                    </a>
                 </li>
             @endif
 

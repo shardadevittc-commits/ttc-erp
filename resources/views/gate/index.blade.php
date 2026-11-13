@@ -25,7 +25,7 @@
     <div class="flex-grow-1 container-p-y">
 
         {{-- Flash Messages --}}
-        @if(session('success'))
+        {{-- @if(session('success'))
             <div class="alert alert-success alert-dismissible fade show">
                 {{ session('success') }}
                 <button type="button" class="btn-close"
@@ -39,7 +39,7 @@
                 <button type="button" class="btn-close"
                     data-bs-dismiss="alert"></button>
             </div>
-        @endif
+        @endif --}}
 
         <div class="card listing-block">
             <div class="card-header">
@@ -119,7 +119,7 @@
 
                                     <td>
                                         <div class="d-flex align-items-center gap-2">
-                                            @if(!in_array($item->id, $weighedIds))
+                                            @if(!in_array($item->id, $weightEntryIds))
                                                 <a href="{{ route('material_in', ['id' => $item->id]) }}" class="btn btn-link text-warning p-0" title="Edit">
                                                     <i class="fas fa-pencil-alt"></i>
                                                 </a>
@@ -136,8 +136,13 @@
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </form>
+                                             @elseif(in_array($item->id, $weighedIds))
+                                                <a href="{{ route('material_out', ['id' => $item->id]) }}"
+                                                class="btn btn-sm btn-success">
+                                                    <i class="fas fa-sign-out-alt"></i> Check Out
+                                                </a>
                                             @else
-                                                <span class="text-muted">Already Weighed</span>
+                                               <span class="btn btn-sm btn-success">Waiting for second weight</span>
                                             @endif
                                         </div>
                                     </td>

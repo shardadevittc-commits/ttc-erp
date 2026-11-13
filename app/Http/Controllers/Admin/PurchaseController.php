@@ -96,7 +96,7 @@ class PurchaseController extends Controller
                     $payTypeUnit = ucfirst(strtolower($matches[2]));
                 }
             }
-
+            //echo"<pre>";print_r($products);die;
             return view('admin.purchases.add', compact('purchaseOrder', 'customers', 'sizes', 'units', 'grades', 'products', 'saleOrders', 'payType', 'payTypeUnit'));
         }
 
@@ -306,7 +306,7 @@ class PurchaseController extends Controller
         $sizes    = Size::query()->where('status', 1)->select(['id', 'size_name', 'created_at'])->get();
         $brands   = Brand::query()->where('status', 1)->select(['id', 'brand_name','created_at'])->get();
         $grades   = Grade::query()->where('status', 1)->select(['id', 'grade_name', 'created_at'])->get();
-        
+
         return view('admin.rawMaterials.index', compact('listing','products','sizes','brands', 'grades'));
     }
 
@@ -371,7 +371,7 @@ class PurchaseController extends Controller
         $sizes    = Size::query()->where('status', 1)->select(['id', 'size_name', 'created_at'])->get();
         $brands   = Brand::query()->where('status', 1)->select(['id', 'brand_name','created_at'])->get();
         $grades   = Grade::query()->where('status', 1)->select(['id', 'grade_name', 'created_at'])->get();
-        
+
         return view('admin.vehicleHistory.index', compact('listing','products','sizes','brands', 'grades'));
     }
 }

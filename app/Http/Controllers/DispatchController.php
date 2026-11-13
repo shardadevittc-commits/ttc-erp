@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\GateAndGaadi;
 use App\Models\Customer;
+use App\Models\SaleOrder;
 
 class DispatchController extends Controller
 {
@@ -62,21 +63,41 @@ class DispatchController extends Controller
 
         $orderIds = $validated['order_ids'];
 
-        // Fetch actual database records, not browser-submitted rates.
-        $orders = SaleOrder::with('items')
-            ->whereIn('id', $orderIds)
-            ->get();
+        $orders = SaleOrder::with([
+            'items',
+            'items.grade',
+            'items.size'
+        ])
+        ->whereIn('id', $orderIds)
+        ->get();
 
-        // Ensure every submitted order ID exists.
-        if ($orders->count() !== count(array_unique($orderIds))) {
+        if ($orders->count() !== count($orderIds)) {
             abort(422, 'One or more selected orders are invalid.');
         }
 
-        // Preserve the user's selection order.
+        // Preserve selection order
         $orders = $orders->sortBy(function ($order) use ($orderIds) {
             return array_search($order->id, $orderIds);
         })->values();
 
+        // Get customer IDs
+        $customerIds = $orders->pluck('customer_id')->unique();
+
+        // Check weight records
+        $weightCustomers = DB::table('weights')
+            ->whereIn('cust_id', $customerIds)
+            ->where('second_weight', 'done')
+            ->pluck('cust_id')
+            ->toArray();
+
+        // Attach weight status to orders
+        foreach ($orders as $order) {
+            $order->weight_completed = in_array(
+                $order->customer_id,
+                $weightCustomers
+            );
+        }
+        //pr($orders->toArray());die;
         return view('dispatch.selected-orders', compact('orders'));
     }
 

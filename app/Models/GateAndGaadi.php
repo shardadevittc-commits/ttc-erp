@@ -31,6 +31,11 @@ class GateAndGaadi extends Model
 
     public function customer()
     {
-        return $this->belongsTo(\App\Models\Customer::class, 'cust_id');
+        return $this->belongsTo(\App\Models\Customer::class, 'cust_id', 'id');
+    }
+
+    public function weights()
+    {
+        return $this->hasMany(Weight::class, 'vehicle_id', 'id');
     }
 }

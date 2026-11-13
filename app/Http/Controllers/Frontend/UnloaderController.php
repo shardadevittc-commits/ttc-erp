@@ -10,6 +10,8 @@ use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseOrderitemReceiving;
 use App\Models\Grade;
 use App\Models\ReturnMaterial;
+use App\Models\UnloadWeight;
+use App\Models\Customer;
 use Illuminate\Support\Facades\DB;
 
 class UnloaderController extends Controller
@@ -284,7 +286,7 @@ class UnloaderController extends Controller
     /**
      * Vehicle-wise material receiving history listing
      */
-    
+
     public function vehicleHistory(Request $request)
     {
         $query = Weight::with('customer:id,cust_code,company_name,status')
