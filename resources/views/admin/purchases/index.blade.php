@@ -92,8 +92,7 @@
 
                                             {{-- ID --}}
                                             <th>
-                                                <a href="{{ route(
-                                                    'purchase',
+                                                <a href="{{ route('purchase',
                                                     array_merge(request()->query(), [
                                                         'sort_by' => 'id',
                                                         'sort_order' => request('sort_by') === 'id' && request('sort_order', 'desc') === 'desc' ? 'asc' : 'desc',
@@ -130,8 +129,8 @@
                                     <tbody class="list table_listing_body">
 
                                         @forelse($purchaseOrders as $purchaseOrder)
-
-                                            <tr>
+                                            
+                                            <tr class="{{ isset($purchaseOrder->ref_saleorder_id) && $purchaseOrder->ref_saleorder_id == 0 ? 'table-info' : '' }}">
                                                 {{-- Purchase Order ID --}}
                                                 <td><strong>#{{ $purchaseOrder->id }}</strong></td>
 

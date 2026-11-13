@@ -52,7 +52,7 @@
                 <h6 class="fw-bold text-uppercase mb-3">Customer Details</h6>
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label for="customer_id" class="form-label">Customer <span class="text-danger">*</span></label>
+                        <label for="customer_id" class="form-label">Customer </label>
                         <a href="javascript:void(0)" class="btn btn-sm btn-outline-primary mb-2" data-bs-toggle="modal" data-bs-target="#addCustomerModal">Add New Customer </a>
                         <select class="form-select select2" id="customer_id" name="customer_id" required>
                             <option value="">Select Customer</option>
@@ -76,11 +76,11 @@
                             <label class="form-label d-block">Freight Basis</label>
                             <div class="d-flex align-items-center gap-3 mt-2">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="freight_basis" id="frtBasisEx" value="1" required @checked((string) old('freight_basis', $saleOrder->freight_basis ?? '2') === '1')>
+                                    <input class="form-check-input" type="radio" name="freight_basis" id="frtBasisEx" value="1" @checked((string) old('freight_basis', $saleOrder->freight_basis ?? '2') === '1')>
                                     <label class="form-check-label" for="frtBasisEx">EX</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="freight_basis" id="frtBasisFor" value="2" required @checked((string) old('freight_basis', $saleOrder->freight_basis ?? '2') === '2')>
+                                    <input class="form-check-input" type="radio" name="freight_basis" id="frtBasisFor" value="2" @checked((string) old('freight_basis', $saleOrder->freight_basis ?? '2') === '2')>
                                     <label class="form-check-label" for="frtBasisFor">FOR</label>
                                 </div>
                             </div>

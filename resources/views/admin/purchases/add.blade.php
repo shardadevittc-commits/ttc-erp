@@ -377,12 +377,17 @@
                                                             class="form-select border-0 rounded-0 shadow-none"
                                                             style="height: 36px;">
                                                         <option value="">Select Unit</option>
+                                                        @if(isset($units) && $units)
                                                         @foreach ($units ?? [] as $unit)
                                                             <option value="{{ $unit->id }}"
                                                                 @selected((string) ($itemRow['size_unit'] ?? '') === (string) $unit->id)>
                                                                 {{ $unit->unit_name }}
                                                             </option>
                                                         @endforeach
+                                                        @else
+                                                            <option value="MM" >MM</option>
+                                                            <option value="THOUG" >THOUG</option>
+                                                        @endif
                                                     </select>
                                                 </div>
 

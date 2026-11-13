@@ -76,8 +76,8 @@ function calculateProductionScrap(Request $request, WorkOrderProcess $workOrder)
     $acidSelection = $request->input('acid_pickling');
     if ($acidSelection === null && $activeProcess === 'shotblastingAcidPickling') {
         $acidSelection = match ($request->input('surface_process')) {
-            'shot_blasting' => '1',
-            'acid_pickling' => '1',
+            'shot_blasting' => 'optionacid',
+            'acid_pickling' => 'optionphos',
             default => null,
         };
     }
@@ -391,5 +391,4 @@ function calculateProductionScrap(Request $request, WorkOrderProcess $workOrder)
 
     return $inserted;
 } */
-
 

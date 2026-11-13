@@ -1,11 +1,16 @@
 @extends('layouts.app')
 
-@section('title', ($saleOrderItem->product?->product_name ?? 'Production') . ' Work Order #' . $workOrder->id)
+@section('title', ($saleOrderItem->product?->product_name ?? 'Bright Bar') . ' Work Order #' . $workOrder->id)
 
 @section('content')
 @php
     $sizeLabel = $saleOrderItem->size?->size_name ?? $saleOrderItem->size_unit ?? '-';
-    $bundleUnit = $workOrder->fs_bundle_unit ?: '-';
+    $bundleUnit = match (strtolower((string) $workOrder->fs_bundle_unit)) {
+        '1', 'kg' => 'KG',
+        '2', 'ton', 'tons' => 'Tons',
+        default => '-',
+    };
+    $materialSentKg = (float) ($workOrder->material_send_for_work ?? 0) * 1000;
 @endphp
 
 <style>
@@ -36,7 +41,7 @@
         <div class="card-body">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
                 <div>
-                    <h4 class="mb-1">{{ $saleOrderItem->product?->product_name ?? 'Bright Bar' }} Production</h4>
+                    <h4 class="mb-1">{{ $saleOrderItem->product?->product_name ?? 'brightBar Bright Bar' }} Production</h4>
                     <div class="text-muted">Work Order #{{ $workOrder->id }}</div>
                 </div>
                 <a href="{{ route('productions') }}" class="btn btn-outline-secondary">Back</a>
@@ -45,486 +50,392 @@
                 <table class="table table-bordered table-sm align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                        <th>S No.</th>
-                        <th>WO. No./Date</th>
-                        <th>Party Name</th>
-                        <th>SO No - Product - Sizes - Rate - Qty</th>
-                        <th>Grade</th>
-                        <th>Pending Qty. (Tons)</th>
-                        <th class="no-print">Status</th>
+                            <th>S No.</th>
+                            <th>WO. No./Date</th>
+                            <th>Party Name</th>
+                            <th>SO No - Product - Size - Rate - Qty</th>
+                            <th>Grade</th>
+                            <th>Pending Qty. (Tons)</th>
+                            <th class="no-print">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                        <td>1</td>
-                        <td>{{$workOrder->id}} / <strong>{{ _dt($workOrder->created_at) }}</strong></td>
-                        <td>{{ $saleOrderItem->saleOrder?->customer?->company_name ?? '-' }}</td>
-                        <td><strong class="text-danger">{{ $saleOrderItem->saleOrder?->id ?? '-' }}</strong> <strong>-</strong> {{ $saleOrderItem->product?->product_name }} <strong>-</strong> {{ $sizeLabel }} <strong>-</strong> {{ $saleOrderItem->sale_item_prices ?? '-' }} <strong>-</strong> {{ _rz($saleOrderItem->item_qty) }} {{ $saleOrderItem->qty_type === \App\Models\SaleOrderItem::QTY_KGS ? 'KG' : 'Tons' }}</td>
-                        <td>{{ $saleOrderItem->grade?->grade_name ?? '-' }}</td>
-                        <td><span id="pendingPrd">{{ isset($workOrder->material_send_for_work) && $workOrder->material_send_for_work ? _rz($workOrder->material_send_for_work) : '' }}</span> Tons</td>
-                        <td class="text-success"><strong class="text-capitalize">{{ isset($workOrder->total_operation_perfome) && $workOrder->total_operation_perfome ? $workOrder->total_operation_perfome : ''}}</strong></td>
+                            <td>1</td>
+                            <td>{{ $workOrder->id }} / <strong>{{ _dt($workOrder->created_at) }}</strong></td>
+                            <td>{{ $saleOrderItem->saleOrder?->customer?->company_name ?? '-' }}</td>
+                            <td>
+                                <strong class="text-danger">{{ $saleOrderItem->saleOrder?->id ?? '-' }}</strong>
+                                - {{ $saleOrderItem->product?->product_name ?? '-' }}
+                                - {{ $sizeLabel }}
+                                - {{ $saleOrderItem->sale_item_prices ?? '-' }}
+                                - {{ _rz($saleOrderItem->item_qty) }}
+                                {{ $saleOrderItem->qty_type === \App\Models\SaleOrderItem::QTY_KGS ? 'KG' : 'Tons' }}
+                            </td>
+                            <td>{{ $saleOrderItem->grade?->grade_name ?? '-' }}</td>
+                            <td>{{ _rz($workOrder->material_send_for_work ?? 0) }}</td>
+                            <td class="text-success">
+                                <strong class="text-capitalize">{{ str_replace('_', ' ', $workOrder->status) }}</strong>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+
     @if (session('success'))
         <div class="alert alert-success" role="status">{{ session('success') }}</div>
     @endif
     @if ($errors->any())
         <div class="alert alert-danger" role="alert">{{ $errors->first() }}</div>
     @endif
+
     <div class="card-body">
-        <div class="accordion accordion-flush" id="accordionFlushExample">
-            <!-- Operation 1 -->
+        <div class="accordion accordion-flush" id="brightBarOperationAccordion">
             @if ($currentOperation >= 1)
-            <div class="accordion-item shadow-sm border rounded mt-4">
-                <h2 class="accordion-header rounded">
-                    <button class="accordion-button {{ $currentOperation === 1 ? '' : 'collapsed' }} bg-success text-white" type="button" data-bs-toggle="collapse" data-bs-target="#work2" aria-expanded="{{ $currentOperation === 1 ? 'true' : 'false' }}" aria-controls="work2">
-                    <b>Shot Blasting / Acid Pickling (Operation 1)</b>
-                    </button>
-                </h2>
-                <div id="work2" class="accordion-collapse collapse {{ $currentOperation === 1 ? 'show' : '' }}" data-bs-parent="#accordionFlushExample">
-                    <div class="accordion-body">
-                    <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 1]) }}">
-                        @csrf
-                        <input type="hidden" name="workStatus" value="operation1">
-                        <input type="hidden" name="doAction" value="Addoprt">
-                        <input type="hidden" name="oprtion1" value="Operation 1">
-                        <input type="hidden" name="processtype" value="shotblastingAcidPickling">
-                        <div class="row">
-                        <div class="col-md-12">
-                            <div class="form-check ps-0">
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="surface_process" id="acid1" value="shot_blasting" checked>
-                                <label class="form-check-label fs-6" for="acid1">Shot Blasting</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="surface_process" id="phos2" value="acid_pickling">
-                                <label class="form-check-label fs-6" for="phos2">Acid Pickling</label>
-                            </div>
-                            </div>
+                <div class="accordion-item shadow-sm border rounded mt-4">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button {{ $currentOperation === 2 ? '' : 'collapsed' }} bg-success text-white"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#brightBarOperation2"
+                            aria-expanded="{{ $currentOperation === 2 ? 'true' : 'false' }}" aria-controls="brightBarOperation2">
+                            <b>SHOT BLASTING / ACID PICKLING (Operation 2)</b>
+                        </button>
+                    </h2>
+                    <div id="brightBarOperation2" class="accordion-collapse collapse {{ $currentOperation === 2 ? 'show' : '' }}"
+                        data-bs-parent="#brightBarOperationAccordion">
+                        <div class="accordion-body">
+                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 2]) }}">
+                                @csrf
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="surface_process" id="brightBarShotBlasting"
+                                                value="shot_blasting" {{ $workOrder->shot_blasting == 1 ? 'checked' : ''}} >
+                                            <label class="form-check-label" for="brightBarShotBlasting">Shot Blasting</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="surface_process" id="brightBarAcidPickling"
+                                                value="acid_pickling" {{$workOrder->acid_pickling == 1 ? 'checked' : '' }} >
+                                            <label class="form-check-label" for="brightBarAcidPickling">Acid Pickling</label>
+                                        </div>
+                                    </div>
+                                    @if ($currentOperation === 2)
+                                        <div class="col-12 text-end mt-3">
+                                            <button type="submit" class="btn btn-primary">Submit</button>
+                                        </div>
+                                    @endif
+                                </div>
+                            </form>
                         </div>
-                        @if ($currentOperation === 1)
-                        <div class="col-12 text-end">
-                            <input type="submit" class="btn btn-primary">
-                        </div>
-                        @endif
-                        </div>
-                    </form>
                     </div>
                 </div>
-            </div>
             @endif
 
-            <!-- Operation 2 -->
             @if ($currentOperation >= 2)
-            <div class="accordion-item shadow-sm border rounded mt-4">
-                <h2 class="accordion-header rounded">
-                    <button class="accordion-button {{ $currentOperation === 2 ? '' : 'collapsed' }} bg-success text-white" type="button" data-bs-toggle="collapse" data-bs-target="#work3" aria-expanded="{{ $currentOperation === 2 ? 'true' : 'false' }}" aria-controls="work3">
-                    <b>Pointing (Operation 2)</b>
-                    </button>
-                </h2>
-                <div id="work3" class="accordion-collapse collapse {{ $currentOperation === 2 ? 'show' : '' }}" data-bs-parent="#accordionFlushExample">
-                    <div class="accordion-body">
-                    <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 2]) }}">
-                        @csrf
-                        <input type="hidden" name="workStatus" value="operation2">
-                        <input type="hidden" name="doAction" value="Addoprt">
-                        <input type="hidden" name="oprtion1" value="Operation 1">
-                        <input type="hidden" name="oprtion2" value="Operation 2">
-                        <input type="hidden" name="processtype" value="pointing">
-                        <div class="row">
-                        <div class="col-md-8">
-                            <div class="form-check ps-0 mt-3">
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="pointing" id="pointy" value="1" checked>
-                                <label class="form-check-label fs-6" for="pointy">Yes</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="pointing" id="pointn" value="2">
-                                <label class="form-check-label fs-6" for="pointn">No</label>
-                            </div>
-                            </div>
+                <div class="accordion-item shadow-sm border rounded mt-4">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button {{ $currentOperation === 3 ? '' : 'collapsed' }} bg-success text-white"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#brightBarOperation3"
+                            aria-expanded="{{ $currentOperation === 3 ? 'true' : 'false' }}" aria-controls="brightBarOperation3">
+                            <b>POINTING (Operation 3)</b>
+                        </button>
+                    </h2>
+                    <div id="brightBarOperation3" class="accordion-collapse collapse {{ $currentOperation === 3 ? 'show' : '' }}"
+                        data-bs-parent="#brightBarOperationAccordion">
+                        <div class="accordion-body">
+                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 3]) }}">
+                                @csrf
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="pointing" id="brightBarPointingYes"
+                                                value="1" @checked(old('pointing', (string) ($workOrder->pointing ?? '')) === '1') required>
+                                            <label class="form-check-label" for="brightBarPointingYes">Yes</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="pointing" id="brightBarPointingNo"
+                                                value="2" @checked(old('pointing', (string) ($workOrder->pointing ?? '')) === '2') required>
+                                            <label class="form-check-label" for="brightBarPointingNo">No</label>
+                                        </div>
+                                    </div>
+                                    @if ($currentOperation === 3)
+                                        <div class="col-12 text-end mt-3">
+                                            <button type="submit" class="btn btn-primary">Submit</button>
+                                        </div>
+                                    @endif
+                                </div>
+                            </form>
                         </div>
-                        @if ($currentOperation === 2)
-                        <div class="col-12 text-end">
-                            <input type="submit" class="btn btn-primary">
-                        </div>
-                        @endif
-                        </div>
-                    </form>
                     </div>
                 </div>
-            </div>
             @endif
 
-            <!-- Operation 3 -->
             @if ($currentOperation >= 3)
-            <div class="accordion-item shadow-sm border rounded mt-4">
-                <h2 class="accordion-header rounded">
-                    <button class="accordion-button {{ $currentOperation === 3 ? '' : 'collapsed' }} bg-success text-white" type="button" data-bs-toggle="collapse" data-bs-target="#work4" aria-expanded="{{ $currentOperation === 3 ? 'true' : 'false' }}" aria-controls="work4">
-                    <b>Drawing (Operation 3)</b>
-                    </button>
-                </h2>
-                <div id="work4" class="accordion-collapse collapse {{ $currentOperation === 3 ? 'show' : '' }}" data-bs-parent="#accordionFlushExample">
-                    <div class="accordion-body">
-                    <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 3]) }}">
-                        @csrf
-                        <input type="hidden" name="workStatus" value="operation3">
-                        <input type="hidden" name="doAction" value="Addoprt">
-                        <input type="hidden" name="oprtion1" value="Operation 1">
-                        <input type="hidden" name="oprtion2" value="Operation 2">
-                        <input type="hidden" name="oprtion3" value="Operation 3">
-                        <div class="row">
-                        <div class="col-md-6 mt-2">
-                            <div class="row">
-                            <div class="col-md-6 mt-3">
-                                <label class="col-form-label">Required Size</label>
-                                <div class="input-group mb-3">
-                                <input type="text" name="fs_size" class="form-control" value="{{ $workOrder->fs_size }}" readonly>
-                                <select class="form-select" name="fs_size_unit" style="max-width:100px;">
-                                    <option value="MM" @selected($workOrder->fs_size_unit === 'MM')>MM</option>
-                                    <option value="THOU" @selected($workOrder->fs_size_unit === 'THOU')>THOU</option>
-                                </select>
+                <div class="accordion-item shadow-sm border rounded mt-4">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button {{ $currentOperation === 4 ? '' : 'collapsed' }} bg-success text-white"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#brightBarOperation4"
+                            aria-expanded="{{ $currentOperation === 4 ? 'true' : 'false' }}" aria-controls="brightBarOperation4">
+                            <b>DRAWING (Operation 4)</b>
+                        </button>
+                    </h2>
+                    <div id="brightBarOperation4" class="accordion-collapse collapse {{ $currentOperation === 4 ? 'show' : '' }}"
+                        data-bs-parent="#brightBarOperationAccordion">
+                        <div class="accordion-body">
+                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 4]) }}">
+                                @csrf
+                                <div class="row">
+                                    {{-- <div class="col-md-4 mt-3">
+                                        <label class="col-form-label" for="brightBarSaleSize">Required Size (Sale Order)</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control pe-none bg-body-secondary" name="fs_size" id="brightBarSaleSize" value="{{ $sizeLabel }}" readonly>
+                                            <span class="input-group-text">{{ $saleOrderItem->size_unit ?? '-' }}</span>
+                                        </div>
+                                    </div> --}}
+                                    <div class="col-md-5 mt-3">
+                                        <label class="col-form-label" for="brightBarSaleSize">Required Size (Sale Order)</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control pe-none bg-body-secondary" id="brightBarSaleSize"
+                                                name="fs_size" value="{{ old('fs_size', $sizeLabel) }}" required>
+                                            <select class="form-select pe-none bg-body-secondary" name="fs_size_unit" aria-label="Observed size unit" required>
+                                                <option value="MM" @selected(old('fs_size_unit', $saleOrderItem->size_unit) === 'MM')>MM</option>
+                                                <option value="THOU" @selected(old('fs_size_unit', $saleOrderItem->size_unit) === 'THOU')>THOU</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-5 mt-3">
+                                        <label class="col-form-label" for="brightBarObservedSize">Observed Size</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="brightBarObservedSize"
+                                                name="fs_observed_size" value="{{ old('fs_observed_size', $workOrder->fs_observed_size) }}" required>
+                                            <select class="form-select" name="fs_observed_unit" aria-label="Observed size unit" required>
+                                                <option value="MM" @selected(old('fs_observed_unit', $workOrder->fs_observed_unit) === 'MM')>MM</option>
+                                                <option value="THOU" @selected(old('fs_observed_unit', $workOrder->fs_observed_unit) === 'THOU')>THOU</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    @if ($currentOperation === 4)
+                                        <div class="col-12 text-end mt-3">
+                                            <button type="submit" class="btn btn-primary">Submit</button>
+                                        </div>
+                                    @endif
                                 </div>
-                            </div>
-                            <div class="col-md-6 mt-3">
-                                <label class="col-form-label">Observed Size</label>
-                                <div class="input-group mb-3">
-                                <input type="text" class="form-control" name="fs_observed_size" value="{{ old('fs_observed_size', $workOrder->fs_observed_size) }}" required>
-                                <select class="form-select" name="fs_observed_unit" style="max-width:100px;">
-                                    <option value="MM" @selected(old('fs_observed_unit', $workOrder->fs_observed_unit) === 'MM')>MM</option>
-                                    <option value="THOU" @selected(old('fs_observed_unit', $workOrder->fs_observed_unit) === 'THOU')>THOU</option>
-                                </select>
-                                </div>
-                            </div>
-                            </div>
+                            </form>
                         </div>
-                        @if ($currentOperation === 3)
-                        <div class="col-12 text-end">
-                            <input type="submit" class="btn btn-primary">
-                        </div>
-                        @endif
-                        </div>
-                    </form>
                     </div>
                 </div>
-            </div>
             @endif
 
-            <!-- Point Discard (Operation 4) -->
             @if ($currentOperation >= 4)
-            <div class="accordion-item shadow-sm border rounded mt-4">
-                <h2 class="accordion-header rounded">
-                    <button class="accordion-button {{ $currentOperation === 4 ? '' : 'collapsed' }} bg-success text-white" type="button" data-bs-toggle="collapse" data-bs-target="#work5" aria-expanded="{{ $currentOperation === 4 ? 'true' : 'false' }}" aria-controls="work5">
-                    <b>Point Discard</b>
-                    </button>
-                </h2>
-                <div id="work5" class="accordion-collapse collapse {{ $currentOperation === 4 ? 'show' : '' }}" data-bs-parent="#accordionFlushExample">
-                    <div class="accordion-body">
-                    <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 4]) }}">
-                        @csrf
-                        <input type="hidden" name="workStatus" value="operation4">
-                        <input type="hidden" name="doAction" value="Addoprt">
-                        <input type="hidden" name="oprtion1" value="Operation 1">
-                        <input type="hidden" name="oprtion2" value="Operation 2">
-                        <input type="hidden" name="oprtion3" value="Operation 3">
-                        <input type="hidden" name="oprtion4" value="Operation 4">
-                        <input type="hidden" name="processtype" value="pointing_discard">
-                        <div class="row">
-                        <div class="col-md-8">
-                            <div class="form-check ps-0 mt-3">
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="poin_discard" id="pointdy" value="1">
-                                <label class="form-check-label fs-6" for="pointdy">Yes</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="poin_discard" id="pointdn" value="2" checked>
-                                <label class="form-check-label fs-6" for="pointdn">No</label>
-                            </div>
-                            </div>
+                <div class="accordion-item shadow-sm border rounded mt-4">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button {{ $currentOperation === 5 ? '' : 'collapsed' }} bg-success text-white"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#brightBarOperation5"
+                            aria-expanded="{{ $currentOperation === 5 ? 'true' : 'false' }}" aria-controls="brightBarOperation5">
+                            <b>POINT DISCARD (Operation 5)</b>
+                        </button>
+                    </h2>
+                    <div id="brightBarOperation5" class="accordion-collapse collapse {{ $currentOperation === 5 ? 'show' : '' }}"
+                        data-bs-parent="#brightBarOperationAccordion">
+                        <div class="accordion-body">
+                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 5]) }}">
+                                @csrf
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="poin_discard" id="brightBarPointDiscardYes"
+                                                value="1" @checked(old('poin_discard', (string) ($workOrder->poin_discard ?? '')) === '1') required>
+                                            <label class="form-check-label" for="brightBarPointDiscardYes">Yes</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="poin_discard" id="brightBarPointDiscardNo"
+                                                value="2" @checked(old('poin_discard', (string) ($workOrder->poin_discard ?? '')) === '2') required>
+                                            <label class="form-check-label" for="brightBarPointDiscardNo">No</label>
+                                        </div>
+                                    </div>
+                                    @if ($currentOperation === 5)
+                                        <div class="col-12 text-end mt-3">
+                                            <button type="submit" class="btn btn-primary">Submit</button>
+                                        </div>
+                                    @endif
+                                </div>
+                            </form>
                         </div>
-                        @if ($currentOperation === 4)
-                        <div class="col-12 text-end">
-                            <input type="submit" class="btn btn-primary">
-                        </div>
-                        @endif
-                        </div>
-                    </form>
                     </div>
                 </div>
-            </div>
             @endif
 
-            <!-- Straightening (Operation 5) -->
             @if ($currentOperation >= 5)
-            <div class="accordion-item shadow-sm border rounded mt-4">
-                <h2 class="accordion-header rounded">
-                    <button class="accordion-button {{ $currentOperation === 5 ? '' : 'collapsed' }} bg-success text-white" type="button" data-bs-toggle="collapse" data-bs-target="#work6" aria-expanded="{{ $currentOperation === 5 ? 'true' : 'false' }}" aria-controls="work6">
-                    <b>Straightening</b>
-                    </button>
-                </h2>
-                <div id="work6" class="accordion-collapse collapse {{ $currentOperation === 5 ? 'show' : '' }}" data-bs-parent="#accordionFlushExample">
-                    <div class="accordion-body">
-                    <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 5]) }}">
-                        @csrf
-                        <input type="hidden" name="workStatus" value="operation5">
-                        <input type="hidden" name="doAction" value="Addoprt">
-                        <input type="hidden" name="oprtion1" value="Operation 1">
-                        <input type="hidden" name="oprtion2" value="Operation 2">
-                        <input type="hidden" name="oprtion3" value="Operation 3">
-                        <input type="hidden" name="oprtion4" value="Operation 4">
-                        <input type="hidden" name="oprtion5" value="Operation 5">
-                        <div class="row">
-                        <div class="col-md-8">
-                            <div class="form-check ps-0 mt-3">
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="straightening" id="pointsy" value="1">
-                                <label class="form-check-label fs-6" for="pointsy">Yes</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="straightening" id="pointsn" value="2" checked>
-                                <label class="form-check-label fs-6" for="pointsn">No</label>
-                            </div>
-                            </div>
+                <div class="accordion-item shadow-sm border rounded mt-4">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button {{ $currentOperation === 6 ? '' : 'collapsed' }} bg-success text-white"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#brightBarOperation6"
+                            aria-expanded="{{ $currentOperation === 6 ? 'true' : 'false' }}" aria-controls="brightBarOperation6">
+                            <b>STRAIGHTENING (Operation 6)</b>
+                        </button>
+                    </h2>
+                    <div id="brightBarOperation6" class="accordion-collapse collapse {{ $currentOperation === 6 ? 'show' : '' }}"
+                        data-bs-parent="#brightBarOperationAccordion">
+                        <div class="accordion-body">
+                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 6]) }}">
+                                @csrf
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="straightening" id="brightBarStraighteningYes"
+                                                value="1" @checked(old('straightening', (string) ($workOrder->straightening ?? '')) === '1') required>
+                                            <label class="form-check-label" for="brightBarStraighteningYes">Yes</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="straightening" id="brightBarStraighteningNo"
+                                                value="2" @checked(old('straightening', (string) ($workOrder->straightening ?? '')) === '2') required>
+                                            <label class="form-check-label" for="brightBarStraighteningNo">No</label>
+                                        </div>
+                                    </div>
+                                    @if ($currentOperation === 6)
+                                        <div class="col-12 text-end mt-3">
+                                            <button type="submit" class="btn btn-primary">Submit</button>
+                                        </div>
+                                    @endif
+                                </div>
+                            </form>
                         </div>
-                        @if ($currentOperation === 5)
-                        <div class="col-12 text-end">
-                            <input type="submit" class="btn btn-primary">
-                        </div>
-                        @endif
-                        </div>
-                    </form>
                     </div>
                 </div>
-            </div>
             @endif
 
-            <!-- Operation 6: Bend Saw Cut -->
             @if ($currentOperation >= 6)
-            <div class="accordion-item shadow-sm border rounded mt-4">
-                <h2 class="accordion-header rounded">
-                    <button class="accordion-button {{ $currentOperation === 6 ? '' : 'collapsed' }} bg-success text-white" type="button" data-bs-toggle="collapse" data-bs-target="#work7" aria-expanded="{{ $currentOperation === 6 ? 'true' : 'false' }}" aria-controls="work7">
-                    <b>Bend Saw Cut</b>
-                    </button>
-                </h2>
-                <div id="work7" class="accordion-collapse collapse {{ $currentOperation === 6 ? 'show' : '' }}" data-bs-parent="#accordionFlushExample">
-                    <div class="accordion-body">
-                    <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 6]) }}">
-                        @csrf
-                        <input type="hidden" name="workStatus" value="operation6">
-                        <input type="hidden" name="doAction" value="Addoprt">
-                        <input type="hidden" name="oprtion1" value="Operation 1">
-                        <input type="hidden" name="oprtion2" value="Operation 2">
-                        <input type="hidden" name="oprtion3" value="Operation 3">
-                        <input type="hidden" name="oprtion4" value="Operation 4">
-                        <input type="hidden" name="oprtion5" value="Operation 5">
-                        <input type="hidden" name="oprtion6" value="Operation 6">
-                        <input type="hidden" name="processtype" value="bendsawcut">
-                        <input type="hidden" name="processtype2" value="misc" disabled>
-                        <input type="hidden" class="form-control" name="misc" value="" disabled>
-                        <input type="hidden" name="adjustable_reco_scrap" id="adjustable_reco_scrap" value="0">
-                        <input type="hidden" name="adjustable_percentage" id="adjustable_percentage" value="0">
-                        <input type="hidden" name="bundleCount" value="0">
+                <div class="accordion-item shadow-sm border rounded mt-4">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button {{ $currentOperation === 7 ? '' : 'collapsed' }} bg-success text-white"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#brightBarOperation7"
+                            aria-expanded="{{ $currentOperation === 7 ? 'true' : 'false' }}" aria-controls="brightBarOperation7">
+                            <b>Bend Saw Cut (Operation 7)</b>
+                        </button>
+                    </h2>
+                    <div id="brightBarOperation7" class="accordion-collapse collapse {{ $currentOperation === 7 ? 'show' : '' }}"
+                        data-bs-parent="#brightBarOperationAccordion">
+                        <div class="accordion-body">
+                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 7]) }}">
+                                @csrf
+                                <div class="row">
+                                    {{-- <div class="col-md-4 mt-3">
+                                        <label class="col-form-label" for="brightBarFinalSize">Final Size (Sale Order)</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="brightBarFinalSize" value="{{ $sizeLabel }}" readonly>
+                                            <span class="input-group-text">{{ $saleOrderItem->size_unit ?? '-' }}</span>
+                                        </div>
+                                    </div> --}}
+                                    <div class="col-md-4 mt-3">
+                                        <label class="col-form-label" for="brightBarSaleSize">Required Size (Sale Order)</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control pe-none bg-body-secondary" id="brightBarSaleSize"
+                                                name="fs_size" value="{{ old('fs_size', $sizeLabel) }}" disabled>
+                                            <select class="form-select pe-none bg-body-secondary" name="fs_size_unit" aria-label="Observed size unit" disabled>
+                                                <option value="MM" @selected(old('fs_size_unit', $saleOrderItem->size_unit) === 'MM')>MM</option>
+                                                <option value="THOU" @selected(old('fs_size_unit', $saleOrderItem->size_unit) === 'THOU')>THOU</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mt-3">
+                                        <label class="col-form-label" for="brightBarObservedSize">Observed Size</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="brightBarObservedSize" name="fs_observed_size" value="{{ old('fs_observed_size', $workOrder->fs_observed_size) }}" disabled>
+                                            <select class="form-select" name="fs_observed_unit" aria-label="Observed size unit" disabled>
+                                                <option value="MM" @selected(old('fs_observed_unit', $workOrder->fs_observed_unit) === 'MM')>MM</option>
+                                                <option value="THOU" @selected(old('fs_observed_unit', $workOrder->fs_observed_unit) === 'THOU')>THOU</option>
+                                            </select>
+                                        </div>
+                                    </div>
 
-                        <div class="row">
-                        <div class="col-md-12 mt-2">
-                            <div class="row">
-                            <div class="col-md-3 mt-3">
-                                <label class="col-form-label">Required Size</label>
-                                <div class="input-group mb-3">
-                                <input type="text" name="fsSize" class="form-control" value="{{ $workOrder->fs_size }}" readonly>
-                                <select class="form-select" name="fsSizeUnit" style="max-width:100px;">
-                                    <option value="MM" @selected($workOrder->fs_size_unit === 'MM')>MM</option>
-                                    <option value="THOU" @selected($workOrder->fs_size_unit === 'THOU')>THOU</option>
-                                </select>
-                                </div>
-                            </div>
-                            <div class="col-md-3 mt-3">
-                                <label class="col-form-label">Observed Size</label>
-                                <div class="input-group mb-3">
-                                <input type="text" class="form-control" name="fsobservedSize" value="{{ $workOrder->fs_observed_size }}">
-                                <select class="form-select" name="fsObservedSizeUnit" style="max-width:100px;">
-                                    <option value="MM">MM</option>
-                                    <option value="THOU">THOU</option>
-                                </select>
-                                </div>
-                            </div>
-                            <div class="col-md-3 mt-3">
-                                <label class="col-form-label">FS Bundle Weight (From SO)</label>
-                                <div class="input-group">
-                                <input type="number" step="0.001" class="form-control" name="fsbndle" value="{{ $workOrder->fs_bundle_weight }}" readonly>
-                                <select class="form-select" name="fsbndleUnit" style="max-width:100px;">
-                                    <option value="KG" selected>KG</option>
-                                    <option value="MT">TONS</option>
-                                </select>
-                                </div>
-                            </div>
-                            <div class="col-md-3 mt-3">
-                                <label class="col-form-label">Pcs Per Bundle</label>
-                                <div class="input-group">
-                                <input type="number" class="form-control" name="pcsfsbndle" value="">
-                                </div>
-                            </div>
-                            </div>
-                        </div>
+                                    <div class="col-md-4 mt-3">
+                                        <label class="col-form-label" for="brightBarBundleWeight">FS Bundle Weight (From SO)</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="brightBarBundleWeight"
+                                                value="{{ $saleOrderItem->fs_bundle_weight ? _rz($saleOrderItem->fs_bundle_weight) : '' }}" readonly>
+                                            <span class="input-group-text">{{ $bundleUnit }}</span>
+                                        </div>
+                                    </div>
+                                    {{-- <div class="col-md-4 mt-3">
+                                        <label class="col-form-label" for="brightBarRecoScrap">Recoverable Scrap (Kg.)</label>
+                                        <input type="number" min="0" step="0.0001" class="form-control" id="brightBarRecoScrap"
+                                            name="reco_scrap" value="{{ old('reco_scrap', $totalRecScrap ?? 0) }}">
+                                    </div>
+                                    <div class="col-md-4 mt-3">
+                                        <label class="col-form-label">Sent Material (Kg.)</label>
+                                        <input type="text" class="form-control" value="{{ _rz($materialSentKg) }}" readonly>
+                                    </div> --}}
 
-                        <div class="col-md-6 mt-3">
-                            <div class="fheading"><b>Raw Material</b></div>
-                            <div class="row">
-                            <div class="col-md-5 mt-3">
-                                <label class="col-form-label">RM Size (Purchase)</label>
-                                <div class="input-group mb-3">
-                                <input type="text" class="form-control" name="rmSize" value="12" readonly>
-                                <select class="form-select" name="rmSizeUnit" style="max-width:100px;">
-                                    <option value="MM" selected>MM</option>
-                                    <option value="THOU">THOU</option>
-                                </select>
+                                    @if ($currentOperation === 7)
+                                        <div class="col-12 text-end mt-3">
+                                            <button type="submit" class="btn btn-primary">Complete Operation &amp; Generate Token</button>
+                                        </div>
+                                    @endif
                                 </div>
-                            </div>
-                            </div>
-                        </div>
 
-                        @if ($currentOperation === 6)
-                        <div class="col-12 text-end">
-                            <input type="submit" class="btn btn-primary" value="Complete Operation & Generate Token">
-                        </div>
-                        
-                        </div>
+                                <hr>
+                                @php
+                                    $totalScrap = ($totalNonRecScrap ?? 0) + ($totalRecScrap ?? 0);
+                                    $percentage = 0.75;
+                                    $bendSawCutScrap = $workOrder->saleOrderItem->losses;
+                                    $bendSawCut = 0;
+                                    if(isset($lossWeight) && $lossWeight){
+                                        $finishQty = $materialSentKg - $totalScrap;
+                                    }else{
+                                        $finishQty = $materialSentKg - ($totalScrap + $bendSawCut);
+                                        $bendSawCut = ($materialSentKg * $percentage) / 100;
+                                    }
 
-                        <hr>
-
-                        <div class="row bg-light mt-4">
-                        <div class="col-md-12 mt-3">
-                            <div class="fheading"><b>Finish Material Info</b></div>
-                            <div class="row">
-                            <div class="col-md-2 mt-3">
-                                <label class="col-form-label text-size">Send RM Qty (Kg.)</label>
-                                <div class="input-group mb-3">
-                                <input type="text" class="form-control" value="1000" disabled>
+                                @endphp
+                                <div class="row bg-light mt-4 p-3">
+                                    <div class="col-12">
+                                        <h6 class="fw-semibold border-bottom pb-2 text-danger"> Finish Material Info </h6>
+                                        <div class="row">
+                                            <div class="col-md-3 mt-3">
+                                            <label class="col-form-label">Sent Material (Kg.)</label>
+                                            <input type="text" class="form-control" value="{{ _rz($materialSentKg) }}" disabled>
+                                        </div>
+                                            <div class="col-md-3 mt-2">
+                                                <label class="col-form-label">Non-Recoverable Scrap (Kg.)</label>
+                                                <input type="text" class="form-control" value="{{ _rz($totalNonRecScrap ?? 0) }}" disabled>
+                                            </div>
+                                            <div class="col-md-3 mt-2">
+                                                <label class="col-form-label">Recoverable Scrap (Kg.)</label>
+                                                <input type="text" class="form-control" id="recoverable_scrap" name="recoverable_scrap" value="{{ _rz($totalRecScrap + $bendSawCut ?? 0) }}" >
+                                            </div>
+                                            <div class="col-md-3 mt-2">
+                                                <label class="col-form-label">Finish Qty (Kg.)</label>
+                                                <input type="text" class="form-control pe-none bg-body-secondary" id="finished_material" name="finished_material" value="{{ _rz($finishQty ?? 0) }}" >
+                                            </div>
+                                            @if(isset($workOrder->total_full_bundle_count) && $workOrder->total_full_bundle_count)
+                                            <div class="col-md-4 mt-2">
+                                                <label class="col-form-label">Full Bundle Count</label>
+                                                <input type="text" class="form-control" value="{{ (int) ($workOrder->total_full_bundle_count ?? 0) }}" disabled>
+                                            </div>
+                                            <div class="col-md-4 mt-2">
+                                                <label class="col-form-label">Loose Bundle Weight ({{ $bundleUnit }})</label>
+                                                <input type="text" class="form-control" value="{{ _rz($workOrder->lose_bundle_weight ?? 0) }}" disabled>
+                                            </div>
+                                            <div class="col-md-4 mt-2">
+                                                <label class="col-form-label">Loose Bundle Count</label>
+                                                <input type="text" class="form-control" value="{{ (int) ($workOrder->lose_bundle_count ?? 0) }}" disabled>
+                                            </div>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-2 mt-3">
-                                <label class="col-form-label text-size">Non. Reco. Scrap Qty (Kg.)</label>
-                                <div class="input-group mb-3">
-                                <input type="text" class="form-control" value="0.000" disabled>
-                                </div>
-                            </div>
-                            <div class="col-md-2 mt-3">
-                                <label class="col-form-label text-size">Reco. Scrap Qty (Kg.)</label>
-                                <div class="input-group mb-3">
-                                <input type="number" step="0.0001" min="0" id="reco_scrap" class="form-control" value="7.5">
-                                </div>
-                            </div>
-                            <div class="col-md-2 mt-3">
-                                <label class="col-form-label text-size">Finish Qty (Kg.)</label>
-                                <div class="input-group mb-3">
-                                <input type="number" id="finish_qty" name="finish_qty" step="0.0001" class="form-control" value="992.5" readonly>
-                                </div>
-                            </div>
-                            <div class="col-md-2 mt-3">
-                                <label class="col-form-label text-size">Bundle Qty</label>
-                                <div class="input-group mb-3">
-                                <input type="text" class="form-control" value="00" disabled>
-                                </div>
-                            </div>
-                            <div class="col-md-2 mt-3">
-                                <label class="col-form-label text-size">Total PCS</label>
-                                <div class="input-group mb-3">
-                                <input type="text" class="form-control" value="00" disabled>
-                                </div>
-                            </div>
-                            </div>
+                            </form>
                         </div>
-                        </div>
-                        @endif
-                    </form>
                     </div>
                 </div>
-            </div>
             @endif
         </div>
     </div>
 </div>
 
-@if ($currentOperation === 6)
 <script>
-    $(document).ready(function () {
-        // Original / baseline values
-        const originalReco = parseFloat($("#reco_scrap").val()) || 0;
-        const originalFinishQty = parseFloat($("#finish_qty").val()) || 0;
-
-        $("#reco_scrap").on("keyup input change", function () {
-
-            $('input[name="misc"]').val("").prop("disabled", true);
-            $('input[name="processtype2"]').prop("disabled", true);
-            let currentReco = parseFloat($(this).val());
-
-            // Invalid / negative value
-            if (isNaN(currentReco) || currentReco < 0) {
-                currentReco = 0;
-                $(this).val("0.0000");
-            }
-
-            // Finish Qty hamesha original values ke hisab se calculate hoti hai
-            let newFinishQty = originalFinishQty + originalReco - currentReco;
-
-            // Finish Qty negative nahi honi chahiye
-            if (newFinishQty < 0) {
-                newFinishQty = 0;
-                currentReco = originalFinishQty + originalReco;
-                $(this).val(currentReco.toFixed(3));
-            }
-
-            // CASE 1: Reco Scrap original se zyada -> extra misc mein jayega
-            if (currentReco > originalReco) {
-                $('input[name="misc"]').val("").prop("disabled", false);
-                $('input[name="processtype2"]').prop("disabled", false);
-
-                let miscValue = currentReco - originalReco;
-                $('input[name="misc"]').val(miscValue.toFixed(3));
-
-                $('input[name="adjustable_reco_scrap"]').val("").prop("disabled", true);
-                $('input[name="adjustable_percentage"]').prop("disabled", true);
-                $("#adjustable_reco_scrap").val("");
-                $("#adjustable_percentage").val("");
-            }
-
-            // CASE 2: Reco Scrap original ke barabar
-            else if (currentReco === originalReco) {
-                $('input[name="misc"]').val("").prop("disabled", true);
-                $('input[name="processtype2"]').prop("disabled", true);
-                $('input[name="adjustable_reco_scrap"]').val("").prop("disabled", true);
-                $('input[name="adjustable_percentage"]').prop("disabled", true);
-                $("#adjustable_reco_scrap").val("");
-                $("#adjustable_percentage").val("");
-            }
-
-            // CASE 3: Reco Scrap original se kam -> adjustment
-            else {
-                let adjustableReco = currentReco - originalReco;
-                let percentage = 0;
-                if (originalReco > 0) {
-                    percentage = (adjustableReco / originalReco) * 100;
-                }
-
-                $('input[name="misc"]').val("").prop("disabled", true);
-                $('input[name="processtype2"]').prop("disabled", true);
-                $('input[name="adjustable_reco_scrap"]').prop("disabled", false);
-                $('input[name="adjustable_percentage"]').prop("disabled", false);
-                $("#adjustable_reco_scrap").val(adjustableReco.toFixed(3));
-                $("#adjustable_percentage").val(percentage.toFixed(3));
-            }
-
-            $("#finish_qty").val(newFinishQty.toFixed(3));
-        });
-    });
-</script>
-@endif
-<script>
-    document.querySelectorAll('#accordionFlushExample form').forEach((form) => {
+    document.querySelectorAll('#brightBarOperationAccordion form').forEach((form) => {
         form.addEventListener('submit', () => {
             const loader = document.getElementById('productionOperationLoader');
             const submitButton = form.querySelector('[type="submit"]');
@@ -537,5 +448,39 @@
             loader.setAttribute('aria-hidden', 'false');
         });
     });
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+    let scrapInput = document.getElementById('recoverable_scrap');
+    let finishInput = document.getElementById('finished_material');
+
+    let initialScrap = parseFloat(scrapInput.value) || 0;
+    let initialFinish = parseFloat(finishInput.value) || 0;
+
+    let totalQty = initialScrap + initialFinish;
+
+    scrapInput.addEventListener('input', function () {
+
+        let scrap = parseFloat(this.value) || 0;
+
+        // Scrap total quantity se jyada nahi hona chahiye
+        if (scrap > totalQty) {
+            scrap = totalQty;
+            this.value = totalQty;
+        }
+
+        if (scrap < 0) {
+            scrap = 0;
+            this.value = 0;
+        }
+
+        // Finish Qty automatically calculate hogi
+        let finish = totalQty - scrap;
+
+        finishInput.value = finish.toFixed(3);
+
+    });
+
+});
 </script>
 @endsection

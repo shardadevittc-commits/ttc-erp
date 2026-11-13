@@ -8,6 +8,10 @@
 
 @section('content')
 
+    <!-- Floating Toast Notification Area -->
+    {{-- <div id="statusToastContainer" class="status-toast-container"></div> --}}
+
+
    <div class="page-header">
         <div class="page-header__inner">
             <div class="page-header__content">
@@ -23,6 +27,9 @@
         </div>
     </div>
 
+
+    
+
     <div class="content_area">
         <div class="flex-grow-1 container-p-y">
             <div class="row">
@@ -36,16 +43,17 @@
                             </div>
                             <div class="actions">
                                 <div class="input-group input-group-merge">
-                                    <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></span>
-                                    <input type="search" class="form-control listing-search" placeholder="Search..." value="{{ request('search', '') }}" aria-label="Search Products">
+                                    <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                    <input type="search" class="form-control listing-search" placeholder="Search..." value="{{ request('search', '') }}" aria-label="Search customers">
                                 </div>
                             </div>
+                            
                         </div>
                         <!--!!!!! DO NOT REMOVE listing-table, mark_all  CLASSES. INCLUDE THIS IN ALL TABLES LISTING USERS !!!!!-->
                         <div class="card-body p-0">
-                            {{-- <div class="listing-loading d-none px-3 py-2" role="status" aria-live="polite">
-                                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Loading products...
-                            </div> --}}
+                            <div class="listing-loading d-none px-3 py-2" role="status" aria-live="polite">
+                                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Loading customers...
+                            </div>
                             <div class="listing-error d-none alert alert-danger m-3" role="alert"></div>
                             <div class="table-responsive text-nowrap">
                                 <table class="table listing-table">

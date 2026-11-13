@@ -1,5 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Unload Raw Material | TTC Robotronics - Steel Industry ERP')
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/unloader-print-card.css') }}">
+@endpush
 @section('content')
 <style>
     .blink-blue {
@@ -69,10 +72,7 @@
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    {{-- @php
-                                    pr($vehicalDetails->toArray()); die;
-                                    @endphp --}}
-                                        <tr>
+                                        <tr >
                                             <td>{{ $vehicalDetails->rstno }}</td>
                                             <td>{{ $vehicalDetails->customer->company_name }}</td>
                                             <td>{{ $vehicalDetails->truckno }}</td>
@@ -116,7 +116,6 @@
                                     </thead>
                                     <tbody>
                                     @foreach ($poItemsReceived as $k => $recItems)
-
                                         <tr>
                                             <td>
                                                 @if(@$recItems->purchaseOrderItem->product->product_name)
@@ -132,7 +131,33 @@
                                             <td>{{ @$recItems->received_price ? $recItems->received_price : '---' }}</td>
                                             <td>{{ @$recItems->received_qty ? $recItems->received_qty : '---' }}</td>
                                             <td>{{ @$recItems->lab_test == 1 ? 'Yes' : 'No' }}</td>
-                                            <td></td>
+                                            <td>
+                                                @php
+                                                    $inlineCardId = 'unload-material-card-' . $recItems->id;
+                                                @endphp
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-outline-primary btn-sm"
+                                                    data-toggle-print-card="{{ $inlineCardId }}"
+                                                    aria-expanded="false"
+                                                    aria-controls="{{ $inlineCardId }}-row"
+                                                    aria-label="Show print card for received material {{ $k + 1 }}"
+                                                    title="Show Print Card"
+                                                >
+                                                    <i class="fa-solid fa-print" aria-hidden="true"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr id="{{ $inlineCardId }}-row" class="rm-inline-card-row" hidden>
+                                            <td colspan="8">
+                                                @include('unloader.partials.print-card', [
+                                                    'vehicle' => $vehicalDetails,
+                                                    'item' => $recItems,
+                                                    'cardNumber' => $k + 1,
+                                                    'inlineCard' => true,
+                                                    'cardId' => $inlineCardId,
+                                                ])
+                                            </td>
                                         </tr>
                                     @endforeach
                                     </tbody>
@@ -176,8 +201,6 @@
 
                                     <tbody id="materialTableBody">
                                         <tr>
-                                            {{-- Common hidden fields --}}
-
                                             <input type="hidden" name="weight_id[]" value="{{ $vehicalDetails->id  }}">
                                             <input type="hidden" name="vehical_id[]" value="{{ $vehicalDetails->vehicle_id }}">
                                             <input type="hidden" name="customer_id[]" value="{{ $vehicalDetails->cust_id }}">
@@ -201,7 +224,7 @@
                                                                 data-pending-qty="{{ $item->qty }}"
                                                                 data-rate="{{ $item->rate }}"
                                                         >
-                                                        {{ $item->id ." | ". $product.$size ." | ".  $grade ." | ". $item->size->size_name ." | Pending Qty". $item->qty }}
+                                                        {{ $item->id ." | ". $product.$size ." | ".  $grade ." | ". $item->size->size_name ." | Pending Qty ". $item->qty }}
                                                         </option>
                                                     @endforeach
                                                 </select>
@@ -232,7 +255,7 @@
                                                 <select name="lab_test[]" class="form-select">
                                                     <option value="">Select</option>
                                                     <option value="1">Yes</option>
-                                                    <option value="0">No</option>
+                                                    <option value="2">No</option>
                                                 </select>
                                             </td>
                                             <td><button type="button" class="btn btn-danger btn-sm" onclick="removeMaterialRow(this)"> <i class="fa fa-trash"></i></button></td>
@@ -249,7 +272,7 @@
                 </div>
             </div>
 
-            {{-- <style>
+            <style>
                 #materialTable {
                     min-width: 1200px;
                     font-size: 13px;
@@ -257,9 +280,7 @@
                 }
 
                 #materialTable th {
-                    background-color: #fcebd5;
-                    color: #111;
-                    font-weight: 500;
+                    color: #050505;
                     vertical-align: middle;
                     white-space: normal;
                     min-width: 80px;
@@ -283,7 +304,7 @@
                     height: 20px;
                     margin-right: 5px;
                 }
-            </style> --}}
+            </style>
 
             <script>
                 function addMaterialRow() {
@@ -338,3 +359,8 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="{{ asset('js/unloader-print-card.js') }}"></script>
+@endpush
