@@ -13,7 +13,27 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
+        
         $query = Product::query()->with(['size', 'grade']);
+        // Product filter
+        if ($request->filled('product')) {
+            $query->where('product_category', $request->product);
+        }
+
+        // Status filter
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Date Filter
+        if (!empty($request->created_on[0])) {
+            $query->whereDate('created_at', '>=', $request->created_on[0]);
+        }
+
+        if (!empty($request->created_on[1])) {
+            $query->whereDate('created_at', '<=', $request->created_on[1]);
+        }
+
         $search = trim((string) $request->query('search', ''));
         if ($search !== '') {
             $query->where(function ($query) use ($search) {
@@ -60,7 +80,7 @@ class ProductController extends Controller
         );
     }
 
-    public function add(Request $request)
+    /* public function add(Request $request)
     {
         if($request->isMethod('post')) 
         {			
@@ -78,6 +98,50 @@ class ProductController extends Controller
                 'product_name' => $validated['product_name'],
                 'product_category' => $validated['product_category'],
                 'status' => (int) $request->status ?? 1,
+                'created_by' => auth()->id(),
+            ]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'id' => $product->id,
+                    'text' => $product->product_name,
+                ], 201);
+            }
+
+            return redirect()->route('products')->with('success', 'Product added successfully.');
+        }
+
+        return view('admin.products.add');
+    } */
+
+    public function add(Request $request)
+    {
+        if ($request->isMethod('post')) {
+
+            $validated = $request->validate([
+                'product_name' => [
+                    'required',
+                    'string',
+                    'max:50',
+                    Rule::unique('products', 'product_name')->whereNull('deleted_at')
+                ],
+                'product_category' => 'required',
+            ]);
+
+            // Generate product type
+            $productType = null;
+
+            if ($validated['product_category'] == 'finished_material') {
+                $productType = strtolower(
+                    str_replace(' ', '_', trim($validated['product_name']))
+                );
+            }
+
+            $product = Product::create([
+                'product_name' => $validated['product_name'],
+                'product_category' => $validated['product_category'],
+                'product_type' => $productType,
+                'status' => $request->status ?? 1,
                 'created_by' => auth()->id(),
             ]);
 

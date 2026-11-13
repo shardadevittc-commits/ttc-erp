@@ -278,14 +278,14 @@ set_validation('.form-validation1');
 
 
 /* Required field message */
-$(document).on('input change blur', 'input, select, textarea', function () {
+/* $(document).on('input change blur', 'input, select, textarea', function () {
     let field = $(this);
     let error = field.next('.error-msg');
 
     if (field.prop('required') && !String(field.val() || '').trim()) {
         if (!error.length) {
             field.after(
-                $('<span class="error-msg text-muted">This field is required</span>')
+                $('<span class="error-msg text-danger" >This field is required</span>')
                 .css({
                     'color': 'red',
                     'font-size': '12px',
@@ -296,6 +296,54 @@ $(document).on('input change blur', 'input, select, textarea', function () {
     } else {
         error.remove();
     }
+}); */
+
+function showFieldError(field, show) {
+
+    let name = field.attr('name');
+
+    let error = field.closest('td').find('.error-msg').filter(function () {
+        return $(this).attr('data-field-name') === name;
+    });
+
+    let errorTarget = field.closest('.d-flex').length
+        ? field.closest('.d-flex')
+        : field;
+
+    if (show) {
+
+        if (!error.length) {
+            errorTarget.after(
+                $('<span class="error-msg text-danger"></span>')
+                    .attr('data-field-name', name)
+                    .text('This field is required')
+                    .css({
+                        color: 'red',
+                        fontSize: '12px',
+                        display: 'block',
+                        width: '100%'
+                    })
+            );
+        }
+
+    } else {
+        error.remove();
+    }
+}
+
+
+// Common validation event
+$(document).on('input change blur', 'input, select, textarea', function () {
+
+    let field = $(this);
+
+    if (field.prop('required')) {
+        let isEmpty = !String(field.val() || '').trim();
+        showFieldError(field, isEmpty);
+    } else {
+        showFieldError(field, false);
+    }
+
 });
 
 // Common Model  Submit throught ajax

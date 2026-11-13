@@ -33,4 +33,9 @@ class PurchaseOrder extends Model
         return $this->belongsTo(Customer::class, 'cust_id');
     }
 
+    public function saleOrder()
+    {
+        return $this->belongsTo(SaleOrder::class, 'ref_saleorder_id');
+    }
+
 }

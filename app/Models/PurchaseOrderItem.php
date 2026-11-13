@@ -38,6 +38,11 @@ class PurchaseOrderItem extends Model
         return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id');
     }
 
+    public function saleOrder(): BelongsTo
+    {
+        return $this->belongsTo(SaleOrder::class, 'ref_saleorder_id');
+    }
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'cust_id');
@@ -67,4 +72,5 @@ class PurchaseOrderItem extends Model
     {
         return $this->hasMany(PurchaseOrderitemReceiving::class,'purchase_order_item_id','id');
     }
+
 }

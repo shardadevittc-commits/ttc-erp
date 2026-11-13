@@ -168,7 +168,24 @@ class UnloaderController extends Controller
                 ->select('purchase_order_items.*')
                 ->get();
                 // Is vehicle ka receiving data
-                $poItemsReceived = PurchaseOrderitemReceiving::with(['customer','grade','size','purchaseOrderItem.product', 'weight'])->where('vehical_id', $vehicalDetails->vehicle_id)->get();
+                $poItemsReceived = PurchaseOrderitemReceiving::with([
+                    'customer',
+                    'grade',
+                    'size',
+                    'purchaseOrderItem.product',
+                    'purchaseOrderItem.purchaseOrder',
+                    'purchaseOrderItem.saleOrder.items.product',
+                    'purchaseOrderItem.saleOrder.items.size',
+                    'purchaseOrderItem.saleOrder.items.grade',
+                    'purchaseOrderItem.saleOrder.items.brand',
+                    'purchaseOrderItem.purchaseOrder.saleOrder.items.product',
+                    'purchaseOrderItem.purchaseOrder.saleOrder.items.size',
+                    'purchaseOrderItem.purchaseOrder.saleOrder.items.grade',
+                    'purchaseOrderItem.purchaseOrder.saleOrder.items.brand',
+                    'purchaseOrderItem.size',
+                    'purchaseOrderItem.grade',
+                    'weight',
+                ])->where('vehical_id', $vehicalDetails->vehicle_id)->get();
         }
 
         if ($request->isMethod('post')) {
@@ -262,5 +279,148 @@ class UnloaderController extends Controller
         } while ($exists);
 
         return $heatNo;
+    }
+
+    /**
+     * Vehicle-wise material receiving history listing
+     */
+    
+    public function vehicleHistory(Request $request)
+    {
+        $query = Weight::with('customer:id,cust_code,company_name,status')
+            ->select('weights.*')
+
+            ->selectSub(function ($q) {
+                $q->from('poitem_receiving as pir')
+                    ->selectRaw('COUNT(*)')
+                    ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->where(function ($sub) {
+                        $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
+                            ->orWhereColumn('pir.weight_id', 'weights.id')
+                            ->orWhereColumn('pir.vehical_id', 'weights.id');
+                    });
+            }, 'total_materials')
+
+            ->selectSub(function ($q) {
+                $q->from('poitem_receiving as pir')
+                    ->selectRaw('COALESCE(SUM(pir.received_qty), 0)')
+                    ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->where(function ($sub) {
+                        $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
+                            ->orWhereColumn('pir.weight_id', 'weights.id')
+                            ->orWhereColumn('pir.vehical_id', 'weights.id');
+                    });
+            }, 'total_received_qty')
+
+            ->selectSub(function ($q) {
+                $q->from('poitem_receiving as pir')
+                    ->selectRaw('MAX(pir.created_at)')
+                    ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->where(function ($sub) {
+                        $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
+                            ->orWhereColumn('pir.weight_id', 'weights.id')
+                            ->orWhereColumn('pir.vehical_id', 'weights.id');
+                    });
+            }, 'last_receiving_date')
+
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('poitem_receiving as pir')
+                    ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->where(function ($sub) {
+                        $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
+                            ->orWhereColumn('pir.weight_id', 'weights.id')
+                            ->orWhereColumn('pir.vehical_id', 'weights.id');
+                    });
+            });
+
+        // Vehicle number search
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('weights.truckno', 'LIKE', "%{$search}%")
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('company_name', 'LIKE', "%{$search}%")
+                            ->orWhere('cust_code', 'LIKE', "%{$search}%");
+                    });
+            });
+        }
+
+        // Customer filter
+        if ($request->filled('customer_id')) {
+            $query->where('weights.cust_id', $request->customer_id);
+        }
+
+        // Date filter
+        if ($request->filled('from_date')) {
+            $query->whereDate('weights.created_at', '>=', $request->from_date);
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereDate('weights.created_at', '<=', $request->to_date);
+        }
+
+        // Sorting
+        $allowedSorts = [
+            'id' => 'weights.id',
+            'truckno' => 'weights.truckno',
+            'created_at' => 'weights.created_at',
+        ];
+
+        $sortBy = $request->get('sort_by', 'id');
+        $sortOrder = $request->get('sort_order', 'desc');
+
+        $query->orderBy(
+            $allowedSorts[$sortBy] ?? 'weights.id',
+            $sortOrder === 'asc' ? 'asc' : 'desc'
+        );
+
+        // Pagination
+        $perPage = (int) $request->get('per_page', 20);
+        $perPage = in_array($perPage, [10, 20, 50, 100]) ? $perPage : 20;
+
+        $listing = $query->paginate($perPage)->withQueryString();
+
+        // Customer dropdown
+        $customers = \App\Models\Customer::select('id', 'company_name')
+            ->orderBy('company_name')
+            ->get();
+
+        return view('unloader.vehicleHistory', compact(
+            'listing',
+            'customers'
+        ));
+    }
+
+
+    /**
+     * Particular vehicle complete material receiving history
+     */
+    public function vehicleHistoryView($weightId)
+    {
+        $vehicle = Weight::with('customer')->findOrFail($weightId);
+
+        $receivedItems = $this->receivedItemsForVehicle($vehicle)
+            ->with([
+                'customer',
+                'purchaseOrderItem.purchaseOrder',
+                'purchaseOrderItem.saleOrder.items.product',
+                'purchaseOrderItem.saleOrder.items.size',
+                'purchaseOrderItem.saleOrder.items.grade',
+                'purchaseOrderItem.saleOrder.items.brand',
+                'purchaseOrderItem.purchaseOrder.saleOrder.items.product',
+                'purchaseOrderItem.purchaseOrder.saleOrder.items.size',
+                'purchaseOrderItem.purchaseOrder.saleOrder.items.grade',
+                'purchaseOrderItem.purchaseOrder.saleOrder.items.brand',
+                'purchaseOrderItem.size',
+                'purchaseOrderItem.grade',
+            ])
+            ->get();
+
+        return view('unloader.vehicleHistoryView', compact(
+            'vehicle',
+            'receivedItems'
+        ));
     }
 }

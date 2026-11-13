@@ -20,13 +20,28 @@
     </td>
     {{-- Size --}}
     <td data-field="size">
-        <select class="form-select form-select-sm mb-1" name="items[{{ $index }}][size_id]" data-inline-add="size" data-add-url="{{ route('sizes.add') }}" data-add-field="size_name" data-add-label="Size">
-            <option value="">Select Size</option>
-            <option value="__add__">+ Add Size</option>
-            @foreach ($sizes as $size)
-                <option value="{{ $size->id }}" @selected((string) data_get($item, 'size_id', '') === (string) $size->id)>{{ $size->size_name }}</option>
-            @endforeach
-        </select>
+        <div class="d-flex gap-1">
+            <select class="form-select form-select-sm"
+                    name="items[{{ $index }}][size_id]"
+                    data-inline-add="size"
+                    data-add-url="{{ route('sizes.add') }}"
+                    data-add-field="size_name"
+                    data-add-label="Size">
+                <option value="">Select Size</option>
+                <option value="__add__">+ Add Size</option>
+                @foreach ($sizes as $size)
+                    <option value="{{ $size->id }}" @selected((string) data_get($item, 'size_id', '') === (string) $size->id)>
+                        {{ $size->size_name }}
+                    </option>
+                @endforeach
+            </select>
+
+            <select class="form-select form-select-sm" name="items[{{ $index }}][unit]" required>
+                <option value="">Select Unit</option>
+                <option value="MM" @selected(data_get($item, 'unit') === 'MM')>MM</option>
+                <option value="THOUG" @selected(data_get($item, 'unit') === 'THOUG')>THOUG</option>
+            </select>
+        </div>
     </td>
     {{-- Grade --}}
     <td data-field="grade">
@@ -75,23 +90,15 @@
         </div>
     </td> --}}
     <td data-field="hardness">
-    <div class="d-flex border rounded overflow-hidden">
-        <input type="text"
-               class="form-control form-control-sm border-0 rounded-0 shadow-none"
-               style="width: 50%;"
-               name="items[{{ $index }}][hardness]"
-               value="{{ data_get($item, 'hardness') }}"
-               placeholder="Hardness">
-
-        <select class="form-control form-control-sm border-0 rounded-0 shadow-none"
-                style="width: 50%;"
-                name="items[{{ $index }}][hardness_unit]">
-            <option value="">Unit</option>
-            <option value="BHN" @selected(data_get($item, 'hardness_unit') === 'BHN')>BHN</option>
-            <option value="HRC" @selected(data_get($item, 'hardness_unit') === 'HRC')>HRC</option>
-        </select>
-    </div>
-</td>
+        <div class="d-flex border rounded overflow-hidden">
+            <input type="text" class="form-control form-control-sm border-0 rounded-0 shadow-none" style="width: 50%;" name="items[{{ $index }}][hardness]" value="{{ data_get($item, 'hardness') }}" placeholder="Hardness">
+            <select class="form-control form-control-sm border-0 rounded-0 shadow-none" style="width: 50%;" name="items[{{ $index }}][hardness_unit]">
+                <option value="">Unit</option>
+                <option value="BHN" @selected(data_get($item, 'hardness_unit') === 'BHN')>BHN</option>
+                <option value="HRC" @selected(data_get($item, 'hardness_unit') === 'HRC')>HRC</option>
+            </select>
+        </div>
+    </td>
 
     <td data-field="length">
         <input class="form-control form-control-sm" name="items[{{ $index }}][pcs_length_unit]" value="{{ data_get($item, 'pcs_length_unit') }}" placeholder="Length">
@@ -99,9 +106,25 @@
 
     <td data-field="coating">
         <input type="hidden" name="items[{{ $index }}][coating]" value="">
-        <div class="mt-1">
-            <label class="d-block"><input type="radio" name="items[{{ $index }}][coating]" value="autoblack" @checked(data_get($item, 'coating') === 'autoblack')> Auto black</label>
-            <label class="d-block"><input type="radio" name="items[{{ $index }}][coating]" value="galvanized" @checked(data_get($item, 'coating') === 'galvanized')> Galvanized</label>
+
+        <div class="d-flex align-items-center gap-2 mt-1 flex-nowrap">
+            <label class="mb-0 text-nowrap">
+                <input type="radio" name="items[{{ $index }}][coating]" value="autoblack"
+                    @checked(data_get($item, 'coating') === 'autoblack')>
+                Auto black
+            </label>
+
+            <label class="mb-0 text-nowrap">
+                <input type="radio" name="items[{{ $index }}][coating]" value="galvanized"
+                    @checked(data_get($item, 'coating') === 'galvanized')>
+                Galvanized
+            </label>
+
+            <label class="mb-0 text-nowrap">
+                <input type="radio" name="items[{{ $index }}][coating]" value="N/A"
+                    @checked(data_get($item, 'coating') === 'N/A')>
+                N/A
+            </label>
         </div>
     </td>
 
@@ -119,7 +142,7 @@
 
 
     <td data-field="remarks">
-        <input class="form-control form-control-sm" name="items[{{ $index }}][item_remarks]" value="{{ data_get($item, 'item_remarks') }}" required>
+        <input class="form-control form-control-sm" name="items[{{ $index }}][item_remarks]" value="{{ data_get($item, 'item_remarks') }}">
     </td>
 
     <td>

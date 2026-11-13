@@ -13,3 +13,10 @@ Route::post('/unloader-return', [UnloaderController::class, 'returnMaterial'])
 
 Route::match(['get', 'post'],'/unload-materials/{vid?}', [UnloaderController::class, 'unloadMaterials'])
     ->name('unloader.unload-materials');
+
+Route::get('/unload-materials-history', [UnloaderController::class, 'vehicleHistory'])
+    ->name('unloader.vehicleHistory');
+
+Route::get('/unload-materials-history/{weightId}', [UnloaderController::class, 'vehicleHistoryView'])
+    ->name('unloader.vehicleHistoryView');
+
