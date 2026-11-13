@@ -35,6 +35,24 @@
 		<div class="dropdown-divider"></div>
 		<div class="dropdown-item">
 			<div class="form-group mt-2 mb-0">
+				<label class="form-label">Product Type</label>
+				<div class="form-check form-check-inline">
+					<input class="form-check-input" type="radio" name="product" id="all" value="" {{ (!isset($_GET['product']) || $_GET['product'] === '' || $_GET['product'] === null ? 'checked' : '') }}/>
+					<label class="form-check-label" for="all">All</label>
+				</div>
+				<div class="form-check form-check-inline">
+					<input type="radio" class="form-check-input" name="product" id="finished" value="finished_material" {{ (isset($_GET['product']) && $_GET['product'] == '1' ? 'checked' : '') }}/>
+					<label class="form-check-label" for="finished">Finished</label>
+				</div>
+				<div class="form-check form-check-inline">
+					<input type="radio" class="form-check-input" name="product" id="raw" value="raw_material" {{ (isset($_GET['product']) && $_GET['product'] == '0' ? 'checked' : '') }}/>
+					<label class="form-check-label" for="raw">Raw</label>
+				</div>
+			</div>
+		</div>
+		<div class="dropdown-divider"></div>
+		<div class="dropdown-item">
+			<div class="form-group mt-2 mb-0">
 				<label class="form-label d-none">Status</label>
 				<div class="form-check form-check-inline">
 					<input class="form-check-input" type="radio" name="status" id="all" value="" {{ (!isset($_GET['status']) || $_GET['status'] === '' || $_GET['status'] === null ? 'checked' : '') }}/>

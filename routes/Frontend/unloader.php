@@ -8,6 +8,12 @@ Route::get('/unloader-return/{vid}/details', [UnloaderController::class, 'return
 
 Route::post('/unloader-return', [UnloaderController::class, 'returnMaterial'])->name('unloader.return');
 
-Route::match(['get', 'post'],'/unload-materials/{vid?}', [UnloaderController::class, 'unloadMaterials'])->name('unloader.unload-materials');
+Route::match(['get', 'post'],'/unload-materials/{vid?}', [UnloaderController::class, 'unloadMaterials'])
+    ->name('unloader.unload-materials');
 
-Route::get('/history_unload', [UnloaderController::class, 'history_unload'])->name('history_unload');
+Route::get('/unload-materials-history', [UnloaderController::class, 'vehicleHistory'])
+    ->name('unloader.vehicleHistory');
+
+Route::get('/unload-materials-history/{weightId}', [UnloaderController::class, 'vehicleHistoryView'])
+    ->name('unloader.vehicleHistoryView');
+

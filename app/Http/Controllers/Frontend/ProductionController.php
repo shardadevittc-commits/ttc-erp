@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseOrderitemReceiving;
 use App\Models\SaleOrderItem;
+use App\Models\WorkOrderLoss;
 use App\Models\WorkOrderProcess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -16,11 +17,11 @@ use Illuminate\Validation\ValidationException;
 class ProductionController extends Controller
 {
     private const PRODUCT_TYPE_OPERATIONS = [
-        1 => 'operation6',
-        2 => 'operation5',
-        3 => 'operation2',
-        4 => 'operation8',
-        5 => 'operation9',
+        1 => 'operation6', /* Bright Bar */
+        2 => 'operation5', /* HB Wire */
+        3 => 'operation5', /* HHB Wire */
+        4 => 'operation7', /* Annealing Bar */
+        5 => 'operation8', /* Bolt Road */
     ];
 
     /**
@@ -55,12 +56,7 @@ class ProductionController extends Controller
                     $receivingQuery
                         ->selectRaw('1')
                         ->from('poitem_receiving as receiving')
-                        ->join(
-                            'purchase_order_items as purchase_items',
-                            'purchase_items.id',
-                            '=',
-                            'receiving.purchase_order_item_id'
-                        )
+                        ->join('purchase_order_items as purchase_items', 'purchase_items.id', '=', 'receiving.purchase_order_item_id')
                         ->whereColumn('purchase_items.ref_saleorder_id', 'sale_order_items.sale_order_id')
                         ->whereColumn('purchase_items.grade_id', 'sale_order_items.grade_id')
                         ->whereNull('receiving.deleted_at')
@@ -295,9 +291,9 @@ class ProductionController extends Controller
 
             // Ensure the work quantity does not exceed the matching grade's received quantity.
             $receivedCents = $receivings->sum(
-                fn ($receiving) => round((float) $receiving->received_qty * 100)
+                fn ($receiving) => ((float) $receiving->received_qty * 100)
             );
-            $workQuantityThousandths = round((float) $validated['send_work_qty'] * 1000);
+            $workQuantityThousandths = ((float) $validated['send_work_qty'] * 1000);
             if ($workQuantityThousandths > $receivedCents * 10) {
                 throw ValidationException::withMessages([
                     'send_work_qty' => 'The quantity for work cannot exceed the purchase received quantity.',
@@ -305,10 +301,10 @@ class ProductionController extends Controller
             }
 
             // Calculate the remaining usable quantity from each received lot.
-            $requestedCents = round((float) $validated['send_rm_qty'] * 100);
+            $requestedCents = ((float) $validated['send_rm_qty'] * 100);
             $availableCents = $receivings->sum(function ($receiving) {
-                $receivedCents = round((float) $receiving->received_qty * 100);
-                $usedCents = round((float) ($receiving->production_used_qty ?? 0) * 100);
+                $receivedCents = ((float) $receiving->received_qty * 100);
+                $usedCents = ((float) ($receiving->production_used_qty ?? 0) * 100);
 
                 return max(0, $receivedCents - $usedCents);
             });
@@ -327,8 +323,8 @@ class ProductionController extends Controller
                     break;
                 }
 
-                $receivedCents = (int) round((float) $receiving->received_qty * 100);
-                $usedCents = (int) round((float) ($receiving->production_used_qty ?? 0) * 100);
+                $receivedCents = (int) ((float) $receiving->received_qty * 100);
+                $usedCents = (int) ((float) ($receiving->production_used_qty ?? 0) * 100);
                 $rowAvailableCents = max(0, $receivedCents - $usedCents);
                 $allocatedCents = min($remainingCents, $rowAvailableCents);
 
@@ -387,6 +383,7 @@ class ProductionController extends Controller
 
     public function workflow(WorkOrderProcess $workOrder)
     {
+        // pr($workOrder->saleOrderItem->toArray()); die;
         $workOrder->load([
             'saleOrderItem.product',
             'saleOrderItem.grade',
@@ -402,20 +399,27 @@ class ProductionController extends Controller
             $view = 'productions.workOrderProcess.hbWire';
         }elseif($workOrder->saleOrderItem->product_type === 3){
             $view = 'productions.workOrderProcess.hhbWire';
+        }elseif($workOrder->saleOrderItem->product_type === 4){
+            $view = 'productions.workOrderProcess.anealingBrightBar';
+        }elseif($workOrder->saleOrderItem->product_type === 5){
+            $view = 'productions.workOrderProcess.boldRoad';
         }
-        $totalNonRecScrap = $workOrder->saleOrderItem->losses
-                ->where('scrap_type', 2)
-                ->sum('loss_weight');
-        $totalRecScrap = $workOrder->saleOrderItem->losses
-                ->where('scrap_type', 1)
-                ->sum('loss_weight');
-                // pr($totalLossWeight); die;
+        $totalNonRecScrap = $workOrder->saleOrderItem->losses->where('scrap_type', 2)->sum('loss_weight');
+        $totalRecScrap = $workOrder->saleOrderItem->losses->where('scrap_type', 1)->sum('loss_weight');
+        $adjScrap = $workOrder->saleOrderItem->losses->sum('adjustable_material');
+
+        // pr($workOrder->id); die;
+        $lossWeight = WorkOrderLoss::where('work_order_id', $workOrder->id)
+                    ->where('stage_name', 'bedsawcut')
+                    ->value('loss_weight');
         return view($view, [
             'workOrder'         => $workOrder,
             'saleOrderItem'     => $workOrder->saleOrderItem,
             'currentOperation'  => (int) ($workOrder->current_operation ?: 1),
             'totalNonRecScrap'  => @$totalNonRecScrap ?? 0,
             'totalRecScrap'     => @$totalRecScrap ?? 0,
+            'adjScrap'          => @$adjScrap ?? 0,
+            'lossWeight'        => @$lossWeight ?? 0,
         ]);
     }
 
@@ -429,6 +433,8 @@ class ProductionController extends Controller
             1 => $this->brightBarProduction($request, $workOrder, $operation),
             2 => $this->hbWireProduction($request, $workOrder, $operation),
             3 => $this->hhbWireProduction($request, $workOrder, $operation),
+            4 => $this->annealingBrightBarProduction($request, $workOrder, $operation),
+            5 => $this->boldRoadProduction($request, $workOrder, $operation),
             default => abort(404),
         };
     
@@ -441,7 +447,7 @@ class ProductionController extends Controller
      * Bright Bar (product_type = 1): operations 1 to 6.
      * Validation, save, bundle calculation aur status sab yahin hai.
      */
-    private function brightBarProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
+    /* private function brightBarProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
     {
         $finalOperation = 6;
         abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
@@ -505,6 +511,183 @@ class ProductionController extends Controller
             $lockedWorkOrder->current_operation = $operation + 1;
             $lockedWorkOrder->save();
         });
+    } */
+
+    private function brightBarProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
+    {
+        $finalOperation = 6;
+        abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
+    
+        // Validation (readonly SO values request se nahi liye jaate)
+        $validated = match ($operation) {
+            1 => $request->validate([
+                'surface_process' => ['required', Rule::in(['shot_blasting', 'acid_pickling'])],
+            ]),
+            2 => $request->validate([
+                'pointing' => ['required', 'integer', Rule::in([1, 2])],
+            ]),
+            3 => $request->validate([
+                'fs_size' => 'required',
+                'fs_size_unit' => ['required', Rule::in(['MM', 'THOU'])],
+                'fs_observed_size' => 'required',
+                'fs_observed_unit' => ['required', Rule::in(['MM', 'THOU'])],
+            ]),
+            4 => $request->validate([
+                'poin_discard' => ['required', 'integer', Rule::in([1, 2])],
+            ]),
+            5 => $request->validate([
+                'straightening' => ['required', 'integer', Rule::in([1, 2])],
+            ]),
+            6 => $request->validate([
+                // 'final_observed_size' => 'required',
+                // 'final_observed_unit' => ['required', Rule::in(['MM', 'THOU'])],
+                'recoverable_scrap' => ['nullable', 'numeric', 'min:0', 'decimal:0,4'],
+                'finished_material' => ['nullable', 'numeric', 'min:0', 'decimal:0,4'],
+                'reco_scrap' => ['nullable', 'numeric', 'min:0', 'decimal:0,4'],
+            ]),
+        };
+    
+        DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
+            $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
+    
+            // Operation pehle hi complete ho chuka hai (double submit / refresh).
+            if ($lockedWorkOrder === null) {
+                return;
+            }
+    
+            // Save (yes = 1, no = 2)
+            switch ($operation) {    
+                case 1:
+                    $lockedWorkOrder->shot_blasting = $validated['surface_process'] === 'shot_blasting' ? 1 : 2;
+                    $lockedWorkOrder->acid_pickling = $validated['surface_process'] === 'acid_pickling' ? 1 : 2;
+                    break;
+    
+                case 2:
+                    $lockedWorkOrder->pointing = (int) $validated['pointing'];
+                    break;
+    
+                case 3:
+                    $lockedWorkOrder->fs_size = $validated['fs_size'];
+                    $lockedWorkOrder->fs_size_unit = $validated['fs_size_unit'];
+                    $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
+                    $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'];
+                    break;
+    
+                case 4:
+                    $lockedWorkOrder->poin_discard = (int) $validated['poin_discard'];
+                    break;
+    
+                case 5:
+                    $lockedWorkOrder->straightening = (int) $validated['straightening'];
+                    break;
+    
+                case 6:
+                    // $lockedWorkOrder->final_observed_size = $validated['final_observed_size'];
+                    // $lockedWorkOrder->final_observed_unit = $validated['final_observed_unit'];
+                    // $lockedWorkOrder->pcs_per_bundle = (int) $validated['pcs_per_bundle'];
+
+                    $request->merge([
+                        'processtype' => 'bendsawcut',
+                        'workStatus' => 'operation6',
+                        'product_type' => 'bright_bar',
+                        'recoverable_scrap' => $validated['recoverable_scrap'] ?? 0,
+                        'finished_material' => $validated['finished_material'] ?? 0,
+                    ]);
+                    calculateProductionScrap($request, $lockedWorkOrder);
+
+                    $enteredRecoverableScrapKg = $this->truncateToThreeDecimals(
+                        (float) ($request->input('recoverable_scrap', $request->input('reco_scrap', 0)) ?? 0)
+                    );
+                    $dbRecoverableScrapKg = $this->truncateToThreeDecimals(
+                        (float) WorkOrderLoss::query()
+                            ->join('work_orders_and_process as wop', 'wop.id', '=', 'work_order_loss.work_order_id')
+                            ->where('wop.sale_order_id', $lockedWorkOrder->sale_order_id)
+                            ->where('work_order_loss.scrap_type', 1)
+                            ->sum(DB::raw('COALESCE(work_order_loss.loss_weight, 0)'))
+                    );
+
+                    if ($enteredRecoverableScrapKg > $dbRecoverableScrapKg) {
+                        $additionalScrapKg = $this->truncateToThreeDecimals(
+                            $enteredRecoverableScrapKg - $dbRecoverableScrapKg
+                        );
+                        $request->merge([
+                            'processtype' => 'misc',
+                            'workStatus' => 'operation6',
+                            'product_type' => 'brightbar',
+                            'misc' => $additionalScrapKg,
+                            'finish_qty' => max(0, $this->truncateToThreeDecimals((float) ($request->input('finished_material') ?? 0))),
+                        ]);
+                        calculateProductionScrap($request, $lockedWorkOrder);
+                    } elseif ($enteredRecoverableScrapKg < $dbRecoverableScrapKg) {
+                        $remainingAdjustmentKg = $this->truncateToThreeDecimals(
+                            $dbRecoverableScrapKg - $enteredRecoverableScrapKg
+                        );
+                        $recoverableLosses = WorkOrderLoss::query()
+                            ->join('work_orders_and_process as wop', 'wop.id', '=', 'work_order_loss.work_order_id')
+                            ->where('wop.sale_order_id', $lockedWorkOrder->sale_order_id)
+                            ->where('work_order_loss.scrap_type', 1)
+                            ->orderBy('work_order_loss.id')
+                            ->lockForUpdate()
+                            ->get();
+
+                        foreach ($recoverableLosses as $recoverableLoss) {
+                            if ($remainingAdjustmentKg <= 0) {
+                                break;
+                            }
+
+                            $previousAdjustmentKg = $this->truncateToThreeDecimals((float) ($recoverableLoss->adjustable_material ?? 0));
+                            $adjustableLossKg = max(0, $this->truncateToThreeDecimals((float) $recoverableLoss->loss_weight - $previousAdjustmentKg));
+                            $adjustmentKg = min($remainingAdjustmentKg, $adjustableLossKg);
+
+                            if ($adjustmentKg <= 0) {
+                                continue;
+                            }
+
+                            $recoverableLoss->adjustable_material = $this->truncateToThreeDecimals($previousAdjustmentKg + $adjustmentKg);
+                            $recoverableLoss->weight_after_adjustable_material = $this->truncateToThreeDecimals(
+                                (float) ($recoverableLoss->weight_after_adjustable_material ?? $recoverableLoss->weight_after_loss ?? 0) + $adjustmentKg
+                            );
+                            $recoverableLoss->save();
+
+                            $remainingAdjustmentKg = $this->truncateToThreeDecimals($remainingAdjustmentKg - $adjustmentKg);
+                        }
+                    }
+
+                    $finalFinishedMaterialKg = $this->truncateToThreeDecimals(
+                        (float) ($validated['finished_material'] ?? 0)
+                    );
+                    $this->calculateBundles($lockedWorkOrder, $finalFinishedMaterialKg);
+                    $bundleUnit = $this->bundleUnitLabel($lockedWorkOrder->fs_bundle_unit);
+                    if ($bundleUnit === 'Tons') {
+                        $lockedWorkOrder->lose_bundle_weight = $this->truncateToThreeDecimals(
+                            (float) $lockedWorkOrder->lose_bundle_weight * 1000
+                        );
+                    }
+                    break;
+            }
+
+            if ($operation !== 6) {
+                $scrapProcess = match ($operation) {
+                    2 => 'shotblastingAcidPickling',
+                    3 => 'pointing',
+                    5 => 'pointing_discard',
+                    default => null,
+                };
+                if ($scrapProcess !== null) {
+                    $request->merge([
+                        'processtype' => $scrapProcess,
+                        'workStatus' => 'operation' . $operation,
+                        'product_type' => 'bright_bar',
+                    ]);
+                }
+
+                calculateProductionScrap($request, $lockedWorkOrder);
+            }
+    
+            $lockedWorkOrder->status = $operation === $finalOperation ? 'completed' : 'under_process';
+            $lockedWorkOrder->current_operation = $operation + 1;
+            $lockedWorkOrder->save();
+        });
     }
     
     /**
@@ -512,7 +695,6 @@ class ProductionController extends Controller
      */
     private function hbWireProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
     {
-        
         $finalOperation = 2;
         abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
     
@@ -524,8 +706,17 @@ class ProductionController extends Controller
                 'acid_remarks' => ['nullable', 'string', 'max:255'],
             ]),
             2 => $request->validate([
-                'fs_observed_size' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
+                'pcsfsbndle' => ['required', 'integer', 'min:0'],
+                'misc' => ['nullable'],
+                'fs_size' => 'required',
+                'fs_size_unit' => ['required', Rule::in(['MM', 'THOU'])],
+                'fs_observed_size' => 'required',
                 'fs_observed_unit' => ['required', Rule::in(['MM', 'THOU'])],
+                
+                'rm_observed_size' => 'required',
+                'rm_observed_unit' => ['required', Rule::in(['MM', 'THOU'])],
+                'rm_size' => 'required',
+                'rm_size_unit' => ['required', Rule::in(['MM', 'THOU'])],
             ]),
         };
     
@@ -554,9 +745,332 @@ class ProductionController extends Controller
                         $lockedWorkOrder->phosphating   = isset($validated['phosphating']) ? 1 : 2;
                     break;
                 case 2:
-                        $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
-                        $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'];
-                        $this->calculateBundles($lockedWorkOrder);
+                        $lockedWorkOrder->fs_observed_size  = $validated['fs_observed_size'];
+                        $lockedWorkOrder->fs_observed_unit  = $validated['fs_observed_unit'];
+                        $lockedWorkOrder->fs_size           = $validated['fs_size'];
+                        $lockedWorkOrder->fs_size_unit      = $validated['fs_size_unit'];
+
+                        $lockedWorkOrder->rm_observed_size  = $validated['rm_observed_size'];
+                        $lockedWorkOrder->rm_observed_unit  = $validated['rm_observed_unit'];
+                        $lockedWorkOrder->rm_size           = $validated['rm_size'];
+                        $lockedWorkOrder->rm_size_unit      = $validated['rm_size_unit'];
+
+                        $bundleUnit = $this->bundleUnitLabel($lockedWorkOrder->fs_bundle_unit);
+                        $bundleWeight = (float) $lockedWorkOrder->fs_bundle_weight;
+                        if ($bundleWeight <= 0 || $bundleUnit === null) {
+                            throw ValidationException::withMessages([
+                                'fs_bundle_weight' => 'A positive bundle weight and a valid bundle unit are required.',
+                            ]);
+                        }
+
+                        $bundleWeightKg = $this->truncateToThreeDecimals($bundleWeight * ($bundleUnit === 'KG' ? 1 : 1000));
+                        $initialWeightKg = $this->truncateToThreeDecimals((float) $lockedWorkOrder->material_send_for_work * 1000);
+                        
+                        $nonRecoverableScrapKg = $this->truncateToThreeDecimals(
+                            (float) WorkOrderLoss::query()
+                                ->where('work_order_id', $lockedWorkOrder->id)
+                                // ->where('scrap_type', 2)
+                                ->sum('loss_weight')
+                        );
+                        $availableWeightKg = $this->truncateToThreeDecimals($initialWeightKg - $nonRecoverableScrapKg);
+
+                        if ($bundleWeightKg <= 0 || $availableWeightKg <= 0) {
+                            throw ValidationException::withMessages([
+                                'fs_bundle_weight' => 'A positive quantity of raw material must be available for bundling.',
+                            ]);
+                        }
+
+                        $maxFullBundleCount = (int) floor(($availableWeightKg + 0.000000001) / $bundleWeightKg);
+                        $initialLooseWeightKg = $this->truncateToThreeDecimals($availableWeightKg - ($maxFullBundleCount * $bundleWeightKg));
+                        $requestedFullBundleCount = (int) $validated['pcsfsbndle'];
+                        $miscWeightKg = $this->truncateToThreeDecimals((float) ($validated['misc'] ?? 0));
+                        $fullBundleCount = min($requestedFullBundleCount, $maxFullBundleCount);
+
+                        if ($requestedFullBundleCount < $maxFullBundleCount) {
+                            $selectedBundlesWeightKg = $this->truncateToThreeDecimals($fullBundleCount * $bundleWeightKg);
+                            if ($miscWeightKg > $selectedBundlesWeightKg) {
+                                throw ValidationException::withMessages([
+                                    'misc' => 'Miscellaneous scrap cannot exceed the selected bundle weight.',
+                                ]);
+                            }
+
+                            $finishedWeightKg = $this->truncateToThreeDecimals($selectedBundlesWeightKg - $miscWeightKg);
+                            $looseWeightKg = 0;
+                        } else {
+                            if ($miscWeightKg > $initialLooseWeightKg) {
+                                throw ValidationException::withMessages([
+                                    'misc' => 'Miscellaneous scrap cannot exceed the available loose material.',
+                                ]);
+                            }
+
+                            $looseWeightKg = $this->truncateToThreeDecimals($initialLooseWeightKg - $miscWeightKg);
+                            $finishedWeightKg = $this->truncateToThreeDecimals(($fullBundleCount * $bundleWeightKg) + $looseWeightKg);
+                        }
+
+                        $miscScrapKg = $this->truncateToThreeDecimals($availableWeightKg - $finishedWeightKg);
+
+                        $lockedWorkOrder->fs_bundle_unit = $bundleUnit;
+                        $lockedWorkOrder->total_full_bundle_count = $fullBundleCount;
+                        $lockedWorkOrder->lose_bundle_count = $looseWeightKg > 0 ? 1 : 0;
+                        $lockedWorkOrder->lose_bundle_weight = $bundleUnit === 'KG'
+                            ? $looseWeightKg
+                            : $this->truncateToThreeDecimals($looseWeightKg / 1000);
+
+                        if ($miscScrapKg > 0) {
+                            $request->merge([
+                                'processtype' => 'misc',
+                                'workStatus' => 'operation2',
+                                'product_type' => 'hbwire',
+                                'misc' => $miscScrapKg,
+                                'finish_qty' => $finishedWeightKg,
+                            ]);
+                            calculateProductionScrap($request, $lockedWorkOrder);
+                        }
+                    break;
+            }
+
+            if ($operation === 1) {
+                calculateProductionScrap($request, $lockedWorkOrder);
+            }
+
+            $lockedWorkOrder->status = $operation === $finalOperation ? 'completed' : 'under_process';
+            $lockedWorkOrder->current_operation = $operation + 1;
+            $lockedWorkOrder->save();
+        });
+    }
+
+    /**
+     * HHB Wire (product_type = 3): operations 1 to 5.
+     *  1 Acid Pickling | Phosphating
+     *  2 Wire Drawing
+     *  3 Heat Treatment
+     *  4 Acid Pickling | Phosphating (2nd)
+     *  5 Wire Drawing (Final Pass)
+     */
+    private function hhbWireProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
+    {
+        $finalOperation = 5;
+        abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
+    
+        $sizeUnits = Rule::in(['MM', 'THOU']);
+        $hardnessUnits = Rule::in(['BHN', 'HRC']);
+    
+        // Validation (readonly fields jaise SO size/bundle weight request se nahi liye jaate)
+        $validated = match ($operation) {
+            1 => $request->validate([
+                'acid_pickling' => ['nullable', Rule::in(['1'])],
+                'phosphating' => ['nullable', Rule::in(['1'])],
+                'acid_remarks' => ['nullable', 'string', 'max:255'],
+            ]),
+            2 => $request->validate([
+                'final_bundle_count' => ['required', 'integer', 'min:1'],
+
+                'fs_size' => 'required',
+                'fs_size_unit' => ['required', $sizeUnits],
+                'fs_observed_size' => 'required',
+                'fs_observed_unit' => ['required', $sizeUnits],
+                
+                'rm_observed_size' => 'required',
+                'rm_observed_unit' => ['required', $sizeUnits],
+                'rm_size' => 'required',
+                'rm_size_unit' => ['required', $sizeUnits],
+            ]),
+            3 => $request->validate([
+                'batch_no' => ['required', 'string', 'max:50'],
+                'hardness' => 'nullable',
+                'hardness_unit' => ['nullable', 'required_with:hardness', $hardnessUnits],
+                'hardness_observed' => 'required',
+                'hardness_observed_unit' => ['required', $hardnessUnits],
+            ]),
+            4 => $request->validate([
+                'second_acid_pickling' => ['nullable', Rule::in(['1'])],
+                'second_phosphating' => ['nullable', Rule::in(['1'])],
+                // 'batch_no_old' => ['nullable', 'string', 'max:50'],
+                'second_acid_remarks' => ['nullable', 'string', 'max:255'],
+            ]),
+            5 => $request->validate([
+                'misc_bundle_weight' => ['nullable', 'numeric', 'min:0', 'decimal:0,3'],
+                'manage_misc_scrap' => ['nullable', 'numeric', 'min:0', 'decimal:0,3'],
+                /* 'first_draw_observed_size' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
+                'first_draw_observed_unit' => ['required', $sizeUnits], */
+                'final_observed_size' => 'required',
+                'final_observed_unit' => ['required', $sizeUnits],
+            ]),
+        };
+    
+        DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
+            $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
+    
+            // Operation pehle hi complete ho chuka hai (double submit / refresh).
+            if ($lockedWorkOrder === null) {
+                return;
+            }
+    
+            // Save (checkbox: selected = 1, otherwise 2)
+            switch ($operation) {
+                case 1:
+                    $lockedWorkOrder->acid_pickling = isset($validated['acid_pickling']) ? 1 : 2;
+                    $lockedWorkOrder->phosphating = isset($validated['phosphating']) ? 1 : 2;
+                    $lockedWorkOrder->acid_remarks = $validated['acid_remarks'] ?? null;
+                    break;
+    
+                case 2:
+                    $lockedWorkOrder->fs_observed_size  = $validated['fs_observed_size'];
+                    $lockedWorkOrder->fs_observed_unit  = $validated['fs_observed_unit'];
+                    $lockedWorkOrder->fs_size           = $validated['fs_size'];
+                    $lockedWorkOrder->fs_size_unit      = $validated['fs_size_unit'];
+
+                    $lockedWorkOrder->rm_observed_size  = $validated['rm_observed_size'];
+                    $lockedWorkOrder->rm_observed_unit  = $validated['rm_observed_unit'];
+                    $lockedWorkOrder->rm_size           = $validated['rm_size'];
+                    $lockedWorkOrder->rm_size_unit      = $validated['rm_size_unit'];
+
+                    $bundleUnit = $this->bundleUnitLabel($lockedWorkOrder->fs_bundle_unit);
+                    $bundleWeight = (float) $lockedWorkOrder->fs_bundle_weight;
+                    if ($bundleWeight <= 0 || $bundleUnit === null) {
+                        throw ValidationException::withMessages([
+                            'fs_bundle_weight' => 'A positive bundle weight and a valid bundle unit are required.',
+                        ]);
+                    }
+                    $bundleWeightKg = $this->truncateToThreeDecimals($bundleWeight * ($bundleUnit === 'KG' ? 1 : 1000));
+                    $initialWeightKg = $this->truncateToThreeDecimals((float) $lockedWorkOrder->material_send_for_work * 1000);
+                    $previousScrapKg = $this->truncateToThreeDecimals(
+                        (float) WorkOrderLoss::query()
+                            ->where('work_order_id', $lockedWorkOrder->id)
+                            ->sum('loss_weight')
+                    );
+                    $availableWeightKg = $this->truncateToThreeDecimals($initialWeightKg - $previousScrapKg);
+
+                    if ($bundleWeightKg <= 0 || $availableWeightKg <= 0) {
+                        throw ValidationException::withMessages([
+                            'fs_bundle_weight' => 'A positive quantity of raw material must be available for bundling.',
+                        ]);
+                    }
+
+                    $maxFullBundleCount = (int) floor(($availableWeightKg + 0.000000001) / $bundleWeightKg);
+                    $requestedFullBundleCount = (int) $validated['final_bundle_count'];
+                    $requestedMiscKg = max(0, $this->truncateToThreeDecimals((float) ($request->input('misc') ?? 0)));
+                    $outputWeightKg = $requestedFullBundleCount < $maxFullBundleCount
+                        ? min($requestedFullBundleCount * $bundleWeightKg, $availableWeightKg)
+                        : $availableWeightKg;
+                    $finishedWeightKg = max(0, $this->truncateToThreeDecimals($outputWeightKg - $requestedMiscKg));
+                    $fullBundleCount = (int) floor(($finishedWeightKg + 0.000000001) / $bundleWeightKg);
+                    $looseWeightKg = $this->truncateToThreeDecimals($finishedWeightKg - ($fullBundleCount * $bundleWeightKg));
+                    $miscScrapKg = $this->truncateToThreeDecimals($availableWeightKg - $finishedWeightKg);
+
+                    $lockedWorkOrder->fs_bundle_unit = $bundleUnit;
+                    $lockedWorkOrder->total_full_bundle_count = $fullBundleCount;
+                    $lockedWorkOrder->lose_bundle_count = $looseWeightKg > 0 ? 1 : 0;
+                    $lockedWorkOrder->lose_bundle_weight = $bundleUnit === 'KG'
+                        ? $looseWeightKg
+                        : $this->truncateToThreeDecimals($looseWeightKg / 1000);
+
+                    if ($miscScrapKg > 0) {
+                        $request->merge([
+                            'processtype' => 'misc',
+                            'workStatus' => 'operation2',
+                            'product_type' => 'hbwire',
+                            'misc' => $miscScrapKg,
+                            'finish_qty' => $finishedWeightKg,
+                        ]);
+                        calculateProductionScrap($request, $lockedWorkOrder);
+                    }
+                    break;
+    
+                case 3:
+                    $lockedWorkOrder->batch_no = $validated['batch_no'];
+                    $lockedWorkOrder->hardness = $validated['hardness'] ?? $saleOrderItem->hardness;
+                    $lockedWorkOrder->hardness_unit = $validated['hardness_unit'] ?? $saleOrderItem->hardness_unit;
+                    $lockedWorkOrder->hardness_observed = $validated['hardness_observed'];
+                    $lockedWorkOrder->hardness_observed_unit = $validated['hardness_observed_unit'];
+                    break;
+    
+                case 4:
+                    $lockedWorkOrder->second_acid_pickling = isset($validated['second_acid_pickling']) ? 1 : 2;
+                    $lockedWorkOrder->second_phosphating = isset($validated['second_phosphating']) ? 1 : 2;
+                    // $lockedWorkOrder->second_batch_no = $validated['batch_no_old'] ?? null;
+                    $lockedWorkOrder->second_acid_remarks = $validated['second_acid_remarks'] ?? null;
+                    break;
+    
+                case 5:
+                    $lockedWorkOrder->final_fs_observed_size = $validated['final_observed_size'];
+                    $lockedWorkOrder->final_fs_observed_unit = $validated['final_observed_unit'];
+                    $this->calculateBundles($lockedWorkOrder);
+                    
+                    $bundleUnit          = $this->bundleUnitLabel($lockedWorkOrder->fs_bundle_unit);
+                    $bundleWeight        = (float) $lockedWorkOrder->fs_bundle_weight;
+                    $bundleWeightKg      = $this->truncateToThreeDecimals($bundleWeight * ($bundleUnit === 'KG' ? 1 : 1000));
+                    
+                    $bundleTotalWeightKg = $this->truncateToThreeDecimals(
+                        ((int) $lockedWorkOrder->total_full_bundle_count * $bundleWeightKg)
+                        + ((float) $lockedWorkOrder->lose_bundle_weight * ($bundleUnit === 'KG' ? 1 : 1000))
+                    );
+                        
+                    $scrapAdjustmentKg = 0.0;
+                    if (isset($validated['manage_misc_scrap'])) {
+                        $recoverableLosses = WorkOrderLoss::query()
+                            ->where('sale_order_item_id', $lockedWorkOrder->sale_order_item_id)
+                            ->where('scrap_type', 1)
+                            ->orderBy('id')
+                            ->lockForUpdate()
+                            ->get();
+                        $recordedScrapKg = $this->truncateToThreeDecimals($recoverableLosses->sum(
+                            fn (WorkOrderLoss $loss) => max(
+                                0,(float) $loss->loss_weight - (float) ($loss->adjustable_material ?? 0)
+                            )
+                        ));
+                        
+                        $requestedScrapKg = $this->truncateToThreeDecimals((float) $validated['manage_misc_scrap']);
+                        $remainingAdjustmentKg = max(0, $this->truncateToThreeDecimals($recordedScrapKg - $requestedScrapKg));
+
+                        foreach ($recoverableLosses as $recoverableLoss) {
+                            if ($remainingAdjustmentKg <= 0) {
+                                break;
+                            }
+
+                            $previousAdjustmentKg = $this->truncateToThreeDecimals((float) ($recoverableLoss->adjustable_material ?? 0));
+                            $adjustableLossKg = max(0, $this->truncateToThreeDecimals((float) $recoverableLoss->loss_weight - $previousAdjustmentKg));
+                            $adjustmentKg = min($remainingAdjustmentKg, $adjustableLossKg);
+
+                            if ($adjustmentKg <= 0) {
+                                continue;
+                            }
+
+                            $recoverableLoss->adjustable_material = $this->truncateToThreeDecimals($previousAdjustmentKg + $adjustmentKg);
+                            $recoverableLoss->weight_after_adjustable_material = $this->truncateToThreeDecimals(
+                                (float) ($recoverableLoss->weight_after_adjustable_material ?? $recoverableLoss->weight_after_loss ?? 0) + $adjustmentKg
+                            );
+                            $recoverableLoss->save();
+
+                            $scrapAdjustmentKg = $this->truncateToThreeDecimals($scrapAdjustmentKg + $adjustmentKg);
+                            $remainingAdjustmentKg = $this->truncateToThreeDecimals($remainingAdjustmentKg - $adjustmentKg);
+                        }
+                    }
+
+                    $miscBundleWeightKg = max(0, $this->truncateToThreeDecimals((float) ($validated['misc_bundle_weight'] ?? 0)));
+                    $updatedBundleWeightKg = max(
+                        0,
+                        $this->truncateToThreeDecimals($bundleTotalWeightKg + $scrapAdjustmentKg - $miscBundleWeightKg)
+                    );
+                    $fullBundleCount = (int) floor(($updatedBundleWeightKg + 0.000000001) / $bundleWeightKg);
+                    $looseBundleWeightKg = $this->truncateToThreeDecimals(
+                        $updatedBundleWeightKg - ($fullBundleCount * $bundleWeightKg)
+                    );
+
+                    $lockedWorkOrder->total_full_bundle_count = $fullBundleCount;
+                    $lockedWorkOrder->lose_bundle_count = $looseBundleWeightKg > 0 ? 1 : 0;
+                    $lockedWorkOrder->lose_bundle_weight = $bundleUnit === 'KG'
+                        ? $looseBundleWeightKg
+                        : $this->truncateToThreeDecimals($looseBundleWeightKg / 1000);
+
+                    if ($miscBundleWeightKg > 0) {
+                        $request->merge([
+                            'processtype' => 'misc',
+                            'workStatus' => 'operation5',
+                            'product_type' => 'hhbwire',
+                            'misc' => $miscBundleWeightKg,
+                        ]);
+                    }
                     break;
             }
     
@@ -566,6 +1080,487 @@ class ProductionController extends Controller
             $lockedWorkOrder->current_operation = $operation + 1;
             $lockedWorkOrder->save();
         });
+    }
+
+    private function annealingBrightBarProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
+    {
+        // pr($request->toArray()); die;
+        $finalOperation = 7;
+        abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
+    
+        // Validation (readonly SO values request se nahi liye jaate)
+        $validated = match ($operation) {
+            1 => $request->validate([
+                'hardness' => 'required',
+                'hardness_unit' => ['required', Rule::in(['BHN', 'HRC'])],
+                'hardness_observed' => 'required',
+                'hardness_observed_unit' => ['required', Rule::in(['BHN', 'HRC'])],
+            ]),
+            2 => $request->validate([
+                'surface_process' => ['required', Rule::in(['shot_blasting', 'acid_pickling'])],
+            ]),
+            3 => $request->validate([
+                'pointing' => ['required', 'integer', Rule::in([1, 2])],
+            ]),
+            4 => $request->validate([
+                'fs_size' => 'required',
+                'fs_size_unit' => ['required', Rule::in(['MM', 'THOU'])],
+                'fs_observed_size' => 'required',
+                'fs_observed_unit' => ['required', Rule::in(['MM', 'THOU'])],
+            ]),
+            5 => $request->validate([
+                'poin_discard' => ['required', 'integer', Rule::in([1, 2])],
+            ]),
+            6 => $request->validate([
+                'straightening' => ['required', 'integer', Rule::in([1, 2])],
+            ]),
+            7 => $request->validate([
+                // 'final_observed_size' => 'required',
+                // 'final_observed_unit' => ['required', Rule::in(['MM', 'THOU'])],
+                'recoverable_scrap' => ['nullable', 'numeric', 'min:0', 'decimal:0,4'],
+                'finished_material' => ['nullable', 'numeric', 'min:0', 'decimal:0,4'],
+                'reco_scrap' => ['nullable', 'numeric', 'min:0', 'decimal:0,4'],
+            ]),
+        };
+    
+        DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
+            $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
+    
+            // Operation pehle hi complete ho chuka hai (double submit / refresh).
+            if ($lockedWorkOrder === null) {
+                return;
+            }
+    
+            // Save (yes = 1, no = 2)
+            switch ($operation) {
+                case 1:
+                    $lockedWorkOrder->hardness = $validated['hardness'];
+                    $lockedWorkOrder->hardness_unit = $validated['hardness_unit'];
+                    $lockedWorkOrder->hardness_observed = $validated['hardness_observed'];
+                    $lockedWorkOrder->hardness_observed_unit = $validated['hardness_observed_unit'];
+                    break;
+    
+                case 2:
+                    $lockedWorkOrder->shot_blasting = $validated['surface_process'] === 'shot_blasting' ? 1 : 2;
+                    $lockedWorkOrder->acid_pickling = $validated['surface_process'] === 'acid_pickling' ? 1 : 2;
+                    break;
+    
+                case 3:
+                    $lockedWorkOrder->pointing = (int) $validated['pointing'];
+                    break;
+    
+                case 4:
+                    $lockedWorkOrder->fs_size = $validated['fs_size'];
+                    $lockedWorkOrder->fs_size_unit = $validated['fs_size_unit'];
+                    $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
+                    $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'];
+                    break;
+    
+                case 5:
+                    $lockedWorkOrder->poin_discard = (int) $validated['poin_discard'];
+                    break;
+    
+                case 6:
+                    $lockedWorkOrder->straightening = (int) $validated['straightening'];
+                    break;
+    
+                case 7:
+                    // $lockedWorkOrder->final_observed_size = $validated['final_observed_size'];
+                    // $lockedWorkOrder->final_observed_unit = $validated['final_observed_unit'];
+                    // $lockedWorkOrder->pcs_per_bundle = (int) $validated['pcs_per_bundle'];
+
+                    $request->merge([
+                        'processtype' => 'bendsawcut',
+                        'workStatus' => 'operation7',
+                        'product_type' => 'annealed_bright_bar',
+                        'recoverable_scrap' => $validated['recoverable_scrap'] ?? 0,
+                        'finished_material' => $validated['finished_material'] ?? 0,
+                    ]);
+                    calculateProductionScrap($request, $lockedWorkOrder);
+
+                    $enteredRecoverableScrapKg = $this->truncateToThreeDecimals(
+                        (float) ($request->input('recoverable_scrap', $request->input('reco_scrap', 0)) ?? 0)
+                    );
+                    $dbRecoverableScrapKg = $this->truncateToThreeDecimals(
+                        (float) WorkOrderLoss::query()
+                            ->join('work_orders_and_process as wop', 'wop.id', '=', 'work_order_loss.work_order_id')
+                            ->where('wop.sale_order_id', $lockedWorkOrder->sale_order_id)
+                            ->where('work_order_loss.scrap_type', 1)
+                            ->sum(DB::raw('COALESCE(work_order_loss.loss_weight, 0)'))
+                    );
+
+                    if ($enteredRecoverableScrapKg > $dbRecoverableScrapKg) {
+                        $additionalScrapKg = $this->truncateToThreeDecimals(
+                            $enteredRecoverableScrapKg - $dbRecoverableScrapKg
+                        );
+                        $request->merge([
+                            'processtype' => 'misc',
+                            'workStatus' => 'operation7',
+                            'product_type' => 'brightbar',
+                            'misc' => $additionalScrapKg,
+                            'finish_qty' => max(0, $this->truncateToThreeDecimals((float) ($request->input('finished_material') ?? 0))),
+                        ]);
+                        calculateProductionScrap($request, $lockedWorkOrder);
+                    } elseif ($enteredRecoverableScrapKg < $dbRecoverableScrapKg) {
+                        $remainingAdjustmentKg = $this->truncateToThreeDecimals(
+                            $dbRecoverableScrapKg - $enteredRecoverableScrapKg
+                        );
+                        $recoverableLosses = WorkOrderLoss::query()
+                            ->join('work_orders_and_process as wop', 'wop.id', '=', 'work_order_loss.work_order_id')
+                            ->where('wop.sale_order_id', $lockedWorkOrder->sale_order_id)
+                            ->where('work_order_loss.scrap_type', 1)
+                            ->orderBy('work_order_loss.id')
+                            ->lockForUpdate()
+                            ->get();
+
+                        foreach ($recoverableLosses as $recoverableLoss) {
+                            if ($remainingAdjustmentKg <= 0) {
+                                break;
+                            }
+
+                            $previousAdjustmentKg = $this->truncateToThreeDecimals((float) ($recoverableLoss->adjustable_material ?? 0));
+                            $adjustableLossKg = max(0, $this->truncateToThreeDecimals((float) $recoverableLoss->loss_weight - $previousAdjustmentKg));
+                            $adjustmentKg = min($remainingAdjustmentKg, $adjustableLossKg);
+
+                            if ($adjustmentKg <= 0) {
+                                continue;
+                            }
+
+                            $recoverableLoss->adjustable_material = $this->truncateToThreeDecimals($previousAdjustmentKg + $adjustmentKg);
+                            $recoverableLoss->weight_after_adjustable_material = $this->truncateToThreeDecimals(
+                                (float) ($recoverableLoss->weight_after_adjustable_material ?? $recoverableLoss->weight_after_loss ?? 0) + $adjustmentKg
+                            );
+                            $recoverableLoss->save();
+
+                            $remainingAdjustmentKg = $this->truncateToThreeDecimals($remainingAdjustmentKg - $adjustmentKg);
+                        }
+                    }
+
+                    $finalFinishedMaterialKg = $this->truncateToThreeDecimals(
+                        (float) ($validated['finished_material'] ?? 0)
+                    );
+                    $this->calculateBundles($lockedWorkOrder, $finalFinishedMaterialKg);
+                    $bundleUnit = $this->bundleUnitLabel($lockedWorkOrder->fs_bundle_unit);
+                    if ($bundleUnit === 'Tons') {
+                        $lockedWorkOrder->lose_bundle_weight = $this->truncateToThreeDecimals(
+                            (float) $lockedWorkOrder->lose_bundle_weight * 1000
+                        );
+                    }
+                    break;
+            }
+
+            if ($operation !== 7) {
+                $scrapProcess = match ($operation) {
+                    2 => 'shotblastingAcidPickling',
+                    3 => 'pointing',
+                    5 => 'pointing_discard',
+                    default => null,
+                };
+                if ($scrapProcess !== null) {
+                    $request->merge([
+                        'processtype' => $scrapProcess,
+                        'workStatus' => 'operation' . $operation,
+                        'product_type' => 'annealed_bright_bar',
+                    ]);
+                }
+
+                calculateProductionScrap($request, $lockedWorkOrder);
+            }
+    
+            $lockedWorkOrder->status = $operation === $finalOperation ? 'completed' : 'under_process';
+            $lockedWorkOrder->current_operation = $operation + 1;
+            $lockedWorkOrder->save();
+        });
+    }
+
+    /**
+     * Bolt Rod (product_type = 5): operations 1 to 8.
+     *  1 Shot Blasting / Acid Pickling
+     *  2 Pointing
+     *  3 Drawing
+     *  4 Press Cutting / Bend Saw Cutting (scrap + finish qty)
+     *  5 Marking
+     *  6 Threading
+     *  7 Auto Black
+     *  8 Packing (final)
+     */
+    private function boldRoadProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
+    {
+        $finalOperation = 8;
+        abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
+        // pr($request->toArray()); die;
+        // Validation (readonly / carry-forward values request se nahi liye jaate)
+        $validated = match ($operation) {
+            1 => $request->validate([
+                'surface_process' => ['required', Rule::in(['shot_blasting', 'acid_pickling'])],
+            ]),
+            2 => $request->validate([
+                'pointing' => ['required', 'integer', Rule::in([1, 2])],
+            ]),
+            3 => $request->validate([
+                'fs_observed_size' => ['required', 'string', 'max:20'],
+                'fs_observed_unit' => ['required', Rule::in(['MM', 'THOU'])],
+            ]),
+            4 => $request->validate([
+                'cutting_type' => ['required', Rule::in(['press_cutting', 'bend_saw_cutting'])],
+                'per_pcs_weight' => ['required', 'numeric', 'gt:0', 'decimal:0,3'],
+                'finished_pcs' => ['required', 'integer', 'min:1'],
+                'recoverable_scrap' => ['required', 'numeric', 'min:0', 'decimal:0,4'],
+                'finish_qty' => ['nullable', 'numeric', 'min:0', 'decimal:0,4'],
+            ]),
+            5 => $request->validate([
+                'rejected_pcs' => ['required', 'integer', 'min:0'],
+            ]),
+            6 => [], // Finish / Rejected pichle operation se aate hain
+            7 => $request->validate([
+                /* 'auto_black_finish' => ['required', 'integer', 'min:0'],
+                'auto_black_rejected' => ['required', 'integer', 'min:0'],
+                'weight_per_pcs' => ['required', 'numeric', 'gt:0', 'decimal:0,3'], */
+            ]),
+            8 => $request->validate([
+                'no_of_boxes' => ['required', 'integer', 'min:1'],
+                'pcs_per_box' => ['required', 'integer', 'min:1'],
+                'loose_handling' => ['nullable', Rule::in(['adjust_last_box', 'extra_box'])],
+            ])
+        };
+    
+        DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
+            $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
+    
+            // Operation pehle hi complete ho chuka hai (double submit / refresh).
+            if ($lockedWorkOrder === null) {
+                return;
+            }
+    
+            // Save
+            switch ($operation) {
+                case 1:
+                    $lockedWorkOrder->shot_blasting = $validated['surface_process'] === 'shot_blasting' ? 1 : 2;
+                    $lockedWorkOrder->acid_pickling = $validated['surface_process'] === 'acid_pickling' ? 1 : 2;
+                    break;
+    
+                case 2:
+                    $lockedWorkOrder->pointing = (int) $validated['pointing'];
+                    break;
+    
+                case 3:
+                    // Required size (fs_size) work order banate waqt hi save hota hai, request se nahi liya.
+                    $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
+                    $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'];
+                    break;
+    
+                case 4:
+                    $enteredRecoverableKg = $this->truncateToThreeDecimals((float) $validated['recoverable_scrap']);
+                    $finishedKg = $this->truncateToThreeDecimals((float) ($validated['finish_qty'] ?? 0));
+                    
+                    $lockedWorkOrder->cutting_type = $validated['cutting_type'];
+                    $lockedWorkOrder->per_pcs_weight = $validated['per_pcs_weight'];
+                    $lockedWorkOrder->finished_pcs = (int) $validated['finished_pcs'];
+                    $lockedWorkOrder->finished_pcs_weight = $validated['per_pcs_weight'] * (int) $validated['finished_pcs'];
+
+                    // pr($lockedWorkOrder); die;
+                    $request->merge([
+                        'workStatus' => 'operation4',
+                        'product_type' => 'bolt_rod',
+                        'recoverable_scrap' => $enteredRecoverableKg,
+                        'finished_material' => $finishedKg,
+                    ]);
+                    // D: is operation se pehle ka recoverable scrap, B: Bend Saw ka scrap
+                    $dbRecoverableBeforeKg = $this->truncateToThreeDecimals((float) WorkOrderLoss::query()
+                                            ->where('sale_order_item_id', $lockedWorkOrder->sale_order_item_id)
+                                            ->where('scrap_type', 1)
+                                            ->sum('loss_weight'));
+                    $bendSawScrapKg = $this->truncateToThreeDecimals(
+                        ((float) $lockedWorkOrder->material_send_for_work * 1000) * 0.75 / 100
+                    );
+                
+                    // Bend Saw ki entry sirf tab, jab recoverable scrap D + B se kam nahi kiya gaya.
+                    $recordBendSaw = $validated['cutting_type'] === 'bend_saw_cutting'
+                        && $enteredRecoverableKg >= $this->truncateToThreeDecimals($dbRecoverableBeforeKg + $bendSawScrapKg);
+                
+                    if ($recordBendSaw) {
+                        $request->merge(['processtype' => 'bendsawcut']);
+                        calculateProductionScrap($request, $lockedWorkOrder);
+                    }
+                
+                    // Baaki farak: R > D (ab tak ka) -> naya scrap record, R < D -> purana scrap adjust.
+                    $this->reconcileRecoverableScrap($request, $lockedWorkOrder, $enteredRecoverableKg, $finishedKg, 'operation4');
+                
+                    // Is operation ne jitna naya recoverable scrap jodha, wahi scrap_weight mein (sirf dikhane ke liye).
+                    // $this->reconcileRecoverableScrap($request, $lockedWorkOrder, $enteredRecoverableKg, $finishedKg, 'operation4');
+                    break;
+                
+                case 5:
+                    $finishedPcs = (int) $lockedWorkOrder->finished_pcs;
+                    $rejectedPcs = (int) $validated['rejected_pcs'];
+
+                    if ($rejectedPcs > $finishedPcs) {
+                        throw ValidationException::withMessages([
+                            'rejected_pcs' => 'Rejected pieces cannot exceed the finished pieces.',
+                        ]);
+                    }
+
+                    $lockedWorkOrder->rejected_pcs = $rejectedPcs;
+
+                    // Rejected pieces ka weight = rejected pcs x per pcs weight -> misc scrap
+                    $perPcsWeightKg = (float) $lockedWorkOrder->per_pcs_weight;
+                    $rejectedWeightKg = $this->truncateToThreeDecimals($rejectedPcs * $perPcsWeightKg);
+                    $lockedWorkOrder->rejected_pcs_weight = $rejectedWeightKg;
+
+                    if ($rejectedWeightKg > 0) {
+                        $goodWeightKg = $this->truncateToThreeDecimals(($finishedPcs - $rejectedPcs) * $perPcsWeightKg);
+
+                        $request->merge([
+                            'processtype' => 'misc',
+                            'workStatus' => 'operation5',
+                            'product_type' => 'bolt_rod',
+                            'misc' => $rejectedWeightKg,
+                            'finish_qty' => $goodWeightKg,
+                        ]);
+                        calculateProductionScrap($request, $lockedWorkOrder);
+
+                        $scrapHandled = true;
+                    }
+                    break;
+    
+                case 6:
+                    // Pichle operations se carry-forward (blade mein readonly).
+                   /*  $lockedWorkOrder->threading_finish = (int) $lockedWorkOrder->finished_pcs;
+                    $lockedWorkOrder->threading_rejected = (int) $lockedWorkOrder->rejected_pcs; */
+                    break;
+    
+                case 7:
+                    /* $available = (int) $lockedWorkOrder->threading_finish;
+                    $finishPcs = (int) $validated['auto_black_finish'];
+                    $rejectedPcs = (int) $validated['auto_black_rejected'];
+    
+                    if ($finishPcs > $available || $rejectedPcs > $available) {
+                        throw ValidationException::withMessages([
+                            'auto_black_finish' => 'Finish or rejected pieces cannot exceed the pieces received from threading.',
+                        ]);
+                    }
+    
+                    $lockedWorkOrder->auto_black_finish = $finishPcs;
+                    $lockedWorkOrder->auto_black_rejected = $rejectedPcs;
+                    $lockedWorkOrder->weight_per_pcs = $validated['weight_per_pcs']; */
+                    break;
+    
+                case 8:
+                    // Packing ke liye available pcs = Auto Black (operation 7) ke finish pcs
+                    $availablePcs = (int) $lockedWorkOrder->finished_pcs - (int) $lockedWorkOrder->rejected_pcs;
+                
+                    if ($availablePcs <= 0) {
+                        throw ValidationException::withMessages([
+                            'no_of_boxes' => 'No finished pieces are available for packing.',
+                        ]);
+                    }
+                
+                    $boxes = (int) $validated['no_of_boxes'];
+                    $perBox = (int) $validated['pcs_per_box'];
+                    $packedPcs = $boxes * $perBox;
+                
+                    if ($packedPcs > $availablePcs) {
+                        throw ValidationException::withMessages([
+                            'no_of_boxes' => "Boxes x pcs per box ({$packedPcs}) cannot exceed the finished pieces ({$availablePcs}).",
+                        ]);
+                    }
+                
+                    $loosePcs = $availablePcs - $packedPcs;
+                    $handling = $validated['loose_handling'] ?? null;
+                
+                    if ($loosePcs > 0 && $handling === null) {
+                        throw ValidationException::withMessages([
+                            'loose_handling' => "Choose how to pack the remaining {$loosePcs} pcs (adjust in last box or pack in an extra box).",
+                        ]);
+                    }
+                
+                    $lockedWorkOrder->no_of_boxes = $boxes;
+                    $lockedWorkOrder->pcs_per_box = $perBox;
+                    $lockedWorkOrder->loss_box_pcs = $loosePcs;
+                    $lockedWorkOrder->loss_box_count = ($loosePcs > 0 && $handling === 'extra_box') ? 1 : 0;
+                    // pr($lockedWorkOrder->toArray()); die;
+                    break;
+            }
+    
+            // Operation 4 apna scrap upar hi handle kar chuka hai.
+            if ($operation !== 4) {
+                $scrapProcess = match ($operation) {
+                    1 => 'shotblastingAcidPickling',
+                    2 => 'pointing',
+                    default => null,
+                };
+    
+                if ($scrapProcess !== null) {
+                    $request->merge([
+                        'processtype' => $scrapProcess,
+                        'workStatus' => 'operation' . $operation,
+                        'product_type' => 'bolt_rod',
+                    ]);
+                }
+    
+                calculateProductionScrap($request, $lockedWorkOrder);
+            }
+    
+            $lockedWorkOrder->status = $operation === $finalOperation ? 'completed' : 'under_process';
+            $lockedWorkOrder->current_operation = $operation + 1;
+            $lockedWorkOrder->save();
+        });
+    }
+    
+    /**
+     * Entered recoverable scrap ko DB ke recoverable scrap se match karta hai.
+     *  - Entered zyada  -> farak ko misc scrap ki tarah record karta hai.
+     *  - Entered kam    -> farak ko purane recoverable losses mein adjustable material bana deta hai.
+     *
+     * Join nahi hai, isliye save() hamesha sahi row par hota hai.
+     */
+    private function reconcileRecoverableScrap(Request $request, WorkOrderProcess $workOrder, float $enteredKg, float $finishedKg, string $workStatus): void {
+        $recoverableLosses = fn () => WorkOrderLoss::query()
+            ->where('sale_order_item_id', $workOrder->sale_order_item_id)
+            ->where('scrap_type', 1);
+    
+        $dbRecoverableKg = $this->truncateToThreeDecimals((float) $recoverableLosses()->sum('loss_weight'));
+    
+        if ($enteredKg > $dbRecoverableKg) {
+            $request->merge([
+                'processtype' => 'misc',
+                'workStatus' => $workStatus,
+                'product_type' => 'bolt_rod',
+                'misc' => $this->truncateToThreeDecimals($enteredKg - $dbRecoverableKg),
+                'finish_qty' => max(0, $finishedKg),
+            ]);
+            calculateProductionScrap($request, $workOrder);
+    
+            return;
+        }
+    
+        if ($enteredKg < $dbRecoverableKg) {
+            $remainingKg = $this->truncateToThreeDecimals($dbRecoverableKg - $enteredKg);
+    
+            $losses = $recoverableLosses()->orderBy('id')->lockForUpdate()->get();
+    
+            foreach ($losses as $loss) {
+                if ($remainingKg <= 0) {
+                    break;
+                }
+    
+                $previousKg = $this->truncateToThreeDecimals((float) ($loss->adjustable_material ?? 0));
+                $adjustableKg = max(0, $this->truncateToThreeDecimals((float) $loss->loss_weight - $previousKg));
+                $adjustmentKg = min($remainingKg, $adjustableKg);
+    
+                if ($adjustmentKg <= 0) {
+                    continue;
+                }
+    
+                $loss->adjustable_material = $this->truncateToThreeDecimals($previousKg + $adjustmentKg);
+                $loss->weight_after_adjustable_material = $this->truncateToThreeDecimals(
+                    (float) ($loss->weight_after_adjustable_material ?? $loss->weight_after_loss ?? 0) + $adjustmentKg
+                );
+                $loss->save();
+    
+                $remainingKg = $this->truncateToThreeDecimals($remainingKg - $adjustmentKg);
+            }
+        }
     }
     
     /**
@@ -601,7 +1596,7 @@ class ProductionController extends Controller
     /**
      * Full aur loose bundles sale-order unit mein calculate karta hai (full bundle round-up nahi hota).
      */
-    private function calculateBundles(WorkOrderProcess $workOrder): void
+    private function calculateBundles(WorkOrderProcess $workOrder, ?float $materialWeightKg = null): void
     {
         $bundleWeight = (float) $workOrder->fs_bundle_weight;
         if ($bundleWeight <= 0) {
@@ -617,26 +1612,53 @@ class ProductionController extends Controller
             ]);
         }
     
-        $bundleWeightMilli = (int) round($bundleWeight * 1000);
-        $materialMilli = (int) round((float) $workOrder->material_send_for_work * 1000);
+        $bundleWeightKg = $this->truncateToThreeDecimals($bundleWeight * ($unit === 'KG' ? 1 : 1000));
+        $materialWeightKg = $this->truncateToThreeDecimals(
+            $materialWeightKg ?? ((float) $workOrder->material_send_for_work * 1000)
+        );
     
-        if ($bundleWeightMilli <= 0 || $materialMilli <= 0) {
+        if ($bundleWeightKg <= 0 || $materialWeightKg <= 0) {
             throw ValidationException::withMessages([
                 'fs_bundle_weight' => 'A positive material quantity and bundle weight are required.',
             ]);
         }
     
-        // Material tons mein hai; bundle KG mein ho to convert karo.
-        if ($unit === 'KG') {
-            $materialMilli *= 1000;
-        }
-    
-        $remainingWeight = ($materialMilli % $bundleWeightMilli) / 1000;
+        $fullBundleCount = (int) floor(($materialWeightKg + 0.000000001) / $bundleWeightKg);
+        $remainingWeightKg = $this->truncateToThreeDecimals($materialWeightKg - ($fullBundleCount * $bundleWeightKg));
     
         $workOrder->fs_bundle_unit = $unit;
-        $workOrder->total_full_bundle_count = intdiv($materialMilli, $bundleWeightMilli);
-        $workOrder->lose_bundle_weight = $remainingWeight;
-        $workOrder->lose_bundle_count = $remainingWeight > 0 ? 1 : 0;
+        $workOrder->total_full_bundle_count = $fullBundleCount;
+        $workOrder->lose_bundle_weight = $unit === 'KG'
+            ? $remainingWeightKg
+            : $this->truncateToThreeDecimals($remainingWeightKg / 1000);
+        $workOrder->lose_bundle_count = $remainingWeightKg > 0 ? 1 : 0;
+    }
+
+    private function truncateToThreeDecimals(float $value): float
+    {
+        $number = strtolower((string) $value);
+        $negative = str_starts_with($number, '-');
+        $number = ltrim($number, '+-');
+        [$significand, $exponent] = array_pad(explode('e', $number, 2), 2, '0');
+        [$integer, $fraction] = array_pad(explode('.', $significand, 2), 2, '');
+
+        $digits = $integer . $fraction;
+        $decimalPosition = strlen($integer) + (int) $exponent;
+
+        if ($decimalPosition <= 0) {
+            $integer = '0';
+            $fraction = str_repeat('0', -$decimalPosition) . $digits;
+        } elseif ($decimalPosition >= strlen($digits)) {
+            $integer = $digits . str_repeat('0', $decimalPosition - strlen($digits));
+            $fraction = '';
+        } else {
+            $integer = substr($digits, 0, $decimalPosition);
+            $fraction = substr($digits, $decimalPosition);
+        }
+
+        $truncated = $integer . ($fraction === '' ? '' : '.' . substr($fraction, 0, 3));
+
+        return (float) ($negative ? '-' . $truncated : $truncated);
     }
 
     private function bundleUnitLabel($unit): ?string

@@ -23,7 +23,7 @@ class SaleOrderController extends Controller
     public function index(Request $request)
     {
         $listing = $this->saleOrderRepository->listing($request);
-
+        // pr($listing->toArray()); die;
         if ($request->ajax()) {
             return response()->json([
                 'status' => true,

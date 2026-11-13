@@ -206,41 +206,26 @@ class WeightController extends Controller
                 ->where('formlist', $formlist)
                 ->first();
 
-            /*
-            |--------------------------------------------------------------------------
-            | Material In Receiving Items
-            |--------------------------------------------------------------------------
-            */
-
-            if ($formlist === 'Material In') {
-
-                $po_receiving = PurchaseOrderitemReceiving::query()
-                    ->leftJoin(
-                        'purchase_order_items as poi',
-                        'poitem_receiving.purchase_order_item_id',
-                        '=',
-                        'poi.id'
-                    )
-                    ->leftJoin('products as p', 'poi.product_id', '=', 'p.id')
-                    ->leftJoin('grades as g', 'poitem_receiving.grade_id', '=', 'g.id')
-                    ->leftJoin('sizes as s', 'poitem_receiving.size_id', '=', 's.id')
-                    ->where('poitem_receiving.weight_id', $id)
-                    ->when($custId, function ($query) use ($custId) {
-                        $query->where('poitem_receiving.customer_id', $custId);
-                    })
-                    ->select(
-                        'poitem_receiving.size_id',
-                        's.size_name',
-                        'poitem_receiving.purchase_order_item_id',
-                        'poi.product_id',
-                        'p.product_name',
-                        'poitem_receiving.grade_id',
-                        'g.grade_name',
-                        'poitem_receiving.po_item_qty',
-                        'poitem_receiving.received_qty'
-                    )
-                    ->get();
-            }
+            $po_receiving = PurchaseOrderitemReceiving::query()
+                ->leftJoin('purchase_order_items as poi','poitem_receiving.purchase_order_item_id','=','poi.id')
+                ->leftJoin('products as p', 'poi.product_id', '=', 'p.id')
+                ->leftJoin('grades as g', 'poitem_receiving.grade_id', '=', 'g.id')
+                ->leftJoin('sizes as s', 'poitem_receiving.size_id', '=', 's.id')
+                ->where('poitem_receiving.weight_id', $id)
+                ->when($custId, function ($query) use ($custId) {
+                    $query->where('poitem_receiving.customer_id', $custId);
+                })
+                ->select(
+                    'poitem_receiving.size_id',
+                    's.size_name as size_name',
+                    'poitem_receiving.purchase_order_item_id',
+                    'poi.product_id',
+                    'p.product_name as product_name',
+                    'poitem_receiving.grade_id',
+                    'g.grade_name as grade_name',
+                    'poitem_receiving.po_item_qty',
+                    'poitem_receiving.received_qty'
+                )->get()->toArray();
         }
 
         /*
@@ -373,7 +358,6 @@ class WeightController extends Controller
             'actual_qty' => 'required|array',
             'actual_qty.*' => 'required|numeric|min:0',
         ]);
-        //echo"<pre>";print_r($request->all());die;
         $entries = $validated['po_receiving'];
         $actualQty = $validated['actual_qty'];
 
@@ -383,8 +367,7 @@ class WeightController extends Controller
                 return back()
                     ->withInput()
                     ->withErrors([
-                        "actual_qty.$index" =>
-                            'Actual quantity is required for every material entry.',
+                        "actual_qty.$index" => 'Actual quantity is required for every material entry.',
                     ]);
             }
         }

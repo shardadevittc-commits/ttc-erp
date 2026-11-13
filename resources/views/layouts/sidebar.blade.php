@@ -86,10 +86,10 @@
                         <span>Unload Materials</span>
                     </a>
                 </li>
-               <li class="sidebar-item">
-                    <a href="{{ route('history_unload') }}" class="sidebar-link {{ request()->routeIs('history_unload') ? 'active' : '' }}">
-                        <i class="fa-solid fa-clock-rotate-left nav-icon"></i>
-                        <span>History</span>
+                <li class="sidebar-item">
+                    <a href="{{ route('unloader.vehicleHistory') }}" class="sidebar-link {{ request()->routeIs('unload-materials-history') ? 'active' : '' }}">
+                        <i class="fa-solid fa-truck-pickup nav-icon"></i>
+                        <span>Unload Materials History</span>
                     </a>
                 </li>
             @endif
