@@ -2,11 +2,12 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GateController;
 
-Route::get('/gate', [GateController::class, 'index'])
-    ->name('gate.index');
+Route::get('/gate', [GateController::class, 'index'])->name('gate.index');
 
-Route::match(['get', 'post'],'/material_in', [GateController::class, 'add'])
-    ->name('material_in');
+Route::match(['get', 'post'],'/material_in', [GateController::class, 'add'])->name('material_in');
 
-Route::delete('/material-in/{id}', [GateController::class, 'delete'])
-    ->name('material_in.delete');
+Route::delete('/material-in/{id}', [GateController::class, 'delete'])->name('material_in.delete');
+
+Route::get('/material-out/{id}', [GateController::class, 'material_out'])->name('material_out');
+
+Route::get('/history', [GateController::class, 'history'])->name('gate.history');

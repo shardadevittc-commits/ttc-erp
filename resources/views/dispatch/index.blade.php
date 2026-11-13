@@ -840,38 +840,34 @@ async function loadPendingOrders(custId) {
 
 
 // Send all selected orders to another page without putting IDs in URL
+// Send all selected orders to another page without putting IDs in URL
 function sendSelectedOrders() {
     const selectedCheckboxes = document.querySelectorAll(
         '#pending_orders_container .selected-order-checkbox:checked'
     );
 
     if (selectedCheckboxes.length === 0) {
-        alert('Please select at least one Basic Rate.');
+        alert('Please select at least one order.');
         return;
     }
 
-    const selectedOrderIds = Array.from(selectedCheckboxes)
-        .map(checkbox => checkbox.dataset.orderId);
-
-    // Create POST form
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = "{{ route('dispatch.selected-orders') }}";
 
-    // CSRF protection
     const csrf = document.createElement('input');
     csrf.type = 'hidden';
     csrf.name = '_token';
     csrf.value = "{{ csrf_token() }}";
     form.appendChild(csrf);
 
-    // Send selected order IDs only.
-    // Fetch full order/item details from the database on the next page.
-    const ordersInput = document.createElement('input');
-    ordersInput.type = 'hidden';
-    ordersInput.name = 'orders';
-    ordersInput.value = JSON.stringify(selectedOrderIds);
-    form.appendChild(ordersInput);
+    selectedCheckboxes.forEach(checkbox => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'order_ids[]';
+        input.value = checkbox.dataset.orderId;
+        form.appendChild(input);
+    });
 
     document.body.appendChild(form);
     form.submit();

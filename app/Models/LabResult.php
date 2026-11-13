@@ -19,11 +19,13 @@ class LabResult extends Model
         'grade_category_id',
         'property_id',
         'actual_value',
+        'final_value',
     ];
 
     protected $casts = [
         'formlist' => 'array',
         'actual_value' => 'decimal:4',
+        'final_value' => 'decimal:4',
     ];
 
     public function grade()

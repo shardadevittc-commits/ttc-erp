@@ -17,9 +17,10 @@ class GateController extends Controller
     public function index(Request $request)
     {
         $parties = Customer::orderBy('id')->get();
-        $materialIns = GateAndGaadi::with('customer')->latest('id')->paginate(10)->withQueryString();
-        $weighedIds = Weight::whereNotNull('vehicle_id')->pluck('vehicle_id')->toArray();
-        return view('gate.index', compact('parties', 'materialIns', 'weighedIds'));
+        $materialIns = GateAndGaadi::with('customer')->whereNull('check_out')->latest('id')->paginate(10)->withQueryString();
+        $weighedIds = Weight::whereNotNull('vehicle_id')->where('second_weight', 'done')->pluck('vehicle_id')->toArray();
+        $weightEntryIds = Weight::whereNotNull('vehicle_id')->pluck('vehicle_id')->unique()->toArray();
+        return view('gate.index', compact('parties', 'materialIns', 'weighedIds', 'weightEntryIds'));
     }
 
     public function add(Request $request)
@@ -66,19 +67,14 @@ class GateController extends Controller
 
             GateAndGaadi::create($validated);
 
-            return redirect()->route('gate.index')
-                ->with('success', 'Vehicle entry added successfully.');
+            return redirect()->route('gate.index')->with('success', 'Vehicle entry added successfully.');
         }
 
         $user = Auth::user();
         $custIds = PurchaseOrder::distinct()->pluck('cust_id');
         $parties = Customer::select(['id','company_name'])->where('status', '1')->whereIn('id', $custIds)->get();
 
-        return view('gate.material_in', compact(
-            'user',
-            'parties',
-            'materialIn'
-        ));
+        return view('gate.material_in', compact('user', 'parties', 'materialIn'));
     }
 
 
@@ -88,13 +84,45 @@ class GateController extends Controller
 
         $materialIn->delete();
 
-        return redirect()->route('gate.index')
-            ->with('success', 'Vehicle entry deleted successfully.');
+        return redirect()->route('gate.index')->with('success', 'Vehicle entry deleted successfully.');
     }
 
+    public function material_out($id)
+    {
+        $item = GateAndGaadi::findOrFail($id);
 
+        $item->check_out = now();
+        $item->save();
 
+        return redirect()->route('gate.index')->with('success', 'Vehicle checked out successfully.');
+    }
 
+    public function history(Request $request)
+    {
+        $query = GateAndGaadi::with('customer')->whereNotNull('check_out');
 
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                    $customerQuery->where('company_name', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        if ($request->filled('from_date')) {
+            $query->whereDate('check_out', '>=', $request->from_date);
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereDate('check_out', '<=', $request->to_date);
+        }
+
+        $materialIns = $query->latest('id')->paginate(10)->withQueryString();
+        //pr($materialIns->toArray());die;
+        return view('gate.history', compact('materialIns'));
+    }
 
 }

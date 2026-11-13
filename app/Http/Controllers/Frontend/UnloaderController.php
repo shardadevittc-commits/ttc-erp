@@ -10,6 +10,8 @@ use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseOrderitemReceiving;
 use App\Models\Grade;
 use App\Models\ReturnMaterial;
+use App\Models\UnloadWeight;
+use App\Models\Customer;
 use Illuminate\Support\Facades\DB;
 
 class UnloaderController extends Controller
@@ -264,5 +266,22 @@ class UnloaderController extends Controller
         } while ($exists);
 
         return $heatNo;
+    }
+
+    public function history_unload(Request $request)
+    {
+        $wt = Weight::where('first_weight', 'done')->where('second_weight', 'done')->get();
+
+        foreach ($wt as $weight) {
+
+            // Customer name fetch
+            $customer = Customer::where('id', $weight->cust_id)->first();
+            $weight->customer_name = $customer->company_name ?? 'N/A';
+
+            // Unload weight fetch
+            $weight->unload_weight = UnloadWeight::where('weight_id', $weight->id)->where('vehicle_id', $weight->vehicle_id)->get()->toArray();
+        }
+        //echo"<pre>";print_r($wt->toArray());die;
+        return view('unloader.history', compact('wt'));
     }
 }

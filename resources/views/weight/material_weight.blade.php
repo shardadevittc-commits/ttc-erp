@@ -1,3 +1,4 @@
+
 @extends('layouts.app')
 
 @section('title', 'Vehicle Weight Record | TTC Robotronics - Steel Industry ERP')
@@ -29,14 +30,6 @@
     .weigh-record-table .form-control,
     .weigh-record-table .form-select {
         min-width: 130px;
-    }
-
-    .weigh-record-table .weight-input {
-        max-width: 220px;
-    }
-
-    .weigh-record-table .rst-input {
-        max-width: 160px;
     }
 
     .required-star {
@@ -74,6 +67,7 @@
 @section('content')
 
 @php
+
     $selectedForm = old(
         'formlist',
         $formlist ?? request('formlist', 'Material In')
@@ -85,7 +79,7 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Upper Form Weight
+    | First Weight
     |--------------------------------------------------------------------------
     */
 
@@ -104,7 +98,7 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Pending Second Weight
+    | Second Weight Status
     |--------------------------------------------------------------------------
     */
 
@@ -114,7 +108,7 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Weight Values
+    | First Weight Values
     |--------------------------------------------------------------------------
     */
 
@@ -128,6 +122,12 @@
         $materialIn->tareweight ?? 0
     );
 
+    /*
+    |--------------------------------------------------------------------------
+    | Second Weight Values
+    |--------------------------------------------------------------------------
+    */
+
     $unloadTareWeight = old(
         'unload_tare_weight',
         $materialIn->unload_tare_weight ?? ''
@@ -140,11 +140,12 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Calculate Initial Material Weight
+    | Calculate Material Weight
     |--------------------------------------------------------------------------
     */
 
     if ($isMaterialIn) {
+
         $materialWeight = old(
             'material_weight',
             $materialIn->material_weight ?? ''
@@ -156,7 +157,9 @@
                 $loadedWeight - (float) $unloadTareWeight
             );
         }
+
     } elseif ($isMaterialOut) {
+
         $materialWeight = old(
             'material_weight',
             $materialIn->material_weight ?? ''
@@ -168,7 +171,9 @@
                 (float) $unloadLoadedWeight - $tareWeight
             );
         }
+
     } else {
+
         $materialWeight = old(
             'material_weight',
             $materialIn->material_weight ?? ''
@@ -195,6 +200,7 @@
     $totalActualQty = 0;
 
     foreach ($poReceiving as $index => $item) {
+
         $totalUnloadQty += (float) data_get(
             $item,
             'received_qty',
@@ -206,11 +212,14 @@
             data_get($item, 'actual_qty', 0)
         );
     }
+
 @endphp
 
-{{-- Page Header --}}
+{{-- PAGE HEADER --}}
+
 <div class="page-header">
     <div class="page-headerinner">
+
         <div class="page-headercontent">
             <div class="page-headertitle">
                 <h6>Vehicle Weigh Record</h6>
@@ -220,58 +229,101 @@
         <div class="page-headeractions">
             <a href="{{ url()->previous() }}"
                class="header-btn header-btn--secondary">
+
                 <i class="fas fa-arrow-left"></i> Back
+
             </a>
         </div>
+
     </div>
 </div>
 
+
 <div class="content_area">
+
     <div class="flex-grow-1 container-p-y">
+
         <div class="row">
+
             <div class="col-12">
 
-                {{-- Flash Messages --}}
+                {{-- FLASH MESSAGES --}}
+
                 @if (session('error'))
+
                     <div class="alert alert-danger alert-dismissible fade show">
+
                         {{ session('error') }}
-                        <button type="button" class="btn-close"
+
+                        <button type="button"
+                                class="btn-close"
                                 data-bs-dismiss="alert"></button>
+
                     </div>
+
                 @endif
+
 
                 @if (session('success'))
+
                     <div class="alert alert-success alert-dismissible fade show">
+
                         {{ session('success') }}
-                        <button type="button" class="btn-close"
+
+                        <button type="button"
+                                class="btn-close"
                                 data-bs-dismiss="alert"></button>
+
                     </div>
+
                 @endif
 
-                {{-- Validation Errors --}}
+
+                {{-- VALIDATION ERRORS --}}
+
                 @if ($errors->any())
+
                     <div class="alert alert-danger alert-dismissible fade show">
+
                         <strong>Please check the following:</strong>
+
                         <ul class="mb-0 mt-2">
+
                             @foreach ($errors->all() as $error)
+
                                 <li>{{ $error }}</li>
+
                             @endforeach
+
                         </ul>
-                        <button type="button" class="btn-close"
+
+                        <button type="button"
+                                class="btn-close"
                                 data-bs-dismiss="alert"></button>
+
                     </div>
+
                 @endif
+
 
                 <div class="card">
+
                     <div class="card-header">
-                        <h5 class="weigh-record-title">Vehicle Weigh Record</h5>
+
+                        <h5 class="weigh-record-title">
+                            Vehicle Weigh Record
+                        </h5>
+
                     </div>
+
 
                     <div class="card-body">
 
+
                         {{-- ==================================================
-                             FORM 1: INITIAL VEHICLE WEIGHT
+                             FORM 1: FIRST WEIGHT
                         =================================================== --}}
+
                         <form action="{{ route('material_weight') }}"
                               method="POST"
                               enctype="multipart/form-data"
@@ -283,9 +335,13 @@
                                    name="id"
                                    value="{{ $id ?? request('id', '') }}">
 
+
                             <div class="table-responsive">
+
                                 <table class="table table-bordered weigh-record-table mb-4">
+
                                     <thead>
+
                                         <tr>
                                             <th>Vehicle Id.</th>
                                             <th>Vehicle No.</th>
@@ -293,19 +349,27 @@
                                             <th>Entry Type</th>
                                             <th>Vehicle Entry Slip</th>
                                         </tr>
+
                                     </thead>
 
+
                                     <tbody>
+
                                         <tr>
+
                                             <td>
+
                                                 <input type="text"
                                                        name="vehicle_id"
                                                        class="form-control"
                                                        value="{{ old('vehicle_id', $materialIn->id ?? request('id', '')) }}"
                                                        readonly>
+
                                             </td>
 
+
                                             <td>
+
                                                 <input type="text"
                                                        name="truckno"
                                                        id="truckno"
@@ -314,31 +378,43 @@
                                                        placeholder="PB10HB5630"
                                                        maxlength="10"
                                                        pattern="[A-Za-z]{2}[0-9]{2}[A-Za-z]{2}[0-9]{4}"
-                                                       title="Enter vehicle number in format PB10HB5630"
                                                        required>
+
                                             </td>
 
+
                                             <td>
+
                                                 <select name="cust_id"
                                                         id="cust_id"
                                                         class="form-select"
                                                         required>
+
                                                     <option value="">Select Party</option>
 
                                                     @foreach ($parties ?? [] as $party)
+
                                                         <option value="{{ $party->id }}"
                                                             {{ (string) old('cust_id', $custId ?? $materialIn->cust_id ?? request('cust_id', '')) === (string) $party->id ? 'selected' : '' }}>
+
                                                             {{ $party->company_name }}
+
                                                         </option>
+
                                                     @endforeach
+
                                                 </select>
+
                                             </td>
 
+
                                             <td>
+
                                                 <select name="formlist"
                                                         id="formlist"
                                                         class="form-select"
                                                         required>
+
                                                     <option value="Material In"
                                                         {{ $isMaterialIn ? 'selected' : '' }}>
                                                         Material In
@@ -353,34 +429,58 @@
                                                         {{ $isReturn ? 'selected' : '' }}>
                                                         Return
                                                     </option>
+
                                                 </select>
+
                                             </td>
 
+
                                             <td>
+
                                                 @if (!empty($materialIn->vehicleentryslip))
+
                                                     <a href="{{ asset('storage/' . $materialIn->vehicleentryslip) }}"
                                                        target="_blank"
                                                        rel="noopener noreferrer"
                                                        class="btn btn-sm btn-outline-primary">
+
                                                         <i class="fas fa-file-alt"></i>
                                                         View Slip
+
                                                     </a>
 
                                                     <input type="hidden"
                                                            name="existing_vehicleentryslip"
                                                            value="{{ $materialIn->vehicleentryslip }}">
+
                                                 @else
-                                                    <span class="text-muted">No Slip Added</span>
+
+                                                    <span class="text-muted">
+                                                        No Slip Added
+                                                    </span>
+
                                                 @endif
+
                                             </td>
+
                                         </tr>
+
                                     </tbody>
+
                                 </table>
+
                             </div>
 
+
                             <div class="row">
+
+                                {{-- RST NO --}}
+
                                 <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 mb-3">
-                                    <label for="rstno" class="form-label">RST No.</label>
+
+                                    <label for="rstno" class="form-label">
+                                        RST No.
+                                    </label>
 
                                     <input type="text"
                                            name="rstno"
@@ -389,12 +489,22 @@
                                            value="{{ old('rstno', $materialIn->rstno ?? '') }}"
                                            placeholder="Enter RST No."
                                            required>
+
                                 </div>
 
+
+                                {{-- FIRST WEIGHT --}}
+
                                 <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 mb-3">
+
                                     <label for="weight" class="form-label">
-                                        <span id="weightLabel">{{ $weightLabel }}</span>
+
+                                        <span id="weightLabel">
+                                            {{ $weightLabel }}
+                                        </span>
+
                                         <span class="required-star">*</span>
+
                                     </label>
 
                                     <input type="number"
@@ -406,24 +516,36 @@
                                            min="0"
                                            step="0.01"
                                            required>
+
                                 </div>
 
+
+                                {{-- WEIGHMENT SLIP --}}
+
                                 <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 mb-3">
+
                                     <label for="weighmentslip" class="form-label">
                                         Weighment Slip
                                     </label>
 
                                     @if (!empty($materialIn->weighmentslip))
+
                                         <div class="mt-2">
+
                                             <a href="{{ asset('storage/' . $materialIn->weighmentslip) }}"
                                                target="_blank"
                                                rel="noopener noreferrer"
                                                class="btn btn-sm btn-outline-primary">
+
                                                 <i class="fas fa-file-alt"></i>
                                                 View Weighment Slip
+
                                             </a>
+
                                         </div>
+
                                     @elseif (empty($weigh))
+
                                         <input type="file"
                                                name="weighmentslip"
                                                id="weighmentslip"
@@ -433,32 +555,57 @@
                                         <small class="text-muted">
                                             JPG, JPEG, PNG or PDF; maximum 5 MB.
                                         </small>
+
                                     @else
-                                        <span class="text-primary">No Slip Added</span>
+
+                                        <span class="text-primary">
+                                            No Slip Added
+                                        </span>
+
                                     @endif
+
                                 </div>
+
                             </div>
 
+
+                            {{-- SAVE FIRST WEIGHT --}}
+
                             @if (empty($materialIn->vehicle_weighId))
+
                                 <div class="border-top pt-3 mt-3">
+
                                     <div class="d-flex justify-content-end gap-2">
+
                                         <a href="{{ url()->previous() }}"
                                            class="btn btn-outline-secondary">
-                                            <i class="fas fa-times me-1"></i> Cancel
+
+                                            <i class="fas fa-times me-1"></i>
+                                            Cancel
+
                                         </a>
 
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-check me-1"></i> Save Record
+                                        <button type="submit"
+                                                class="btn btn-primary">
+
+                                            <i class="fas fa-check me-1"></i>
+                                            Save Record
+
                                         </button>
+
                                     </div>
+
                                 </div>
+
                             @endif
+
                         </form>
 
+
                         {{-- ==================================================
-                             FORM 2: PENDING SECOND WEIGHT
-                             Separate form and separate route
+                             FORM 2: SECOND WEIGHT
                         =================================================== --}}
+
                         @if ($isSecondWeightPending)
 
                             <form action="{{ route('weight.unload_weight') }}"
@@ -467,13 +614,12 @@
 
                                 @csrf
 
-                                <input type="hidden"
-                                       name="id"
-                                       value="{{ $id ?? request('id', '') }}">
+
+                               <input type="hidden" name="id" value="{{ $weight->id ?? '' }}">
 
                                 <input type="hidden"
                                        name="vehicle_id"
-                                       value="{{ $materialIn->id ?? '' }}">
+                                        value="{{ old('vehicle_id', $materialIn->id ?? $id ?? '') }}"
 
                                 <input type="hidden"
                                        name="truckno"
@@ -498,21 +644,32 @@
                                        id="tareWeightHidden"
                                        value="{{ $tareWeight }}">
 
+
                                 <div class="border-top pt-3 mt-3">
+
                                     <h5 class="section-heading">
                                         Pending Second Weight Details
                                     </h5>
 
+
                                     <div class="row">
 
-                                        {{-- Material In: unload tare --}}
+
+                                        {{-- =====================================
+                                             MATERIAL IN: UNLOAD TARE
+                                        ====================================== --}}
+
                                         <div class="col-xxl-3 col-xl-3 col-lg-4 col-md-6 mb-3"
                                              id="unloadTareWrapper"
                                              style="{{ $isMaterialIn ? '' : 'display:none;' }}">
 
-                                            <label for="unload_tare_weight" class="form-label">
+                                            <label for="unload_tare_weight"
+                                                   class="form-label">
+
                                                 Unload Tare Weight (Kgs)
+
                                                 <span class="required-star">*</span>
+
                                             </label>
 
                                             <input type="number"
@@ -524,17 +681,25 @@
                                                    max="{{ $loadedWeight > 0 ? $loadedWeight : '' }}"
                                                    step="0.01"
                                                    {{ $isMaterialIn ? 'required' : 'disabled' }}>
+
                                         </div>
 
-                                        {{-- Material Out: unload loaded weight --}}
+
+                                        {{-- =====================================
+                                             MATERIAL OUT: UNLOAD LOADED WEIGHT
+                                        ====================================== --}}
+
                                         <div class="col-xxl-3 col-xl-3 col-lg-4 col-md-6 mb-3"
                                              id="unloadLoadedWrapper"
                                              style="{{ $isMaterialOut ? '' : 'display:none;' }}">
 
-                                            <label for="unload_loaded_weight" class="form-label">
-                                                {{-- Unload Loaded Weight (Kgs) --}}
-                                                Net loaded Weight (Kgs)
+                                            <label for="unload_loaded_weight"
+                                                   class="form-label">
+
+                                                Net Loaded Weight (Kgs)
+
                                                 <span class="required-star">*</span>
+
                                             </label>
 
                                             <input type="number"
@@ -542,15 +707,24 @@
                                                    id="unload_loaded_weight"
                                                    class="form-control"
                                                    value="{{ $unloadLoadedWeight }}"
-                                                   min="0"
+                                                   min="{{ $tareWeight }}"
                                                    step="0.01"
                                                    {{ $isMaterialOut ? 'required' : 'disabled' }}>
+
                                         </div>
 
-                                        {{-- Calculated material weight --}}
+
+                                        {{-- =====================================
+                                             MATERIAL WEIGHT
+                                        ====================================== --}}
+
                                         <div class="col-xxl-3 col-xl-3 col-lg-4 col-md-6 mb-3">
-                                            <label for="material_weight" class="form-label">
+
+                                            <label for="material_weight"
+                                                   class="form-label">
+
                                                 Material Weight (Kgs)
+
                                             </label>
 
                                             <input type="number"
@@ -559,36 +733,88 @@
                                                    class="form-control"
                                                    value="{{ $materialWeight }}"
                                                    readonly>
+
                                         </div>
+
                                     </div>
 
-                                    {{-- Unloaded Material --}}
+
+                                    {{-- =====================================
+                                         MATERIAL DETAILS
+                                    ====================================== --}}
+
                                     <div class="mt-3">
-                                        <h6 class="section-heading">Unloaded Material</h6>
+
+                                        <h6 class="section-heading">
+
+                                            @if($isMaterialOut)
+                                                Loaded Material
+                                            @else
+                                                Unloaded Material
+                                            @endif
+
+                                        </h6>
+
 
                                         <div class="table-responsive">
+
                                             <table class="table table-bordered weigh-record-table mb-3">
+
                                                 <thead>
+
                                                     <tr>
+
                                                         <th style="width:4%">#</th>
-                                                        <th style="width:22%">Sizes</th>
-                                                        <th style="width:11%">Grade</th>
-                                                        <th style="width:11%">Brand</th>
-                                                        <th style="width:25%">Unload Qty (Tons)</th>
+
+                                                        <th style="width:22%">
+                                                            Sizes
+                                                        </th>
+
+                                                        <th style="width:11%">
+                                                            Grade
+                                                        </th>
+
+                                                        <th style="width:11%">
+                                                            Brand
+                                                        </th>
+
+                                                        <th style="width:25%">
+                                                            Unload Qty (Tons)
+                                                        </th>
+
                                                         <th style="width:27%">
                                                             Actual Qty (KGS)
                                                             <span class="required-star">*</span>
                                                         </th>
+
                                                     </tr>
+
                                                 </thead>
 
+
                                                 <tbody>
+
                                                     @forelse ($poReceiving as $index => $item)
 
                                                         @php
-                                                            $sizeName = data_get($item, 'size_name', '');
-                                                            $gradeName = data_get($item, 'grade_name', '');
-                                                            $productName = data_get($item, 'product_name', '');
+
+                                                            $sizeName = data_get(
+                                                                $item,
+                                                                'size_name',
+                                                                ''
+                                                            );
+
+                                                            $gradeName = data_get(
+                                                                $item,
+                                                                'grade_name',
+                                                                ''
+                                                            );
+
+                                                            $productName = data_get(
+                                                                $item,
+                                                                'product_name',
+                                                                ''
+                                                            );
 
                                                             $unloadQty = (float) data_get(
                                                                 $item,
@@ -600,19 +826,29 @@
                                                                 "actual_qty.$index",
                                                                 data_get($item, 'actual_qty', '')
                                                             );
+
                                                         @endphp
 
+
                                                         <tr>
-                                                            <td>{{ $index + 1 }}</td>
 
                                                             <td>
+                                                                {{ $index + 1 }}
+                                                            </td>
+
+
+                                                            <td>
+
                                                                 {{ $sizeName }}
 
                                                                 @if ($productName !== '')
+
                                                                     <small class="text-muted d-block">
                                                                         {{ $productName }}
                                                                     </small>
+
                                                                 @endif
+
 
                                                                 <input type="hidden"
                                                                        name="po_receiving[{{ $index }}][size_id]"
@@ -620,7 +856,7 @@
 
                                                                 <input type="hidden"
                                                                        name="po_receiving[{{ $index }}][purchase_order_item_id]"
-                                                                       value="{{ data_get($item, 'purchase_order_item_id', '') }}">
+                                                                       value="{{ data_get($item, 'purchase_order_item_id', data_get($item, 'sale_order_item_id', '')) }}">
 
                                                                 <input type="hidden"
                                                                        name="po_receiving[{{ $index }}][product_id]"
@@ -629,29 +865,45 @@
                                                                 <input type="hidden"
                                                                        name="po_receiving[{{ $index }}][product_name]"
                                                                        value="{{ $productName }}">
+
                                                             </td>
 
+
                                                             <td>
+
                                                                 {{ $gradeName }}
 
                                                                 <input type="hidden"
                                                                        name="po_receiving[{{ $index }}][grade_id]"
                                                                        value="{{ data_get($item, 'grade_id', '') }}">
+
                                                             </td>
 
-                                                            <td>
-                                                                {{ data_get($item, 'brand_name', data_get($item, 'brand', '')) }}
-                                                            </td>
 
                                                             <td>
+
+                                                                {{ data_get(
+                                                                    $item,
+                                                                    'brand_name',
+                                                                    data_get($item, 'brand', '')
+                                                                ) }}
+
+                                                            </td>
+
+
+                                                            <td>
+
                                                                 {{ number_format($unloadQty, 3, '.', '') }}
 
                                                                 <input type="hidden"
                                                                        name="po_receiving[{{ $index }}][received_qty]"
                                                                        value="{{ $unloadQty }}">
+
                                                             </td>
 
+
                                                             <td>
+
                                                                 <input type="number"
                                                                        name="actual_qty[{{ $index }}]"
                                                                        class="form-control actual-qty-input"
@@ -660,136 +912,239 @@
                                                                        step="0.001"
                                                                        placeholder="Enter actual quantity"
                                                                        required>
+
                                                             </td>
+
                                                         </tr>
+
 
                                                     @empty
+
                                                         <tr>
-                                                            <td colspan="6" class="text-center text-muted">
-                                                                No unloaded material found.
+
+                                                            <td colspan="6"
+                                                                class="text-center text-muted">
+
+                                                                No material found.
+
                                                             </td>
+
                                                         </tr>
+
                                                     @endforelse
 
-                                                    @if (count($poReceiving) > 0)
-                                                        <tr class="total-row">
-                                                            <td colspan="4" class="text-end">TOTAL</td>
 
-                                                            <td>
-                                                                {{ number_format($totalUnloadQty, 3, '.', '') }}
+                                                    {{-- TOTAL --}}
+
+                                                    @if (count($poReceiving) > 0)
+
+                                                        <tr class="total-row">
+
+                                                            <td colspan="4"
+                                                                class="text-end">
+
+                                                                TOTAL
+
                                                             </td>
 
+
                                                             <td>
+
+                                                                {{ number_format($totalUnloadQty, 3, '.', '') }}
+
+                                                            </td>
+
+
+                                                            <td>
+
                                                                 <span id="actualQtyTotal">
                                                                     {{ number_format($totalActualQty, 3, '.', '') }}
                                                                 </span>
+
                                                             </td>
+
                                                         </tr>
 
+
+                                                        {{-- MATERIAL SUMMARY --}}
+
                                                         <tr>
+
                                                             <td colspan="4"></td>
 
                                                             <td colspan="2">
+
                                                                 <div class="pending-summary">
+
                                                                     <div>
-                                                                        <strong>MATERIAL WT:</strong>
+
+                                                                        <strong>
+                                                                            MATERIAL WT:
+                                                                        </strong>
+
                                                                         <span id="materialWeightTotal">
                                                                             {{ number_format($totalActualQty, 3, '.', '') }}
                                                                         </span>
+
                                                                         KGS
+
                                                                     </div>
+
 
                                                                     <div>
-                                                                        <strong>PENDING WT:</strong>
+
+                                                                        <strong>
+                                                                            PENDING WT:
+                                                                        </strong>
+
                                                                         <span id="pendingWeightTotal">
-    {{ is_numeric($materialWeight) ? number_format((float) $materialWeight, 2, '.', '') : '0.00' }}
-</span>
+
+                                                                            {{ is_numeric($materialWeight)
+                                                                                ? number_format((float) $materialWeight, 2, '.', '')
+                                                                                : '0.00' }}
+
+                                                                        </span>
+
                                                                         KGS
+
                                                                     </div>
+
                                                                 </div>
+
                                                             </td>
+
                                                         </tr>
+
                                                     @endif
+
                                                 </tbody>
+
                                             </table>
+
                                         </div>
+
                                     </div>
+
+
+                                    {{-- SUBMIT SECOND WEIGHT --}}
 
                                     <div class="border-top pt-3 mt-3">
+
                                         <div class="d-flex justify-content-end gap-2">
+
                                             <a href="{{ url()->previous() }}"
                                                class="btn btn-outline-secondary">
-                                                <i class="fas fa-times me-1"></i> Cancel
+
+                                                <i class="fas fa-times me-1"></i>
+                                                Cancel
+
                                             </a>
 
-                                            <button type="submit" class="btn btn-success">
-                                                <i class="fas fa-check me-1"></i> Submit Second Weight
+
+                                            <button type="submit"
+                                                    class="btn btn-success">
+
+                                                <i class="fas fa-check me-1"></i>
+                                                Submit Second Weight
+
                                             </button>
+
                                         </div>
+
                                     </div>
+
                                 </div>
+
                             </form>
+
                         @endif
 
                     </div>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
+
 </div>
 
 @endsection
 
+
 @push('scripts')
+
 <script>
+
 document.addEventListener('DOMContentLoaded', function () {
+
     const truckInput = document.getElementById('truckno');
+
     const formList = document.getElementById('formlist');
 
     const weightLabel = document.getElementById('weightLabel');
+
     const weightInput = document.getElementById('weight');
 
     const secondWeightForm = document.getElementById('secondWeightForm');
+
     const secondFormType = document.getElementById('secondFormType');
 
     const unloadTareWrapper = document.getElementById('unloadTareWrapper');
+
     const unloadLoadedWrapper = document.getElementById('unloadLoadedWrapper');
 
     const unloadTareInput = document.getElementById('unload_tare_weight');
+
     const unloadLoadedInput = document.getElementById('unload_loaded_weight');
+
     const materialWeightInput = document.getElementById('material_weight');
 
     const loadedWeightHidden = document.getElementById('loadedWeightHidden');
+
     const tareWeightHidden = document.getElementById('tareWeightHidden');
 
     const actualInputs = document.querySelectorAll('.actual-qty-input');
 
     const actualQtyTotal = document.getElementById('actualQtyTotal');
+
     const materialWeightTotal = document.getElementById('materialWeightTotal');
+
     const pendingWeightTotal = document.getElementById('pendingWeightTotal');
 
+
     const initialLoadedWeight = Number(@json($loadedWeight));
+
     const initialTareWeight = Number(@json($tareWeight));
+
 
     /*
     |--------------------------------------------------------------------------
-    | Vehicle Number
+    | VEHICLE NUMBER
     |--------------------------------------------------------------------------
     */
 
     if (truckInput) {
+
         truckInput.addEventListener('input', function () {
+
             this.value = this.value.toUpperCase().replace(/\s/g, '');
+
         });
+
     }
+
 
     /*
     |--------------------------------------------------------------------------
-    | Upper Form Weight Field
+    | FIRST WEIGHT FIELD
     |--------------------------------------------------------------------------
     */
 
     function updateWeightField() {
+
         if (!formList || !weightInput || !weightLabel) {
             return;
         }
@@ -809,131 +1164,240 @@ document.addEventListener('DOMContentLoaded', function () {
             : 'Enter Tare Weight';
 
         updateSecondWeightFields();
+
     }
+
 
     /*
     |--------------------------------------------------------------------------
-    | Lower Form Field Visibility
+    | SECOND WEIGHT VISIBILITY
     |--------------------------------------------------------------------------
     */
 
     function updateSecondWeightFields() {
+
         if (!formList) {
             return;
         }
 
         const type = formList.value;
+
         const isMaterialIn = type === 'Material In';
+
         const isMaterialOut = type === 'Material Out';
+
 
         if (secondFormType) {
             secondFormType.value = type;
         }
 
+
+        // Material In: Show Unload Tare Weight
+
         if (unloadTareWrapper && unloadTareInput) {
+
             unloadTareWrapper.style.display = isMaterialIn ? '' : 'none';
+
             unloadTareInput.disabled = !isMaterialIn;
+
             unloadTareInput.required = isMaterialIn;
+
+            if (!isMaterialIn) {
+                unloadTareInput.value = '';
+            }
+
         }
+
+
+        // Material Out: Show Net Loaded Weight
 
         if (unloadLoadedWrapper && unloadLoadedInput) {
+
             unloadLoadedWrapper.style.display = isMaterialOut ? '' : 'none';
+
             unloadLoadedInput.disabled = !isMaterialOut;
+
             unloadLoadedInput.required = isMaterialOut;
+
+            if (!isMaterialOut) {
+                unloadLoadedInput.value = '';
+            }
+
+            unloadLoadedInput.min = initialTareWeight;
+
         }
 
+
         calculateMaterialWeight();
+
         updateActualTotals();
+
     }
+
 
     /*
     |--------------------------------------------------------------------------
-    | Material Weight
+    | CALCULATE MATERIAL WEIGHT
+    |--------------------------------------------------------------------------
     |
-    | Material In:
+    | MATERIAL IN:
     | Loaded Weight - Unload Tare Weight
     |
-    | Material Out:
-    | Unload Loaded Weight - Tare Weight
+    | MATERIAL OUT:
+    | Unload Loaded Weight - First Tare Weight
+    |
     |--------------------------------------------------------------------------
     */
 
     function calculateMaterialWeight() {
+
         if (!formList || !materialWeightInput) {
             return;
         }
 
         const type = formList.value;
+
         let materialWeight = 0;
 
+
+        // MATERIAL IN
+
         if (type === 'Material In') {
+
             if (!unloadTareInput || unloadTareInput.value.trim() === '') {
+
                 materialWeightInput.value = '';
+
                 updatePendingWeight(0);
+
                 return;
             }
+
 
             const loaded = Number(
-                loadedWeightHidden ? loadedWeightHidden.value : initialLoadedWeight
+                loadedWeightHidden
+                    ? loadedWeightHidden.value
+                    : initialLoadedWeight
             );
+
             const tare = Number(unloadTareInput.value);
 
-            if (!Number.isFinite(loaded) || !Number.isFinite(tare) ||
-                tare < 0 || tare > loaded) {
+
+            if (
+                !Number.isFinite(loaded) ||
+                !Number.isFinite(tare) ||
+                tare < 0 ||
+                tare > loaded
+            ) {
+
                 materialWeightInput.value = '';
+
                 updatePendingWeight(0);
+
                 return;
+
             }
+
 
             materialWeight = loaded - tare;
 
-        } else if (type === 'Material Out') {
+        }
+
+
+        // MATERIAL OUT
+
+        else if (type === 'Material Out') {
+
             if (!unloadLoadedInput || unloadLoadedInput.value.trim() === '') {
+
                 materialWeightInput.value = '';
+
                 updatePendingWeight(0);
+
                 return;
             }
+
 
             const tare = Number(
-                tareWeightHidden ? tareWeightHidden.value : initialTareWeight
+                tareWeightHidden
+                    ? tareWeightHidden.value
+                    : initialTareWeight
             );
+
             const loaded = Number(unloadLoadedInput.value);
 
-            if (!Number.isFinite(tare) || !Number.isFinite(loaded) ||
-                tare < 0 || loaded < tare) {
+
+            if (
+                !Number.isFinite(tare) ||
+                !Number.isFinite(loaded) ||
+                tare < 0 ||
+                loaded < tare
+            ) {
+
                 materialWeightInput.value = '';
+
                 updatePendingWeight(0);
+
                 return;
+
             }
+
 
             materialWeight = loaded - tare;
 
-        } else {
-            materialWeightInput.value = '';
-            updatePendingWeight(0);
-            return;
         }
+
+
+        // RETURN
+
+        else {
+
+            materialWeightInput.value = '';
+
+            updatePendingWeight(0);
+
+            return;
+
+        }
+
 
         materialWeightInput.value = materialWeight.toFixed(2);
+
         updatePendingWeight(materialWeight);
+
     }
 
-    function updatePendingWeight(value) {
-        if (pendingWeightTotal) {
-            pendingWeightTotal.textContent = Number(value).toFixed(2);
-        }
-    }
 
     /*
     |--------------------------------------------------------------------------
-    | Actual Quantity Totals
+    | PENDING WEIGHT
+    |--------------------------------------------------------------------------
+    */
+
+    function updatePendingWeight(value) {
+
+        if (pendingWeightTotal) {
+
+            pendingWeightTotal.textContent = Number(value).toFixed(2);
+
+        }
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ACTUAL QUANTITY TOTAL
     |--------------------------------------------------------------------------
     */
 
     function updateActualTotals() {
+
         let total = 0;
 
+
         actualInputs.forEach(function (input) {
+
             if (input.value.trim() === '') {
                 return;
             }
@@ -941,22 +1405,36 @@ document.addEventListener('DOMContentLoaded', function () {
             const value = Number(input.value);
 
             if (Number.isFinite(value) && value >= 0) {
+
                 total += value;
+
             }
+
         });
 
-        // Actual Qty ka total
+
+        // Actual Qty Total
+
         if (actualQtyTotal) {
+
             actualQtyTotal.textContent = total.toFixed(3);
+
         }
 
-        // MATERIAL WT = Actual Qty total
+
+        // Material Weight Total
+
         if (materialWeightTotal) {
+
             materialWeightTotal.textContent = total.toFixed(3);
+
         }
 
-        // PENDING WT = Material Weight - Actual Qty total
+
+        // Pending Weight = Calculated Weight - Actual Qty
+
         if (pendingWeightTotal && materialWeightInput) {
+
             const materialWeight = Number(materialWeightInput.value);
 
             const pending = materialWeightInput.value.trim() !== '' &&
@@ -965,19 +1443,24 @@ document.addEventListener('DOMContentLoaded', function () {
                     : 0;
 
             pendingWeightTotal.textContent = pending.toFixed(2);
+
         }
+
     }
+
 
     /*
     |--------------------------------------------------------------------------
-    | Weighment Slip Validation
+    | WEIGHMENT SLIP VALIDATION
     |--------------------------------------------------------------------------
     */
 
     const slipInput = document.getElementById('weighmentslip');
 
     if (slipInput) {
+
         slipInput.addEventListener('change', function () {
+
             const file = this.files[0];
 
             if (!file) {
@@ -991,58 +1474,101 @@ document.addEventListener('DOMContentLoaded', function () {
             ];
 
             if (!allowedTypes.includes(file.type)) {
+
                 alert('Please upload a JPG, JPEG, PNG or PDF file.');
+
                 this.value = '';
+
                 return;
+
             }
 
             if (file.size > 5 * 1024 * 1024) {
+
                 alert('File size must not exceed 5 MB.');
+
                 this.value = '';
+
             }
+
         });
+
     }
+
 
     /*
     |--------------------------------------------------------------------------
-    | Event Listeners
+    | EVENT LISTENERS
     |--------------------------------------------------------------------------
     */
 
     if (formList) {
+
         formList.addEventListener('change', updateWeightField);
+
     }
+
 
     if (unloadTareInput) {
-        unloadTareInput.addEventListener('input', calculateMaterialWeight);
+
+        unloadTareInput.addEventListener('input', function () {
+
+            calculateMaterialWeight();
+
+            updateActualTotals();
+
+        });
+
     }
+
 
     if (unloadLoadedInput) {
-        unloadLoadedInput.addEventListener('input', calculateMaterialWeight);
+
+        unloadLoadedInput.addEventListener('input', function () {
+
+            calculateMaterialWeight();
+
+            updateActualTotals();
+
+        });
+
     }
 
+
     actualInputs.forEach(function (input) {
+
         input.addEventListener('input', updateActualTotals);
+
     });
+
 
     /*
     |--------------------------------------------------------------------------
-    | Synchronize Weights Before Second Form Submission
+    | SECOND WEIGHT SUBMISSION VALIDATION
     |--------------------------------------------------------------------------
     */
 
     if (secondWeightForm) {
+
         secondWeightForm.addEventListener('submit', function (event) {
+
             calculateMaterialWeight();
 
+
+            // MATERIAL IN VALIDATION
+
             if (formList && formList.value === 'Material In') {
+
                 const loaded = Number(
-                    loadedWeightHidden ? loadedWeightHidden.value : 0
+                    loadedWeightHidden
+                        ? loadedWeightHidden.value
+                        : 0
                 );
 
                 const tare = unloadTareInput
                     ? Number(unloadTareInput.value)
                     : NaN;
+
 
                 if (
                     !unloadTareInput ||
@@ -1051,20 +1577,32 @@ document.addEventListener('DOMContentLoaded', function () {
                     tare < 0 ||
                     tare > loaded
                 ) {
+
                     event.preventDefault();
+
                     alert('Please enter a valid Unload Tare Weight.');
+
                     return;
+
                 }
+
             }
 
+
+            // MATERIAL OUT VALIDATION
+
             if (formList && formList.value === 'Material Out') {
+
                 const tare = Number(
-                    tareWeightHidden ? tareWeightHidden.value : 0
+                    tareWeightHidden
+                        ? tareWeightHidden.value
+                        : 0
                 );
 
                 const loaded = unloadLoadedInput
                     ? Number(unloadLoadedInput.value)
                     : NaN;
+
 
                 if (
                     !unloadLoadedInput ||
@@ -1072,22 +1610,95 @@ document.addEventListener('DOMContentLoaded', function () {
                     !Number.isFinite(loaded) ||
                     loaded < tare
                 ) {
+
                     event.preventDefault();
-                    alert('Unload Loaded Weight must be greater than or equal to Tare Weight.');
+
+                    alert(
+                        'Net Loaded Weight must be greater than or equal to First Tare Weight.'
+                    );
+
                     return;
+
                 }
+
             }
+
+
+            // ACTUAL QTY VALIDATION
+
+            let invalidQty = false;
+
+            actualInputs.forEach(function (input) {
+
+                if (
+                    input.value.trim() === '' ||
+                    !Number.isFinite(Number(input.value)) ||
+                    Number(input.value) < 0
+                ) {
+
+                    invalidQty = true;
+
+                }
+
+            });
+
+
+            if (actualInputs.length > 0 && invalidQty) {
+
+                event.preventDefault();
+
+                alert('Please enter valid Actual Quantity for all materials.');
+
+                return;
+
+            }
+
+
+            // Prevent Actual Qty exceeding Material Weight
+
+            const materialWeight = Number(materialWeightInput.value);
+
+            let actualTotal = 0;
+
+            actualInputs.forEach(function (input) {
+
+                actualTotal += Number(input.value || 0);
+
+            });
+
+
+            if (
+                materialWeightInput.value.trim() !== '' &&
+                actualTotal > materialWeight + 0.01
+            ) {
+
+                event.preventDefault();
+
+                alert('Total Actual Quantity cannot be greater than Material Weight.');
+
+                return;
+
+            }
+
         });
+
     }
+
 
     /*
     |--------------------------------------------------------------------------
-    | Initial Calculations
+    | INITIAL CALCULATIONS
     |--------------------------------------------------------------------------
     */
 
     updateWeightField();
+
+    calculateMaterialWeight();
+
     updateActualTotals();
+
 });
+
 </script>
+
 @endpush

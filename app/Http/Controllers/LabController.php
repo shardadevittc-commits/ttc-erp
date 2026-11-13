@@ -12,263 +12,294 @@ use App\Models\User;
 use App\Models\Customer;
 use App\Models\Weight;
 use App\Models\PurchaseOrderItem;
+use App\Models\UnloadWeight;
+use App\Models\PurchaseOrderitemReceiving;
 use App\Models\LabResult;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 class LabController extends Controller
 {
+    /*
+    |--------------------------------------------------------------------------
+    | Lab Management Listing
+    |--------------------------------------------------------------------------
+    */
 
-
-/*$unloaderData = [
-                'vehical_id' => 1,
-                'weight_id' => 1,
-                'customer_id' => 1,
-                'purchase_order_item_id' => 1,
-                'po_item_qty' => 1000.00,
-                'received_qty' => 800.00,
-                'production_used_qty' => 250.00,
-                'order_price' => 50.00,
-                'received_price' => 40000.00,
-                'size_id' => 1,
-                'grade_id' => 1,
-                'furnance_heat_no' => 'FH-2026-001',
-                'genrated_heat_no' => 'GH-2026-001',
-                'lab_test' => '1',
-                'item_remarks' => 'Material received and lab tested.',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'vehical_id' => 2,
-                'weight_id' => 2,
-                'customer_id' => 2,
-                'purchase_order_item_id' => 2,
-                'po_item_qty' => 1500.00,
-                'received_qty' => 1200.00,
-                'production_used_qty' => 500.00,
-                'order_price' => 45.00,
-                'received_price' => 54000.00,
-                'size_id' => 2,
-                'grade_id' => 2,
-                'furnance_heat_no' => 'FH-2026-002',
-                'genrated_heat_no' => 'GH-2026-002',
-                'lab_test' => '1',
-                'item_remarks' => 'Material partially used in production.',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'vehical_id' => 3,
-                'weight_id' => 3,
-                'customer_id' => 1,
-                'purchase_order_item_id' => 3,
-                'po_item_qty' => 2000.00,
-                'received_qty' => 1000.00,
-                'production_used_qty' => 0.00,
-                'order_price' => 60.00,
-                'received_price' => 60000.00,
-                'size_id' => 3,
-                'grade_id' => 1,
-                'furnance_heat_no' => 'FH-2026-003',
-                'genrated_heat_no' => 'GH-2026-003',
-                'lab_test' => '2',
-                'item_remarks' => 'Lab test pending.',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],*/
     public function index(Request $request)
     {
-        $vehicleId = 1;
-        $materialInId = 1;
-        $customerId = 1;
-
-        $weighRecord = Weight::where('id', $vehicleId)
-            ->where('vehicle_id', $materialInId)
-            ->where('cust_id', $customerId)
-            ->first();
-
-        $formlist = $weighRecord?->formlist;
-
-        $purchaseOrderItems = PurchaseOrderItem::whereIn('id', [1])->get();
+        $unloadWeights = UnloadWeight::all();
 
         $unloaderData = [];
 
-        foreach ($purchaseOrderItems as $item) {
+        foreach ($unloadWeights as $unloadWeight) {
 
-            $sizeName = Size::where('id', $item->size_id)
-                ->value('size_name');
+            $vehicleId = $unloadWeight->vehicle_id;
+            $customerId = $unloadWeight->cust_id;
 
-            $grade = Grade::where('id', $item->grade_id)->first();
+            $weighRecord = Weight::where('vehicle_id', $vehicleId)
+                ->where('cust_id', $customerId)
+                ->first();
 
-            $gradeName = $grade?->grade_name;
+            $labTest = PurchaseOrderitemReceiving::where(
+                'vehical_id',
+                $vehicleId
+            )
+                ->where('customer_id', $customerId)
+                ->where('lab_test', '1')
+                ->first();
 
-            $customerName = Customer::where('id', $item->cust_id)
-                ->value('company_name');
+            $formlist = $weighRecord?->formlist;
 
-            /*
-            |--------------------------------------------------------------------------
-            | Dynamic Grade Properties
-            |--------------------------------------------------------------------------
-            | Grade -> GradeReaction -> GradeProperty -> GradeCategory
-            */
+            $purchaseOrderItems = PurchaseOrderItem::where(
+                'id',
+                $unloadWeight->purchase_order_item_id
+            )->get();
 
-            $gradeReactions = GradeReaction::with([
+            foreach ($purchaseOrderItems as $item) {
+
+                $sizeName = Size::where('id', $item->size_id)
+                    ->value('size_name');
+
+                $grade = Grade::find($item->grade_id);
+
+                $customerName = Customer::where('id', $item->cust_id)
+                    ->value('company_name');
+
+                /*
+                 * Fetch previously saved Actual and Final values.
+                 */
+
+                $savedResults = LabResult::where(
+                    'purchase_order_item_id',
+                    $item->id
+                )
+                    ->get()
+                    ->keyBy('property_id');
+
+                /*
+                 * Fetch Grade Properties.
+                 */
+
+                $gradeReactions = GradeReaction::with([
                     'property.gradeCategory',
                     'category',
                 ])
-                ->where('grade_id', $item->grade_id)
-                ->get();
+                    ->where('grade_id', $item->grade_id)
+                    ->get();
 
-            $gradeProperties = $gradeReactions->map(function ($reaction) {
-                $property = $reaction->property;
+                /*
+                 * Attach Actual and Final values.
+                 */
 
-                return [
-                    'category_id' => $reaction->grade_category_id
-                        ?? $property?->category_id,
+                $gradeProperties = $gradeReactions->map(
+                    function ($reaction) use ($savedResults) {
 
-                    'category_name' => $reaction->category?->name
-                        ?? $property?->gradeCategory?->name
-                        ?? 'Other',
+                        $property = $reaction->property;
 
-                    'property_id' => $reaction->property_id,
+                        $saved = $savedResults->get(
+                            $reaction->property_id
+                        );
 
-                    'property_name' => $property?->name ?? '-',
+                        return [
 
-                    'unit' => $property?->unit ?? '',
+                            'category_id' =>
+                                $reaction->grade_category_id
+                                ?? $property?->category_id,
 
-                    'min_value' => $reaction->min_value,
+                            'category_name' =>
+                                $reaction->category?->name
+                                ?? $property?->gradeCategory?->name
+                                ?? 'Other',
 
-                    'max_value' => $reaction->max_value,
-                ];
-            })->values()->all();
+                            'property_id' =>
+                                $reaction->property_id,
+
+                            'property_name' =>
+                                $property?->name ?? '-',
+
+                            'unit' =>
+                                $property?->unit ?? '',
+
+                            'min_value' =>
+                                $reaction->min_value,
+
+                            'max_value' =>
+                                $reaction->max_value,
+
+                            // Actual Value - Read Only
+                            'actual_value' =>
+                                $saved?->actual_value,
+
+                            // Final Value - Editable
+                            'final_value' =>
+                                $saved?->final_value,
+                        ];
+                    }
+                )->values()->all();
 
                 $unloaderData[] = [
-                    'vehicle_id' => $vehicleId,
 
-                    'weight_id' => $weighRecord?->id,
+                    'unload_weight_id' =>
+                        $unloadWeight->id,
 
-                    'customer_id' => $item->cust_id,
+                    'vehicle_id' =>
+                        $vehicleId,
 
-                    'customer_name' => $customerName ?? '-',
+                    'weight_id' =>
+                        $weighRecord?->id,
 
-                    'purchase_order_item_id' => $item->id,
+                    'customer_id' =>
+                        $item->cust_id,
 
-                    'po_item_qty' => $item->qty ?? 0,
+                    'cust_id' =>
+                        $item->cust_id,
 
-                    'received_qty' => 12,
+                    'customer_name' =>
+                        $customerName ?? '-',
+
+                    'purchase_order_item_id' =>
+                        $item->id,
+
+                    'po_item_qty' =>
+                        $item->qty ?? 0,
+
+                    'received_qty' =>
+                        $unloadWeight->received_qty ?? 0,
 
                     'production_used_qty' => 0,
 
-                    'order_price' => $item->rate ?? 0,
+                    'order_price' =>
+                        $item->rate ?? 0,
 
-                    'received_price' => 45000,
+                    'received_price' =>
+                        $unloadWeight->received_price ?? 0,
 
-                    'size_id' => $item->size_id,
+                    'size_id' =>
+                        $item->size_id,
 
-                    'size_name' => $sizeName ?? '-',
+                    'size_name' =>
+                        $sizeName ?? '-',
 
-                    'grade_id' => $item->grade_id,
+                    'grade_id' =>
+                        $item->grade_id,
 
-                    'grade_name' => $gradeName ?? '-',
+                    'grade_name' =>
+                        $grade?->grade_name ?? '-',
 
-                    'furnance_heat_no' => null,
+                    'furnance_heat_no' =>
+                        $labTest?->furnance_heat_no,
 
-                    'genrated_heat_no' => null,
+                    'genrated_heat_no' =>
+                        $labTest?->genrated_heat_no,
 
-                    'lab_test' => '1',
+                    'lab_test' =>
+                        $labTest?->lab_test,
 
-                    'item_remarks' => $item->remarks,
+                    'item_remarks' =>
+                        $item->remarks,
 
-                    'formlist' => $formlist,
+                    'formlist' =>
+                        $formlist,
 
-                    // Dynamic composition and grade properties
-                    'grade_reactions' => $gradeProperties,
+                    'grade_reactions' =>
+                        $gradeProperties,
 
-                    // static
                     'production_id' => 1,
 
-                    'created_at' => now(),
+                    'created_at' =>
+                        $unloadWeight->created_at,
 
-                    'updated_at' => now(),
+                    'updated_at' =>
+                        $unloadWeight->updated_at,
                 ];
             }
-        //echo"<pre>";print_r($unloaderData);die;
+        }
+
         return view('lab.index', compact('unloaderData'));
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Update Final Lab Results
+    |--------------------------------------------------------------------------
+    */
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'vehicle_id' => ['nullable', 'integer'],
-            'weight_id' => ['nullable', 'integer'],
-            'cust_id' => ['nullable', 'integer'],
-            'purchase_order_item_id' => ['required', 'integer', 'min:1'],
-            'size_id' => ['nullable', 'integer'],
-            'grade_id' => ['nullable', 'integer'],
 
-            // Formlist must be an array
-            'formlist' => ['required', 'array'],
-
-            // Actual values must contain at least one item
-            'actual_values' => ['required', 'array', 'min:1'],
-
-            'actual_values.*.property_id' => [
+            'purchase_order_item_id' => [
                 'required',
                 'integer',
                 'min:1',
+                'exists:purchase_order_items,id'
             ],
 
-            'actual_values.*.grade_category_id' => [
-                'nullable',
+            'final_values' => [
+                'required',
+                'array',
+                'min:1'
+            ],
+
+            'final_values.*.property_id' => [
+                'required',
                 'integer',
-                'min:1',
+                'min:1'
             ],
 
-            'actual_values.*.actual_value' => [
+            'final_values.*.final_value' => [
                 'required',
                 'numeric',
-                'min:0',
+                'min:0'
             ],
+
         ]);
 
         DB::transaction(function () use ($validated) {
-            foreach ($validated['actual_values'] as $item) {
 
-                LabResult::updateOrCreate(
-                    [
-                        'purchase_order_item_id' =>
-                            $validated['purchase_order_item_id'],
+            foreach ($validated['final_values'] as $item) {
 
-                        'property_id' => $item['property_id'],
-                    ],
-                    [
-                        'vehicle_id' => $validated['vehicle_id'] ?? null,
-                        'weight_id' => $validated['weight_id'] ?? null,
-                        'cust_id' => $validated['cust_id'] ?? null,
-                        'size_id' => $validated['size_id'] ?? null,
-                        'grade_id' => $validated['grade_id'] ?? null,
+                /*
+                 * Find existing Actual Result.
+                 * Update only Final Value.
+                 */
 
-                        'grade_category_id' =>
-                            $item['grade_category_id'] ?? null,
+                $labResult = LabResult::where(
+                    'purchase_order_item_id',
+                    $validated['purchase_order_item_id']
+                )
+                    ->where('property_id', $item['property_id'])
+                    ->lockForUpdate()
+                    ->first();
 
-                        // Convert array to JSON before saving
-                        'formlist' => json_encode(
-                            $validated['formlist'],
-                            JSON_THROW_ON_ERROR
-                        ),
+                if (!$labResult) {
 
-                        'actual_value' => $item['actual_value'],
-                    ]
-                );
+                    throw ValidationException::withMessages([
+                        'final_values' =>
+                            'Actual value not found for property ID: '
+                            . $item['property_id']
+                    ]);
+                }
+
+                /*
+                 * Actual Value remains unchanged.
+                 */
+
+                $labResult->final_value = $item['final_value'];
+
+                $labResult->save();
             }
         });
 
         return response()->json([
+
             'success' => true,
-            'message' => 'Lab results saved successfully.',
+
+            'message' =>
+                'Final values updated successfully.',
+
         ]);
     }
-
-
 }
