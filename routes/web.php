@@ -41,5 +41,6 @@
         include "Frontend/productions.php";
 
         include "Admin/purchase.php";
+        include "Admin/finidhedMaterial.php";
 
     });

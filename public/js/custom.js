@@ -297,22 +297,19 @@ set_validation('.form-validation1');
         error.remove();
     }
 }); */
-
+// For **This field is required**
 function showFieldError(field, show) {
-
     let name = field.attr('name');
+    let errorTarget = field.closest('.d-flex').length ? field.closest('.d-flex') : field;
 
+    // Check if same field error already exists
     let error = field.closest('td').find('.error-msg').filter(function () {
-        return $(this).attr('data-field-name') === name;
+        return $(this).attr('data-field-name') === name && $(this).text().trim() === 'This field is required';
     });
 
-    let errorTarget = field.closest('.d-flex').length
-        ? field.closest('.d-flex')
-        : field;
-
     if (show) {
-
-        if (!error.length) {
+        // Show error only if it does not already exist
+        if (error.length === 0) {
             errorTarget.after(
                 $('<span class="error-msg text-danger"></span>')
                     .attr('data-field-name', name)

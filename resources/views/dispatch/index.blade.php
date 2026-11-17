@@ -256,11 +256,8 @@
                 </div>
             </div>
 
-
             <div class="mt-3">
-                <button type="button"
-                    class="btn btn-success w-100"
-                    onclick="sendSelectedOrders()">
+                <button type="button" class="btn btn-success w-100" onclick="sendSelectedOrders()">
 
                     <i class="fas fa-paper-plane me-1"></i>
                     Send Selected Orders
@@ -747,18 +744,15 @@ async function loadPendingOrders(custId) {
             rateSection.className = 'd-flex align-items-center gap-2 flex-wrap';
 
             const basicRate = document.createElement('span');
-            basicRate.textContent =
-                'Basic Rate: ' + (order.basic_rate ?? '-');
+            basicRate.textContent = 'Basic Rate: ' + (order.basic_rate ?? '-');
 
             const checkboxLabel = document.createElement('label');
-            checkboxLabel.className =
-                'd-flex align-items-center gap-1 mb-0';
+            checkboxLabel.className = 'd-flex align-items-center gap-1 mb-0';
             checkboxLabel.style.cursor = 'pointer';
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
-            checkbox.className =
-                'form-check-input selected-order-checkbox';
+            checkbox.className = 'form-check-input selected-order-checkbox';
             checkbox.value = order.id;
             checkbox.dataset.orderId = order.id;
             checkbox.dataset.basicRate = order.basic_rate ?? '';

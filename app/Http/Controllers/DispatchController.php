@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\GateAndGaadi;
 use App\Models\Customer;
 use App\Models\SaleOrder;
+use App\Models\SaleOrderItem;
 
 class DispatchController extends Controller
 {
@@ -34,23 +35,24 @@ class DispatchController extends Controller
 
     public function pendingOrders($cust_id)
     {
-        $orders = DB::table('sale_orders')->where('customer_id', $cust_id)->orderByDesc('id')->get();
-
+        $orders = SaleOrder::where('customer_id', $cust_id)->orderByDesc('id')->get();
+        // pr($orders); die;
         foreach ($orders as $order) {
-
             $order->items = DB::table('sale_order_items as soi')
                 ->leftJoin('grades as g', 'g.id', '=', 'soi.grade_id')
                 ->leftJoin('sizes as s', 's.id', '=', 'soi.size_id')
                 ->leftJoin('units as u', 'u.id', '=', 'soi.fs_bundle_unit')
+                ->leftJoin('products', 'products.id', '=', 'soi.product_id')
                 ->where('soi.sale_order_id', $order->id)
                 ->select('soi.id', 'soi.sale_order_id', 'soi.grade_id','g.grade_name as grade_name',
                     'soi.size_id', 's.size_name as size_name', 'soi.sale_item_prices', 'soi.item_qty',
-                    'soi.fs_bundle_weight', 'soi.fs_bundle_unit')->get();
+                    'soi.fs_bundle_weight', 'soi.fs_bundle_unit','products.product_name')->get();
 
             foreach ($order->items as $item) {
                 $item->basic_rate = $order->basic_rate;
             }
         }
+
         return response()->json(['success' => true, 'orders' => $orders,]);
     }
 

@@ -110,6 +110,7 @@
                                             </th>
 
                                             <th>Customer</th>
+                                            <th>Sale Order</th>
 
                                             <th>Products</th>
 
@@ -136,6 +137,27 @@
 
                                                 {{-- Customer --}}
                                                 <td>{{ $purchaseOrder->customer->company_name ?? 'N/A' }}</td>
+
+                                                <td>
+                                                    <span class="badge"
+                                                        style="background-color: #e8f3ff;
+                                                                color: #1456a0;
+                                                                border: 1px solid #b6d8ff;
+                                                                padding: 8px 12px;
+                                                                border-radius: 6px;
+                                                                font-size: 12px;
+                                                                font-weight: 700;">
+ 
+                                                        @if(isset($purchaseOrder->saleOrder->id) && $purchaseOrder->saleOrder->id)
+                                                        #{{ $purchaseOrder->saleOrder->id ?? 'N/A' }}
+                                                        -
+                                                        {{ $purchaseOrder->saleOrder->customer->company_name ?? 'N/A' }}
+                                                        @else
+                                                         {{ "Self Purchase" }}
+                                                        @endif
+ 
+                                                    </span>
+                                                </td>
 
                                                 {{-- Products --}}
                                                 <td class="purchase-products">
