@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Log;
 
 class PurchaseController extends Controller
 {
-    public function index(Request $request)
+    /* public function index(Request $request)
     {
         $query = PurchaseOrder::with([
             'customer',
@@ -61,6 +61,64 @@ class PurchaseController extends Controller
 
         $purchaseOrders = $query->orderBy($sortBy, $sortOrder)->paginate(10)->withQueryString();
         //echo "<pre>"; print_r($purchaseOrders->toArray()); echo "</pre>"; die;
+        return view('admin.purchases.index', compact('purchaseOrders'));
+    } */
+
+    public function index(Request $request)
+    {
+        $query = PurchaseOrder::with([
+            'customer',
+            'saleOrder.customer',
+            'items.product',
+            'items.size',
+            'items.grade',
+            'items.sizeUnit',
+        ]);
+ 
+        // Search functionality
+        if ($request->filled('search')) {
+ 
+            $search = $request->search;
+ 
+            $query->where(function ($q) use ($search) {
+ 
+                $q->where('id', 'like', "%{$search}%")
+                    ->orWhere('basis', 'like', "%{$search}%")
+                    ->orWhere('term', 'like', "%{$search}%")
+ 
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('company_name', 'like', "%{$search}%");
+                    })
+ 
+                    ->orWhereHas('saleOrder.customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('company_name', 'like', "%{$search}%");
+                    })
+ 
+                    ->orWhereHas('items.product', function ($productQuery) use ($search) {
+                        $productQuery->where('product_name', 'like', "%{$search}%");
+                    });
+            });
+        }
+ 
+        // Sorting
+        $sortBy = $request->get('sort_by', 'id');
+        $sortOrder = $request->get('sort_order', 'desc');
+ 
+        $allowedSorts = ['id', 'basis', 'created_at'];
+ 
+        if (!in_array($sortBy, $allowedSorts)) {
+            $sortBy = 'id';
+        }
+ 
+        if (!in_array($sortOrder, ['asc', 'desc'])) {
+            $sortOrder = 'desc';
+        }
+ 
+        $purchaseOrders = $query
+            ->orderBy($sortBy, $sortOrder)
+            ->paginate(10)
+            ->withQueryString();
+ 
         return view('admin.purchases.index', compact('purchaseOrders'));
     }
 
