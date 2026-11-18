@@ -8,6 +8,9 @@ Route::get('/productions', [ProductionController::class, 'index'])
 Route::get('/production-history', [ProductionController::class, 'index'])
     ->name('production-history');
 
+Route::get('/productions/unlinked-listings', [ProductionController::class, 'unlinkedListings'])
+    ->name('productions.unlinked-listings');
+
 /* Route::match(['get', 'post'],'/productions/{saleOrderItem}/send-for-work', [ProductionController::class, 'workOrderDetails'])
     ->whereNumber('saleOrderItem')
     ->name('productions.work-order.create'); */

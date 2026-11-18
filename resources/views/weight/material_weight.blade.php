@@ -207,8 +207,11 @@
             data_get($item, 'po_item_qty', 0)
         );
 
+        $actualQtyKey = $isMaterialOut
+            ? data_get($item, 'sale_order_item_id')
+            : $index;
         $totalActualQty += (float) old(
-            "actual_qty.$index",
+            "actual_qty.$actualQtyKey",
             data_get($item, 'actual_qty', 0)
         );
     }
@@ -606,7 +609,7 @@
                              FORM 2: SECOND WEIGHT
                         =================================================== --}}
 
-                        @if ($isSecondWeightPending)
+                        @if ($isSecondWeightPending && (!$isMaterialOut || $hasSelectedDispatchItems))
 
                             <form action="{{ route('weight.unload_weight') }}"
                                   method="POST"
@@ -619,7 +622,7 @@
 
                                 <input type="hidden"
                                        name="vehicle_id"
-                                        value="{{ old('vehicle_id', $materialIn->id ?? $id ?? '') }}"
+                                       value="{{ old('vehicle_id', $materialIn->id ?? $id ?? '') }}">
 
                                 <input type="hidden"
                                        name="truckno"
@@ -779,7 +782,7 @@
                                                         </th>
 
                                                         <th style="width:25%">
-                                                            Unload Qty (Tons)
+                                                                            Unload Qty (Order Unit)
                                                         </th>
 
                                                         <th style="width:27%">
@@ -797,6 +800,8 @@
                                                     @forelse ($poReceiving as $index => $item)
 
                                                         @php
+                                                            $itemId = data_get($item, 'sale_order_item_id');
+                                                            $actualQtyKey = $isMaterialOut ? $itemId : $index;
 
                                                             $sizeName = data_get(
                                                                 $item,
@@ -823,7 +828,7 @@
                                                             );
 
                                                             $actualQty = old(
-                                                                "actual_qty.$index",
+                                                                "actual_qty.$actualQtyKey",
                                                                 data_get($item, 'actual_qty', '')
                                                             );
 
@@ -849,7 +854,13 @@
 
                                                                 @endif
 
+                                                                @if ($isMaterialOut)
+                                                                    <input type="hidden"
+                                                                           name="selected_item_ids[]"
+                                                                           value="{{ $itemId }}">
+                                                                @endif
 
+                                                                @if (!$isMaterialOut)
                                                                 <input type="hidden"
                                                                        name="po_receiving[{{ $index }}][size_id]"
                                                                        value="{{ data_get($item, 'size_id', '') }}">
@@ -865,6 +876,7 @@
                                                                 <input type="hidden"
                                                                        name="po_receiving[{{ $index }}][product_name]"
                                                                        value="{{ $productName }}">
+                                                                @endif
 
                                                             </td>
 
@@ -873,9 +885,11 @@
 
                                                                 {{ $gradeName }}
 
-                                                                <input type="hidden"
-                                                                       name="po_receiving[{{ $index }}][grade_id]"
-                                                                       value="{{ data_get($item, 'grade_id', '') }}">
+                                                                @if (!$isMaterialOut)
+                                                                    <input type="hidden"
+                                                                           name="po_receiving[{{ $index }}][grade_id]"
+                                                                           value="{{ data_get($item, 'grade_id', '') }}">
+                                                                @endif
 
                                                             </td>
 
@@ -894,10 +908,15 @@
                                                             <td>
 
                                                                 {{ number_format($unloadQty, 3, '.', '') }}
+                                                                @if ($isMaterialOut)
+                                                                    {{ (int) data_get($item, 'qty_type') === 2 ? 'KG' : 'Tons' }}
+                                                                @endif
 
+                                                                @if (!$isMaterialOut)
                                                                 <input type="hidden"
                                                                        name="po_receiving[{{ $index }}][received_qty]"
                                                                        value="{{ $unloadQty }}">
+                                                                @endif
 
                                                             </td>
 
@@ -905,7 +924,7 @@
                                                             <td>
 
                                                                 <input type="number"
-                                                                       name="actual_qty[{{ $index }}]"
+                                                                       name="actual_qty[{{ $actualQtyKey }}]"
                                                                        class="form-control actual-qty-input"
                                                                        value="{{ $actualQty }}"
                                                                        min="0"
@@ -1057,6 +1076,10 @@
 
                             </form>
 
+                        @elseif ($isSecondWeightPending && $isMaterialOut && !$hasSelectedDispatchItems)
+                            <div class="alert alert-info mt-3">
+                                No sale-order items have been sent for this vehicle's final weighing.
+                            </div>
                         @endif
 
                     </div>

@@ -152,6 +152,13 @@
                 </li>
 
                 <li class="sidebar-item">
+                    <a href="{{ route('finishedMaterial') }}" class="sidebar-link {{ request()->routeIs('finishedMaterial*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-boxes-stacked nav-icon"></i>
+                        <span>FM Stock</span>
+                    </a>
+                </li>
+
+                <li class="sidebar-item">
                     <a href="{{ route('vehicleHistories') }}" class="sidebar-link {{ request()->routeIs('vehicleHistories*') ? 'active' : '' }}">
                         <i class="fa-solid fa-truck nav-icon"></i>
                         <span>Vehicle History</span>
@@ -263,6 +270,12 @@
                             <a href="{{ route('productions') }}" class="submenu-link {{ request()->routeIs('productions') ? 'active' : '' }}">
                                 <span class="submenu-dot"></span>
                                 <span>Pending Work Order's</span>
+                            </a>
+                        </li>
+                         <li class="submenu-item">
+                            <a href="{{ route('productions.unlinked-listings') }}" class="submenu-link {{ request()->routeIs('productions.unlinked-listings') ? 'active' : '' }}">
+                                <span class="submenu-dot"></span>
+                                <span>Self Production</span>
                             </a>
                         </li>
                         <li class="submenu-item">

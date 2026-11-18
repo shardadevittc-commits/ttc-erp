@@ -1741,4 +1741,58 @@ class ProductionController extends Controller
                 }
             });
     }
+
+    public function unlinkedListings(Request $request)
+    {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $query = PurchaseOrderItem::query()
+            ->with([
+                'purchaseOrder.customer',
+                'customer',
+                'product',
+                'grade',
+                'size',
+                'sizeUnit',
+            ])
+            ->where(function (Builder $unlinkedQuery) {
+                $unlinkedQuery->whereNull('ref_saleorder_id')
+                    ->orWhere('ref_saleorder_id', 0);
+            });
+
+        $search = trim($filters['search'] ?? '');
+        if ($search !== '') {
+            $query->where(function (Builder $searchQuery) use ($search) {
+                $searchQuery->where('purchase_order_items.id', 'like', "%{$search}%")
+                    ->orWhere('purchase_order_items.purchase_order_id', 'like', "%{$search}%")
+                    ->orWhere('purchase_order_items.remarks', 'like', "%{$search}%")
+                    ->orWhereHas('purchaseOrder.customer', function (Builder $customerQuery) use ($search) {
+                        $customerQuery->where('company_name', 'like', "%{$search}%")
+                            ->orWhere('cust_code', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('customer', function (Builder $customerQuery) use ($search) {
+                        $customerQuery->where('company_name', 'like', "%{$search}%")
+                            ->orWhere('cust_code', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('product', function (Builder $productQuery) use ($search) {
+                        $productQuery->where('product_name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('grade', function (Builder $gradeQuery) use ($search) {
+                        $gradeQuery->where('grade_name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('size', function (Builder $sizeQuery) use ($search) {
+                        $sizeQuery->where('size_name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $listing = $query
+            ->orderByDesc('purchase_order_items.id')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('productions.unlinkedListings.index', compact('listing'));
+    }
 }
