@@ -4,12 +4,21 @@
 
 @section('content')
 
+@if(session('success'))
+    <div class="alert alert-success">{{ session('success') }}</div>
+@endif
+
 <div class="page-header">
     <div class="page-header__inner">
         <div class="page-header__content">
             <div class="page-header__title">
                 <h6>Manage Dispatch</h6>
             </div>
+        </div>
+        <div class="page-header__actions">
+            <a href="{{ route('dispatch.history') }}" class="btn btn-outline-primary">
+                <i class="fas fa-history me-1"></i>Dispatch History
+            </a>
         </div>
     </div>
 </div>
@@ -19,7 +28,7 @@
     <div class="card-header bg-white py-3">
         <h5 class="mb-1">Vehicle Entry Records</h5>
         <small class="text-muted">
-            Total Records: {{ $gate->count() }}
+            Total Records: {{ $gate->total() }}
         </small>
     </div>
 
@@ -35,7 +44,12 @@
                                 <div>
                                     <small class="text-muted d-block">Truck Number</small>
                                     <h6 class="truck-number mb-0">
-                                        {{ $item->truckno ?: '-' }}
+                                        <a href="{{ route('dispatch.truck-orders', ['gate' => $item->id]) }}"
+                                           target="_blank"
+                                           rel="noopener noreferrer"
+                                           class="text-decoration-none">
+                                            {{ $item->truckno ?: '-' }}
+                                        </a>
                                     </h6>
                                 </div>
 
@@ -44,10 +58,18 @@
                                     <span class="badge bg-primary">
                                         {{ $item->formlist ?: '-' }}
                                     </span>
+                                    @php($vehicleStatuses = $dispatchStatusesByGate->get($item->id, collect())->pluck('status'))
+                                    @if($vehicleStatuses->contains('dispatched'))
+                                        <span class="badge bg-success">Final Dispatched</span>
+                                    @elseif($vehicleStatuses->contains('weight_completed') || $vehicleStatuses->contains('dispatched'))
+                                        <span class="badge bg-info text-dark">Weight Department Completed</span>
+                                    @elseif($vehicleStatuses->contains('sent_for_weight'))
+                                        <span class="badge bg-info text-dark">Vehicle Sent for Weight</span>
+                                    @endif
 
                                     {{-- EDIT BUTTON --}}
                                     <button type="button"
-                                        class="action-icon edit-icon"
+                                        class="action-icon edit-icon {{ $weightCompletedGateIds->contains($item->id) ? 'weight-completed' : '' }}"
                                         title="Edit Dispatch Plan"
                                         data-bs-toggle="offcanvas"
                                         data-bs-target="#editVehicleOffcanvas"
@@ -55,7 +77,7 @@
                                         data-truckno="{{ $item->truckno }}"
                                         data-entrytype="{{ $item->entrytype ?? 'Material Out' }}"
                                         data-vehicletype="{{ $item->vehicletype ?? '' }}"
-                                        data-custid="{{ $item->cust_id ?? $item->customer->cust_id ?? '' }}"
+                                        data-pending-url="{{ route('manage-dispatch.pending-orders', ['gate' => $item->id]) }}"
                                         data-partyname ="{{ $item->customer->company_name ?? '-'}}"
                                         onclick="editVehicle(this)">
 
@@ -154,6 +176,7 @@
         </div>
     </div>
 </div>
+<div class="mt-3">{{ $gate->links() }}</div>
 
 
 {{-- RIGHT SIDE DISPATCH PLAN OFFCANVAS --}}
@@ -250,6 +273,11 @@
                 Loading pending orders...
             </div>
 
+            <label class="form-check d-flex align-items-center gap-2 mb-2">
+                <input type="checkbox" class="form-check-input" id="select_all_dispatch_items">
+                <span class="form-check-label fw-semibold">Select all production-eligible items</span>
+            </label>
+
             <div id="pending_orders_container" class="pending-orders-grid">
                 <div class="pending-order-message">
                     Edit vehicle to view pending orders.
@@ -257,10 +285,10 @@
             </div>
 
             <div class="mt-3">
-                <button type="button" class="btn btn-success w-100" onclick="sendSelectedOrders()">
+                <button type="button" class="btn btn-success w-100" id="send_selected_items" onclick="sendSelectedOrders()" disabled>
 
                     <i class="fas fa-paper-plane me-1"></i>
-                    Send Selected Orders
+                    Send for Weight
                 </button>
             </div>
 
@@ -279,6 +307,11 @@
         background: #fff;
         box-shadow: 0 3px 12px rgba(0,0,0,.05);
         transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .edit-icon.weight-completed:hover {
+        background: #ffc107;
+        color: #212529;
     }
 
     .vehicle-card:hover {
@@ -373,6 +406,11 @@
     .edit-icon {
         background: #eaf2ff;
         color: #0d6efd;
+    }
+
+    .edit-icon.weight-completed {
+        background: #fff3cd;
+        color: #997404;
     }
 
     .edit-icon:hover {
@@ -683,17 +721,17 @@ function editVehicle(button) {
     document.getElementById('selected_party_name').textContent =
         data.partyname || '-';
 
-    loadPendingOrders(data.custid);
+    loadPendingOrders(data.pendingUrl);
 }
 
-async function loadPendingOrders(custId) {
+async function loadPendingOrders(pendingUrl) {
     const container = document.getElementById('pending_orders_container');
     const loading = document.getElementById('pending_orders_loading');
 
     container.replaceChildren();
 
-    if (!custId) {
-        container.textContent = 'Customer ID not found.';
+    if (!pendingUrl) {
+        container.textContent = 'Truck details could not be identified.';
         return;
     }
 
@@ -701,7 +739,7 @@ async function loadPendingOrders(custId) {
 
     try {
         const response = await fetch(
-            "{{ url('pending-orders') }}/" + encodeURIComponent(custId),
+            pendingUrl,
             {
                 headers: {
                     'Accept': 'application/json'
@@ -750,24 +788,14 @@ async function loadPendingOrders(custId) {
             checkboxLabel.className = 'd-flex align-items-center gap-1 mb-0';
             checkboxLabel.style.cursor = 'pointer';
 
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.className = 'form-check-input selected-order-checkbox';
-            checkbox.value = order.id;
-            checkbox.dataset.orderId = order.id;
-            checkbox.dataset.basicRate = order.basic_rate ?? '';
-
-            // Store order data for selection
-            checkbox.dataset.order = JSON.stringify({
-                id: order.id,
-                basic_rate: order.basic_rate ?? null,
-                items: items
-            });
-
             const checkboxText = document.createElement('small');
-            checkboxText.textContent = 'Select';
+            checkboxText.textContent = 'Select order items';
+            const orderCheckbox = document.createElement('input');
+            orderCheckbox.type = 'checkbox';
+            orderCheckbox.className = 'form-check-input select-order-items-checkbox';
+            orderCheckbox.dataset.orderId = order.id;
 
-            checkboxLabel.append(checkbox, checkboxText);
+            checkboxLabel.append(orderCheckbox, checkboxText);
             rateSection.append(basicRate, checkboxLabel);
 
             heading.append(orderTitle, rateSection);
@@ -783,15 +811,43 @@ async function loadPendingOrders(custId) {
 
                 const itemHeading = document.createElement('div');
                 itemHeading.className = 'sale-item-heading';
-                itemHeading.textContent = 'Item ' + (index + 1);
+                itemHeading.classList.add('d-flex', 'justify-content-between', 'align-items-center');
+
+                const itemTitle = document.createElement('span');
+                itemTitle.textContent = 'Item ' + (index + 1);
+                const itemSelectLabel = document.createElement('label');
+                itemSelectLabel.className = 'd-flex align-items-center gap-1 mb-0';
+                itemSelectLabel.style.cursor = 'pointer';
+                const itemCheckbox = document.createElement('input');
+                itemCheckbox.type = 'checkbox';
+                itemCheckbox.className = 'form-check-input selected-item-checkbox';
+                itemCheckbox.value = item.id;
+                itemCheckbox.dataset.itemId = item.id;
+                itemCheckbox.dataset.orderId = order.id;
+                const alreadySent = ['sent_for_weight', 'weight_completed', 'dispatched'].includes(item.dispatch_status);
+                const noQuantityAvailable = parseFloat(item.dispatchable_qty) <= 0;
+                itemCheckbox.disabled = alreadySent || noQuantityAvailable;
+                const itemSelectText = document.createElement('small');
+                itemSelectText.textContent = alreadySent
+                    ? (item.dispatch_status === 'sent_for_weight' ? 'Sent for weight' : 'Already weighed')
+                    : (noQuantityAvailable ? 'No quantity available' : 'Select');
+                itemSelectLabel.append(itemCheckbox, itemSelectText);
+                itemHeading.append(itemTitle, itemSelectLabel);
 
                 itemDiv.appendChild(itemHeading);
 
                 const fields = [
+                    ['Product', item.product_name],
                     ['Grade', item.grade_name],
                     ['Size', item.size_name],
                     ['Item Price', item.sale_item_prices],
-                    ['Quantity', item.item_qty],
+                    ['Order Quantity', `${item.item_qty ?? 0} ${item.qty_type_name ?? ''}`],
+                    ['Purchase', item.purchase_entry_count > 0 ? `Yes (${item.purchase_entry_count})` : 'No'],
+                    ['Production Entries', item.production_entry_count],
+                    ['Production Status', item.production_status],
+                    ['Completed Production', `${item.completed_production_qty ?? 0} ${item.qty_type_name ?? ''}`],
+                    ['Production Remaining', `${item.production_remaining_qty ?? 0} ${item.qty_type_name ?? ''}`],
+                    ['Available to Dispatch', `${item.dispatchable_qty ?? 0} ${item.qty_type_name ?? ''}`],
                     ['Bundle Weight', item.fs_bundle_weight],
                     ['Bundle Unit', item.fs_bundle_unit_name]
                 ];
@@ -817,6 +873,8 @@ async function loadPendingOrders(custId) {
             container.appendChild(orderCard);
         });
 
+        updateSelectionState();
+
         if (totalItems === 0) {
             const message = document.createElement('div');
             message.className = 'pending-order-message';
@@ -834,11 +892,8 @@ async function loadPendingOrders(custId) {
 
 
 // Send all selected orders to another page without putting IDs in URL
-// Send all selected orders to another page without putting IDs in URL
 function sendSelectedOrders() {
-    const selectedCheckboxes = document.querySelectorAll(
-        '#pending_orders_container .selected-order-checkbox:checked'
-    );
+    const selectedCheckboxes = document.querySelectorAll('#pending_orders_container .selected-item-checkbox:checked:not(:disabled)');
 
     if (selectedCheckboxes.length === 0) {
         alert('Please select at least one order.');
@@ -847,7 +902,7 @@ function sendSelectedOrders() {
 
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = "{{ route('dispatch.selected-orders') }}";
+    form.action = "{{ route('dispatch.send-for-weight') }}";
 
     const csrf = document.createElement('input');
     csrf.type = 'hidden';
@@ -855,16 +910,60 @@ function sendSelectedOrders() {
     csrf.value = "{{ csrf_token() }}";
     form.appendChild(csrf);
 
+    appendHidden('gate_id', document.getElementById('edit_token').value);
+
+    const orderIds = new Set();
     selectedCheckboxes.forEach(checkbox => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'order_ids[]';
-        input.value = checkbox.dataset.orderId;
-        form.appendChild(input);
+        appendHidden('item_ids[]', checkbox.dataset.itemId);
+        orderIds.add(checkbox.dataset.orderId);
     });
+    orderIds.forEach(orderId => appendHidden('order_ids[]', orderId));
 
     document.body.appendChild(form);
     form.submit();
+
+    function appendHidden(name, value) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+    }
+}
+
+const pendingOrdersContainer = document.getElementById('pending_orders_container');
+const selectAllItems = document.getElementById('select_all_dispatch_items');
+
+pendingOrdersContainer.addEventListener('change', function (event) {
+    if (event.target.matches('.select-order-items-checkbox')) {
+        const orderItems = pendingOrdersContainer.querySelectorAll(
+            `.selected-item-checkbox[data-order-id="${event.target.dataset.orderId}"]:not(:disabled)`
+        );
+        orderItems.forEach(checkbox => { checkbox.checked = event.target.checked; });
+    }
+    updateSelectionState();
+});
+
+selectAllItems.addEventListener('change', function () {
+    pendingOrdersContainer.querySelectorAll('.selected-item-checkbox:not(:disabled)')
+        .forEach(checkbox => { checkbox.checked = selectAllItems.checked; });
+    updateSelectionState();
+});
+
+function updateSelectionState() {
+    const availableItems = [...pendingOrdersContainer.querySelectorAll('.selected-item-checkbox:not(:disabled)')];
+    const selectedItems = availableItems.filter(checkbox => checkbox.checked);
+
+    selectAllItems.checked = availableItems.length > 0 && selectedItems.length === availableItems.length;
+    selectAllItems.indeterminate = selectedItems.length > 0 && selectedItems.length < availableItems.length;
+    document.getElementById('send_selected_items').disabled = selectedItems.length === 0;
+
+    pendingOrdersContainer.querySelectorAll('.select-order-items-checkbox').forEach(orderCheckbox => {
+        const orderItems = availableItems.filter(item => item.dataset.orderId === orderCheckbox.dataset.orderId);
+        const selectedOrderItems = orderItems.filter(item => item.checked);
+        orderCheckbox.checked = orderItems.length > 0 && selectedOrderItems.length === orderItems.length;
+        orderCheckbox.indeterminate = selectedOrderItems.length > 0 && selectedOrderItems.length < orderItems.length;
+    });
 }
 </script>
 
