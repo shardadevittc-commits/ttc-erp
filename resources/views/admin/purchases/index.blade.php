@@ -129,7 +129,7 @@
                                     <tbody class="list table_listing_body">
 
                                         @forelse($purchaseOrders as $purchaseOrder)
-                                            
+
                                             <tr class="{{ isset($purchaseOrder->ref_saleorder_id) && $purchaseOrder->ref_saleorder_id == 0 ? 'table-info' : '' }}">
                                                 {{-- Purchase Order ID --}}
                                                 <td><strong>#{{ $purchaseOrder->id }}</strong></td>
@@ -217,7 +217,7 @@
                                                     <div class="d-flex align-items-center gap-2">
 
                                                         {{-- View button: enable when route exists --}}
-                                                        <a href="{{ route('purchase.add', $purchaseOrder->id) }}"
+                                                        <a href="{{ route('purchase.view', $purchaseOrder->id) }}"
                                                             class="btn btn-sm btn-info" title ="View"> <i
                                                                 class="fas fa-eye"></i> </a>
 

@@ -150,7 +150,12 @@
                         <span>RM Stock</span>
                     </a>
                 </li>
-
+                <li class="sidebar-item">
+                    <a href="{{ route('finishedMaterials') }}" class="sidebar-link {{ request()->routeIs('finishedMaterials*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-boxes-stacked nav-icon"></i>
+                        <span>Finished Materials</span>
+                    </a>
+                </li>
                 <li class="sidebar-item">
                     <a href="{{ route('vehicleHistories') }}" class="sidebar-link {{ request()->routeIs('vehicleHistories*') ? 'active' : '' }}">
                         <i class="fa-solid fa-truck nav-icon"></i>
