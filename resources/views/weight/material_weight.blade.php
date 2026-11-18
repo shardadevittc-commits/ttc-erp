@@ -364,7 +364,7 @@
 
                                                 <input type="text"
                                                        name="vehicle_id"
-                                                       class="form-control"
+                                                       class="form-control pe-none bg-body-secondary"
                                                        value="{{ old('vehicle_id', $materialIn->id ?? request('id', '')) }}"
                                                        readonly>
 
@@ -376,7 +376,7 @@
                                                 <input type="text"
                                                        name="truckno"
                                                        id="truckno"
-                                                       class="form-control text-uppercase"
+                                                       class="form-control text-uppercase pe-none bg-body-secondary"
                                                        value="{{ old('truckno', $materialIn->truckno ?? '') }}"
                                                        placeholder="PB10HB5630"
                                                        maxlength="10"
@@ -390,7 +390,7 @@
 
                                                 <select name="cust_id"
                                                         id="cust_id"
-                                                        class="form-select"
+                                                        class="form-select pe-none bg-body-secondary"
                                                         required>
 
                                                     <option value="">Select Party</option>
@@ -415,7 +415,7 @@
 
                                                 <select name="formlist"
                                                         id="formlist"
-                                                        class="form-select"
+                                                        class="form-select pe-none bg-body-secondary"
                                                         required>
 
                                                     <option value="Material In"

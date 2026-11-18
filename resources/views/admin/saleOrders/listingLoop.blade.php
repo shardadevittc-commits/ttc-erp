@@ -22,8 +22,9 @@ pr($row->toArray());
             @endforeach
         </td> --}}
         <td>{{ isset($row->total_qty) && $row->total_qty ? _rz($row->total_qty) : '---' }}</td>
-        <td>---</td>
-        <td>{{ isset($row->total_qty) && $row->total_qty ? _rz($row->total_qty) : '---' }}</td>
+        <td>{{ isset($row->total_dispatched_qty) && $row->total_dispatched_qty ? _rz($row->total_dispatched_qty) : '0.00' }}</td>
+        {{-- <td>{{ isset($row->total_pending_qty) && $row->total_pending_qty ? _rz($row->total_pending_qty) : '---' }}</td> --}}
+        <td>{{ isset($row->total_dispatched_qty) && $row->total_dispatched_qty ? _rz($row->total_qty - $row->total_dispatched_qty) : _rz($row->total_qty) }}</td>
         <td>According to the Purchase order</td>
         {{-- <td></td> --}}
         <td class="d-flex align-items-center gap-2">

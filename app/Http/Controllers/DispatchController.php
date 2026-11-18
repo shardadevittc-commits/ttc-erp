@@ -8,6 +8,7 @@ use App\Models\SaleOrder;
 use App\Models\SaleOrderItem;
 use App\Models\Weight;
 use App\Models\WorkOrderProcess;
+use App\Models\WorkOrderLoss;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -141,7 +142,15 @@ class DispatchController extends Controller
             default => 'Pending',
         };
 
-        return view('dispatch.truck-orders', compact('gate', 'orders', 'dispatchStatuses', 'vehicleStatus'));
+        $itemIds = collect($orders)
+            ->flatMap(fn($order) => collect($order['items'])->pluck('id'))
+            ->toArray();
+
+        $workOrderLosses = WorkOrderLoss::whereIn('sale_order_item_id', $itemIds)
+            ->get();
+         
+        
+        return view('dispatch.truck-orders', compact('gate', 'orders', 'dispatchStatuses', 'vehicleStatus', 'workOrderLosses'));
     }
 
     public function sendForWeight(Request $request)
