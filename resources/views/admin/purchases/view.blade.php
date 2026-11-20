@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('title', 'View Purchase Orders | TTC Robotronics - Steel Industry ERP')

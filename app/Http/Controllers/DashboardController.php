@@ -23,6 +23,14 @@ class DashboardController extends Controller
         $user = Auth::user();
         $user->load('role');
 
+        // work_orders_and_process mai se created_at mai sdate nikal kr aaj ki date se match krke material_send_for_work eska sum chahie
+
+        // unload_weights mai se created_at mai sdate nikal kr aaj ki date se match krke received_qty ka sum chahie
+
+
+
+
+
         $stats = [
             'total_users'   => User::count(),
             'total_roles'   => Role::count(),
@@ -96,7 +104,9 @@ class DashboardController extends Controller
      */
     public function weight()
     {
-        $user = Auth::user();$records = Weight::query();
+        $user = Auth::user();
+
+        $records = Weight::query();
 
         $totalVehicles = (clone $records)->count();
 
@@ -199,7 +209,94 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        return view('dashboard.unloader', compact('user'));
+        // Base query
+        $baseQuery = Weight::query()
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('poitem_receiving as pir')
+                    ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->where(function ($sub) {
+                        $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
+                            ->orWhereColumn('pir.weight_id', 'weights.id')
+                            ->orWhereColumn('pir.vehical_id', 'weights.id');
+                    });
+            });
+
+        // Total Vehicles
+        $totalVehicles = (clone $baseQuery)->count();
+
+        // Total Materials
+        $totalMaterials = DB::table('poitem_receiving as pir')
+            ->count();
+
+        // Total Received Quantity
+        $totalReceivedQty = DB::table('poitem_receiving as pir')
+            ->sum('received_qty');
+
+        // Last Receiving Date
+        $lastReceiving = DB::table('poitem_receiving')
+            ->max('created_at');
+
+        // Recent Unloading History
+        $recentUnloadings = Weight::with('customer:id,cust_code,company_name')
+            ->select('weights.*')
+
+            ->selectSub(function ($q) {
+                $q->from('poitem_receiving as pir')
+                    ->selectRaw('COUNT(*)')
+                    ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->where(function ($sub) {
+                        $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
+                            ->orWhereColumn('pir.weight_id', 'weights.id')
+                            ->orWhereColumn('pir.vehical_id', 'weights.id');
+                    });
+            }, 'total_materials')
+
+            ->selectSub(function ($q) {
+                $q->from('poitem_receiving as pir')
+                    ->selectRaw('COALESCE(SUM(pir.received_qty), 0)')
+                    ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->where(function ($sub) {
+                        $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
+                            ->orWhereColumn('pir.weight_id', 'weights.id')
+                            ->orWhereColumn('pir.vehical_id', 'weights.id');
+                    });
+            }, 'total_received_qty')
+
+            ->selectSub(function ($q) {
+                $q->from('poitem_receiving as pir')
+                    ->selectRaw('MAX(pir.created_at)')
+                    ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->where(function ($sub) {
+                        $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
+                            ->orWhereColumn('pir.weight_id', 'weights.id')
+                            ->orWhereColumn('pir.vehical_id', 'weights.id');
+                    });
+            }, 'last_receiving_date')
+
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('poitem_receiving as pir')
+                    ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->where(function ($sub) {
+                        $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
+                            ->orWhereColumn('pir.weight_id', 'weights.id')
+                            ->orWhereColumn('pir.vehical_id', 'weights.id');
+                    });
+            })
+
+            ->orderByDesc('weights.created_at')
+            ->limit(10)
+            ->get();
+
+        return view('dashboard.unloader', compact(
+            'user',
+            'totalVehicles',
+            'totalMaterials',
+            'totalReceivedQty',
+            'lastReceiving',
+            'recentUnloadings'
+        ));
     }
 
     /**

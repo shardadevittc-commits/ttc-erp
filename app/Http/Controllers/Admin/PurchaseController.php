@@ -12,6 +12,7 @@ use App\Models\Size;
 use App\Models\Unit;
 use App\Models\GateAndGaadi;
 use App\Models\Brand;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -74,51 +75,51 @@ class PurchaseController extends Controller
             'items.grade',
             'items.sizeUnit',
         ]);
- 
+
         // Search functionality
         if ($request->filled('search')) {
- 
+
             $search = $request->search;
- 
+
             $query->where(function ($q) use ($search) {
- 
+
                 $q->where('id', 'like', "%{$search}%")
                     ->orWhere('basis', 'like', "%{$search}%")
                     ->orWhere('term', 'like', "%{$search}%")
- 
+
                     ->orWhereHas('customer', function ($customerQuery) use ($search) {
                         $customerQuery->where('company_name', 'like', "%{$search}%");
                     })
- 
+
                     ->orWhereHas('saleOrder.customer', function ($customerQuery) use ($search) {
                         $customerQuery->where('company_name', 'like', "%{$search}%");
                     })
- 
+
                     ->orWhereHas('items.product', function ($productQuery) use ($search) {
                         $productQuery->where('product_name', 'like', "%{$search}%");
                     });
             });
         }
- 
+
         // Sorting
         $sortBy = $request->get('sort_by', 'id');
         $sortOrder = $request->get('sort_order', 'desc');
- 
+
         $allowedSorts = ['id', 'basis', 'created_at'];
- 
+
         if (!in_array($sortBy, $allowedSorts)) {
             $sortBy = 'id';
         }
- 
+
         if (!in_array($sortOrder, ['asc', 'desc'])) {
             $sortOrder = 'desc';
         }
- 
+
         $purchaseOrders = $query
             ->orderBy($sortBy, $sortOrder)
             ->paginate(10)
             ->withQueryString();
- 
+
         return view('admin.purchases.index', compact('purchaseOrders'));
     }
 
@@ -507,5 +508,58 @@ class PurchaseController extends Controller
             'unloadWeight',
             'labResults'
         ));
+    }
+
+    public function indexDM(Request $request)
+    {
+        $dispatches = DB::table('dispatch_material as dm')
+            ->leftJoin('sale_orders as so', 'dm.sale_order_id', '=', 'so.id')
+            ->leftJoin('customers as c', 'so.customer_id', '=', 'c.id')
+            ->leftJoin('gate_and_gaadi as gg', 'dm.gate_id', '=', 'gg.id')
+            ->leftJoin('sale_order_items as soi', 'dm.sale_order_id', '=', 'soi.sale_order_id')
+            ->leftJoin('products as p', 'soi.product_id', '=', 'p.id')
+            ->leftJoin('sizes as sz', 'soi.size_id', '=', 'sz.id')
+            ->leftJoin('grades as gr', 'soi.grade_id', '=', 'gr.id')
+            ->select(
+                // Dispatch Material
+                'dm.id',
+                'dm.gate_id',
+                'dm.sale_order_id',
+                'dm.sale_order_item_id',
+                'dm.dispatch_qty',
+                'dm.weight_id',
+                'dm.actual_qty',
+                'dm.status',
+
+                // Customer Details
+                'c.company_name',
+                'c.email',
+                'c.mobile',
+                'c.gst_no',
+                'c.cust_code',
+
+                // Gate and Vehicle
+                'gg.cust_id',
+                'gg.truckno',
+
+                // Sale Order Item
+                'soi.product_id',
+                'soi.size_id',
+                'soi.grade_id',
+                'soi.item_qty',
+
+                // Product Details
+                'p.product_name',
+
+                // Size Details
+                'sz.size_name',
+
+                // Grade Details
+                'gr.grade_name'
+            )
+            ->orderBy('dm.id', 'desc')
+            ->get();
+        $branch = Branch::first();
+        return view('dispatch.dispatch_report', compact('dispatches', 'branch'));
     }
 }

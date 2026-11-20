@@ -157,6 +157,12 @@
                     </a>
                 </li>
                 <li class="sidebar-item">
+                    <a href="{{ route('dispatchMaterials') }}" class="sidebar-link {{ request()->routeIs('dispatchMaterials*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-boxes-stacked nav-icon"></i>
+                        <span>Dispatch Report</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
                     <a href="{{ route('finishedMaterial') }}" class="sidebar-link {{ request()->routeIs('finishedMaterial*') ? 'active' : '' }}">
                         <i class="fa-solid fa-boxes-stacked nav-icon"></i>
                         <span>FM Stock</span>
@@ -254,6 +260,7 @@
                             @if($role === 'admin')
                                 <li class="submenu-item"><a href="{{ route('users.add') }}" class="submenu-link {{ request()->routeIs('users.add') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Add User / Role</span></a></li>
                             @endif
+                            <li class="submenu-item"><a href="{{ route('users.branches') }}" class="submenu-link {{ request()->routeIs('users.branches') ? 'active' : '' }}"><span class="submenu-dot"></span><span>Branch Details</span></a></li>
                         </ul>
                     </div>
                 </li>
@@ -261,7 +268,7 @@
 
             @if($isProdUser)
             @php
-            $productsActive = request()->routeIs('productions*', 'production-history');
+                $productsActive = request()->routeIs('productions*', 'production-history');
             @endphp
             <li class="sidebar-item">
                 <a href="#productsCollapse" class="sidebar-link {{ $productsActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#productsCollapse" role="button" aria-expanded="{{ $productsActive ? 'true' : 'false' }}" aria-controls="productsCollapse">

@@ -180,4 +180,36 @@ class SaleOrderController extends Controller
             'states' => State::query()->orderBy('name')->get(),
         ];
     }
+
+    public function print($id)
+    {
+        $listing = SaleOrder::with([
+            'customer',
+            'items.product',
+            'items.size',
+            'items.grade'
+        ])->findOrFail($id);
+
+        $branch = \App\Models\Branch::latest()->first();
+
+        $branchData = [
+            'company_name' => $branch->company_name ?? 'Company Name',
+            'logo' => ($branch && $branch->logo)
+                ? asset('storage/' . $branch->logo)
+                : '',
+            'gst' => $branch->gst ?? '',
+            'pan' => $branch->pan ?? '',
+            'address' => $branch->address ?? '',
+            'certificate_desc' => $branch->certificate_desc ?? '',
+            'email' => $branch->email ?? '',
+            'website' => $branch->website ?? '',
+            'phone' => $branch->phone ?? '',
+        ];
+
+        return view('admin.saleOrders.print', compact(
+            'listing',
+            'branchData'
+        ));
+    }
+
 }
