@@ -446,732 +446,477 @@
 
 <script>
 
-    // Current selected order
-    let currentLabItem = null;
 
+let currentLabItem = null;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Helper Functions
-    |--------------------------------------------------------------------------
-    */
+function safeText(value, fallback = '-') {
+    if (value === null || value === undefined || value === '') {
+        return fallback;
+    }
+    return String(value);
+}
 
-    function safeText(value, fallback = '-') {
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    }[char]));
+}
 
-        if (value === null || value === undefined || value === '') {
-            return fallback;
-        }
+function hasValue(value) {
+    return value !== null &&
+        value !== undefined &&
+        String(value).trim() !== '';
+}
 
-        return String(value);
+/*
+|--------------------------------------------------------------------------
+| Determine Current Stage
+|--------------------------------------------------------------------------
+*/
+
+function getLabStage(item) {
+
+    const reactions = item.grade_reactions || [];
+
+    const allActualSaved = reactions.length > 0 &&
+        reactions.every(p => hasValue(p.actual_value));
+
+    const allFinalSaved = reactions.length > 0 &&
+        reactions.every(p => hasValue(p.final_value));
+
+    const productionAvailable = hasValue(item.production_id);
+
+    if (!allActualSaved) {
+        return 'actual';
     }
 
-
-    function escapeHtml(value) {
-
-        return String(value).replace(/[&<>"']/g, function(char) {
-
-            return {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            }[char];
-
-        });
-
+    if (!productionAvailable) {
+        return 'waiting';
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Check Final Value Status
-    |--------------------------------------------------------------------------
-    */
-
-    function checkFinalValueStatus(item) {
-
-        const buttonWrapper = document.getElementById('submitLabWrapper');
-
-        const reactions = Array.isArray(item.grade_reactions)
-            ? item.grade_reactions
-            : [];
-
-        // Properties with saved Actual Values
-        const actualProperties = reactions.filter(function(property) {
-
-            return property.actual_value !== null &&
-                property.actual_value !== undefined &&
-                property.actual_value !== '';
-
-        });
-
-
-        // No Actual Values found
-        if (actualProperties.length === 0) {
-
-            buttonWrapper.style.display = 'none';
-
-            return;
-
-        }
-
-
-        // Check all Final Values
-        const allFinalSaved = actualProperties.every(function(property) {
-
-            return property.final_value !== null &&
-                property.final_value !== undefined &&
-                String(property.final_value).trim() !== '';
-
-        });
-
-
-        // Hide button if all Final Values are saved
-        buttonWrapper.style.display = allFinalSaved ? 'none' : 'block';
-
+    if (allFinalSaved) {
+        return 'completed';
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Render Grade Properties
-    |--------------------------------------------------------------------------
-    */
-
-    function renderDynamicGradeSections(item) {
-
-        const container = document.getElementById('dynamicGradeSections');
-
-        const reactions = Array.isArray(item.grade_reactions)
-            ? item.grade_reactions
-            : [];
-
-
-        if (reactions.length === 0) {
-
-            container.innerHTML = `
-                <div class="alert alert-warning">
-                    No composition/property records found for this grade.
-                </div>
-            `;
-
-            return;
-
-        }
-
-
-        const categories = {};
-
-
-        reactions.forEach(function(reaction) {
-
-            const categoryId = reaction.category_id ?? 'other';
-
-            if (!categories[categoryId]) {
-
-                categories[categoryId] = {
-
-                    id: reaction.category_id ?? null,
-
-                    name: reaction.category_name || 'Other',
-
-                    properties: []
-
-                };
-
-            }
-
-            categories[categoryId].properties.push(reaction);
-
-        });
-
-
-        container.innerHTML = Object.values(categories).map(function(category) {
-
-            const propertiesHtml = category.properties.map(function(property) {
-
-                const propertyId = Number(property.property_id);
-
-                const minValue = property.min_value;
-
-                const maxValue = property.max_value;
-
-                const propertyLabel =
-                    safeText(property.property_name, 'Property') +
-                    (property.unit ? ' (' + property.unit + ')' : '');
-
-
-                return `
-
-                    <div class="col-12 col-sm-6 col-xl-3">
-
-                        <div class="lab-property">
-
-                            <div class="lab-property-label">
-
-                                ${escapeHtml(propertyLabel)}
-
-                            </div>
-
-
-                            <div class="lab-property-values">
-
-                                <!-- MIN VALUE -->
-
-                                <span class="${minValue !== null && minValue !== undefined ? 'has-value' : ''}">
-
-                                    ${escapeHtml(safeText(minValue, 'Min'))}
-
-                                </span>
-
-
-                                <!-- MAX VALUE -->
-
-                                <span class="${maxValue !== null && maxValue !== undefined ? 'has-value' : ''}">
-
-                                    ${escapeHtml(safeText(maxValue, 'Max'))}
-
-                                </span>
-
-
-                                <!-- ACTUAL VALUE READONLY -->
-
-                                <span style="padding:4px;">
-
-                                    <input
-                                        type="number"
-                                        class="lab-actual-input"
-                                        value="${escapeHtml(safeText(property.actual_value, ''))}"
-                                        placeholder="Actual"
-                                        readonly
-                                        tabindex="-1"
-                                    >
-
-                                </span>
-
-
-                                <!-- FINAL VALUE EDITABLE -->
-
-                                <span style="padding:4px;">
-
-                                    <input
-                                        type="number"
-                                        class="lab-final-input"
-                                        data-property-id="${propertyId}"
-                                        min="0"
-                                        step="any"
-                                        inputmode="decimal"
-                                        placeholder="Final"
-                                        value="${escapeHtml(safeText(property.final_value, ''))}"
-                                        onkeydown="return !['e','E','+','-'].includes(event.key)"
-                                    >
-
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                `;
-
-            }).join('');
-
-
-            return `
-
-                <div class="lab-section-title mt-4">
-
-                    ${escapeHtml(category.name)}
-
-                </div>
-
-                <div class="row g-3 mt-1">
-
-                    ${propertiesHtml}
-
-                </div>
-
-            `;
-
-        }).join('');
-
-
-        // Column Headings
-
-        container.insertAdjacentHTML('afterbegin', `
-
-            <div class="row g-3 mt-2">
-
-                <div class="col-12">
-
-                    <div class="lab-property-values fw-bold text-center">
-
-                        <span>Min</span>
-
-                        <span>Max</span>
-
-                        <span>Actual</span>
-
-                        <span>Final</span>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        `);
-
+    return 'final';
+}
+
+/*
+|--------------------------------------------------------------------------
+| Render Properties
+|--------------------------------------------------------------------------
+*/
+
+function renderDynamicGradeSections(item) {
+    const container = document.getElementById('dynamicGradeSections');
+    const reactions = item.grade_reactions || [];
+    const stage = getLabStage(item);
+
+    if (!reactions.length) {
+        container.innerHTML = `
+            <div class="alert alert-warning">
+                No grade properties found.
+            </div>`;
+        updateSubmitButton('completed');
+        return;
     }
 
+    const categories = {};
 
-    /*
-    |--------------------------------------------------------------------------
-    | Additional Details
-    |--------------------------------------------------------------------------
-    */
+    reactions.forEach(property => {
+        const categoryId = property.category_id ?? 'other';
 
-    function renderAdditionalDetails(item) {
-
-        const fields = [
-
-            ['Customer', 'customer_name'],
-
-            ['Purchase Order Item ID', 'purchase_order_item_id'],
-
-            ['PO Item Qty', 'po_item_qty'],
-
-            ['Received Qty', 'received_qty'],
-
-            ['Order Price', 'order_price'],
-
-            ['Received Price', 'received_price'],
-
-            ['Furnace Heat No.', 'furnance_heat_no'],
-
-            ['Generated Heat No.', 'genrated_heat_no'],
-
-            ['Type', 'formlist'],
-
-            ['Lab Test', 'lab_test']
-
-        ];
-
-
-        document.getElementById('additionalFields').innerHTML =
-
-            fields.map(function([label, key]) {
-
-                let value = item[key];
-
-                if (
-                    key === 'formlist' &&
-                    value !== null &&
-                    typeof value === 'object'
-                ) {
-
-                    value = JSON.stringify(value);
-
-                }
-
-                if (key === 'lab_test') {
-
-                    value = value == '1' ? 'Yes' : 'No';
-
-                }
-
-
-                return `
-
-                    <div class="col-12 col-sm-6 col-xl-4">
-
-                        <div class="lab-info-box">
-
-                            <small>${escapeHtml(label)}</small>
-
-                            <strong>${escapeHtml(safeText(value))}</strong>
-
-                        </div>
-
-                    </div>
-
-                `;
-
-            }).join('');
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Open Drawer
-    |--------------------------------------------------------------------------
-    */
-
-    function openLabDetails(button) {
-
-        let item;
-
-        try {
-
-            item = JSON.parse(button.getAttribute('data-item'));
-
-        } catch(error) {
-
-            alert('Unable to load lab details.');
-
-            return;
-
+        if (!categories[categoryId]) {
+            categories[categoryId] = {
+                name: property.category_name || 'Other',
+                properties: []
+            };
         }
 
-
-        currentLabItem = item;
-
-
-        document.getElementById('labOrderNo').textContent =
-            safeText(item.order_no ?? item.purchase_order_item_id);
-
-        document.getElementById('labSize').textContent =
-            safeText(item.size_name);
-
-        document.getElementById('labGrade').textContent =
-            safeText(item.grade_name);
-
-        document.getElementById('labQty').textContent =
-            safeText(item.received_qty ?? item.po_item_qty);
-
-        document.getElementById('labRemarks').textContent =
-            safeText(item.item_remarks);
-
-
-        renderDynamicGradeSections(item);
-
-        renderAdditionalDetails(item);
-
-
-        // Check button status every time drawer opens
-        checkFinalValueStatus(item);
-
-
-        document.getElementById('labOverlay').classList.add('active');
-
-        document.getElementById('labDrawer').classList.add('active');
-
-        document.body.style.overflow = 'hidden';
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Close Drawer
-    |--------------------------------------------------------------------------
-    */
-
-    function closeLabDetails() {
-
-        document.getElementById('labOverlay').classList.remove('active');
-
-        document.getElementById('labDrawer').classList.remove('active');
-
-        document.body.style.overflow = '';
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Submit Final Values
-    |--------------------------------------------------------------------------
-    */
-
-    async function submitLabDetails() {
-
-        if (!currentLabItem) {
-
-            alert('Please select a purchase order first.');
-
-            return;
-
-        }
-
-
-        const purchaseOrderItemId = Number(
-            currentLabItem.purchase_order_item_id
-        );
-
-
-        if (
-            !Number.isInteger(purchaseOrderItemId) ||
-            purchaseOrderItemId <= 0
-        ) {
-
-            alert('Invalid Purchase Order Item ID.');
-
-            return;
-
-        }
-
-
-        const inputs = document.querySelectorAll(
-            '#dynamicGradeSections .lab-final-input'
-        );
-
-
-        const finalValues = [];
-
-
-        for (const input of inputs) {
-
-            const rawValue = input.value.trim();
-
-
-            // Skip empty Final Values
-            if (rawValue === '') {
-
-                continue;
-
-            }
-
-
-            const propertyId = Number(input.dataset.propertyId);
-
-
-            if (!Number.isInteger(propertyId) || propertyId <= 0) {
-
-                alert('Invalid property ID found.');
-
-                return;
-
-            }
-
-
-            const finalValue = Number(rawValue);
-
-
-            if (!Number.isFinite(finalValue) || finalValue < 0) {
-
-                alert('Please enter a valid non-negative Final Value.');
-
-                input.focus();
-
-                return;
-
-            }
-
-
-            finalValues.push({
-
-                property_id: propertyId,
-
-                final_value: finalValue
-
-            });
-
-        }
-
-
-        if (finalValues.length === 0) {
-
-            alert('Please enter at least one Final Value.');
-
-            return;
-
-        }
-
-
-        const button = document.getElementById('submitLabBtn');
-
-        const originalButtonHtml = button.innerHTML;
-
-
-        button.disabled = true;
-
-        button.innerHTML =
-            '<span class="spinner-border spinner-border-sm me-1"></span> Updating...';
-
-
-        try {
-
-            const response = await fetch(
-
-                @json(route('lab-results.store')),
-
-                {
-
-                    method: 'POST',
-
-                    headers: {
-
-                        'Content-Type': 'application/json',
-
-                        'Accept': 'application/json',
-
-                        'X-CSRF-TOKEN':
-                            document.getElementById('lab_csrf_token').value
-
-                    },
-
-                    body: JSON.stringify({
-
-                        purchase_order_item_id: purchaseOrderItemId,
-
-                        final_values: finalValues
-
-                    })
-
-                }
-
-            );
-
-
-            const result = await response.json();
-
-
-            if (!response.ok) {
-
-                if (response.status === 422 && result.errors) {
-
-                    const messages = Object.values(result.errors).flat();
-
-                    throw new Error(messages.join('\n'));
-
-                }
-
-                throw new Error(
-                    result.message || 'Unable to update Final Values.'
-                );
-
-            }
-
-
-            alert(result.message || 'Final Values updated successfully.');
-
-
-            /*
-             * Update Final Values in current drawer data.
-             * Actual Values remain unchanged.
-             */
-
-            finalValues.forEach(function(saved) {
-
-                const property = currentLabItem.grade_reactions?.find(
-                    function(reaction) {
-
-                        return Number(reaction.property_id) ===
-                            saved.property_id;
-
-                    }
-                );
-
-
-                if (property) {
-
-                    property.final_value = saved.final_value;
-
-                }
-
-            });
-
-
-            /*
-             * Update Listing Button Data
-             */
-
-            document.querySelectorAll(
-                'button[onclick="openLabDetails(this)"]'
-            ).forEach(function(rowButton) {
-
-                try {
-
-                    const rowItem = JSON.parse(
-                        rowButton.getAttribute('data-item')
-                    );
-
-
-                    if (
-                        Number(rowItem.purchase_order_item_id) ===
-                        purchaseOrderItemId
-                    ) {
-
-                        finalValues.forEach(function(saved) {
-
-                            const property = rowItem.grade_reactions?.find(
-                                function(reaction) {
-
-                                    return Number(reaction.property_id) ===
-                                        saved.property_id;
-
-                                }
-                            );
-
-
-                            if (property) {
-
-                                property.final_value = saved.final_value;
-
-                            }
-
-                        });
-
-
-                        rowButton.setAttribute(
-                            'data-item',
-                            JSON.stringify(rowItem)
-                        );
-
-                    }
-
-                } catch(error) {
-
-                    // Ignore malformed listing data
-
-                }
-
-            });
-
-
-            /*
-             * Hide Save Button if all Final Values are saved.
-             */
-
-            checkFinalValueStatus(currentLabItem);
-
-
-        } catch(error) {
-
-            alert(error.message || 'Something went wrong while updating.');
-
-        } finally {
-
-            button.disabled = false;
-
-            button.innerHTML = originalButtonHtml;
-
-        }
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Escape Key
-    |--------------------------------------------------------------------------
-    */
-
-    document.addEventListener('keydown', function(event) {
-
-        if (event.key === 'Escape') {
-
-            closeLabDetails();
-
-        }
-
+        categories[categoryId].properties.push(property);
     });
 
-</script>
+    container.innerHTML = Object.values(categories).map(category => {
+        const propertiesHtml = category.properties.map(property => {
+            const actualSaved = hasValue(property.actual_value);
+            const finalSaved = hasValue(property.final_value);
+
+           const actualReadonly =
+    stage !== 'actual' || actualSaved;
+
+const finalReadonly =
+    stage !== 'final' || finalSaved;
+
+const showActualInput = stage === 'actual' || actualSaved;
+const showFinalInput = stage === 'final' || finalSaved;
+            return `
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="lab-property">
+
+                        <div class="lab-property-label">
+                            ${escapeHtml(property.property_name)}
+                            ${property.unit ? '(' + escapeHtml(property.unit) + ')' : ''}
+                        </div>
+
+                        <div class="lab-property-values">
+
+                            <span>
+                                ${escapeHtml(safeText(property.min_value, 'Min'))}
+                            </span>
+
+                            <span>
+                                ${escapeHtml(safeText(property.max_value, 'Max'))}
+                            </span>
+
+                            <span style="padding:4px;">
+                               ${showActualInput ? `
+<input
+    type="number"
+    class="lab-actual-input"
+    data-property-id="${Number(property.property_id)}"
+    value="${actualSaved ? escapeHtml(property.actual_value) : ''}"
+    placeholder="Actual"
+    ${actualReadonly ? 'readonly' : ''}
+>
+` : '-'}
+                            </span>
+
+                            <span style="padding:4px;">
+                               ${showFinalInput ? `
+<input
+    type="number"
+    class="lab-final-input"
+    data-property-id="${Number(property.property_id)}"
+    value="${finalSaved ? escapeHtml(property.final_value) : ''}"
+    placeholder="Final"
+    ${finalReadonly ? 'readonly' : ''}
+>
+` : '-'}
+                            </span>
+
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="lab-section-title mt-4">
+                ${escapeHtml(category.name)}
+            </div>
+
+            <div class="row g-3 mt-1">
+                ${propertiesHtml}
+            </div>
+        `;
+    }).join('');
+
+    container.insertAdjacentHTML('afterbegin', `
+        <div class="row g-3 mt-2">
+            <div class="col-12">
+                <div class="lab-property-values fw-bold text-center">
+                    <span>Min</span>
+                    <span>Max</span>
+                    <span>Actual</span>
+                    <span>Final</span>
+                </div>
+            </div>
+        </div>
+    `);
+
+    updateSubmitButton(stage);
+}
+
+/*
+|--------------------------------------------------------------------------
+| Submit Button Status
+|--------------------------------------------------------------------------
+*/
+
+function updateSubmitButton(stage) {
+    const wrapper = document.getElementById('submitLabWrapper');
+    const button = document.getElementById('submitLabBtn');
+
+    if (stage === 'actual') {
+        wrapper.style.display = 'block';
+        button.style.display = 'inline-block';
+        button.innerHTML = '<i class="fas fa-save me-1"></i> Save Actual Values';
+    } else if (stage === 'final') {
+        wrapper.style.display = 'block';
+        button.style.display = 'inline-block';
+        button.innerHTML = '<i class="fas fa-save me-1"></i> Save Final Values';
+    } else {
+        wrapper.style.display = 'none';
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Additional Details
+|--------------------------------------------------------------------------
+*/
+
+function renderAdditionalDetails(item) {
+    const fields = [
+        ['Customer', 'customer_name'],
+        ['Purchase Order Item ID', 'purchase_order_item_id'],
+        ['Production ID', 'production_id'],
+        ['PO Item Qty', 'po_item_qty'],
+        ['Received Qty', 'received_qty'],
+        ['Order Price', 'order_price'],
+        ['Received Price', 'received_price'],
+        ['Furnace Heat No.', 'furnance_heat_no'],
+        ['Generated Heat No.', 'genrated_heat_no'],
+        ['Type', 'formlist'],
+        ['Lab Test', 'lab_test']
+    ];
+
+    document.getElementById('additionalFields').innerHTML =
+        fields.map(([label, key]) => {
+            let value = item[key];
+
+            if (key === 'formlist' && typeof value === 'object' && value !== null) {
+                value = JSON.stringify(value);
+            }
+
+            if (key === 'lab_test') {
+                value = value == '1' ? 'Yes' : 'No';
+            }
+
+            return `
+                <div class="col-12 col-sm-6 col-xl-4">
+                    <div class="lab-info-box">
+                        <small>${escapeHtml(label)}</small>
+                        <strong>${escapeHtml(safeText(value))}</strong>
+                    </div>
+                </div>
+            `;
+        }).join('');
+}
+
+/*
+|--------------------------------------------------------------------------
+| Open Drawer
+|--------------------------------------------------------------------------
+*/
+
+function openLabDetails(button) {
+    let item;
+
+    try {
+        item = JSON.parse(button.getAttribute('data-item'));
+    } catch (error) {
+        alert('Unable to load lab details.');
+        return;
+    }
+
+    currentLabItem = item;
+
+    document.getElementById('labOrderNo').textContent =
+        safeText(item.order_no ?? item.purchase_order_item_id);
+
+    document.getElementById('labSize').textContent =
+        safeText(item.size_name);
+
+    document.getElementById('labGrade').textContent =
+        safeText(item.grade_name);
+
+    document.getElementById('labQty').textContent =
+        safeText(item.received_qty ?? item.po_item_qty);
+
+    document.getElementById('labRemarks').textContent =
+        safeText(item.item_remarks);
+
+    renderDynamicGradeSections(item);
+    renderAdditionalDetails(item);
+
+    document.getElementById('labOverlay').classList.add('active');
+    document.getElementById('labDrawer').classList.add('active');
+
+    document.body.style.overflow = 'hidden';
+}
+
+/*
+|--------------------------------------------------------------------------
+| Close Drawer
+|--------------------------------------------------------------------------
+*/
+
+function closeLabDetails() {
+    document.getElementById('labOverlay').classList.remove('active');
+    document.getElementById('labDrawer').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+/*
+|--------------------------------------------------------------------------
+| Save Actual / Final Values
+|--------------------------------------------------------------------------
+*/
+
+async function submitLabDetails() {
+    if (!currentLabItem) {
+        alert('Please select a purchase order first.');
+        return;
+    }
+
+    const stage = getLabStage(currentLabItem);
+
+    if (!['actual', 'final'].includes(stage)) {
+        alert('No values available for submission.');
+        return;
+    }
+
+    if (stage === 'final' && !hasValue(currentLabItem.production_id)) {
+        alert('Production ID is not available.');
+        return;
+    }
+
+    const inputClass = stage === 'actual'
+        ? '.lab-actual-input:not([readonly])'
+        : '.lab-final-input:not([readonly])';
+
+    const inputs = document.querySelectorAll(
+        '#dynamicGradeSections ' + inputClass
+    );
+
+    const values = [];
+
+    for (const input of inputs) {
+        const rawValue = input.value.trim();
+
+        if (rawValue === '') {
+            alert('Please enter all ' + stage + ' values.');
+            input.focus();
+            return;
+        }
+
+        const value = Number(rawValue);
+        const propertyId = Number(input.dataset.propertyId);
+
+        if (!Number.isInteger(propertyId) || !Number.isFinite(value) || value < 0) {
+            alert('Please enter valid non-negative values.');
+            input.focus();
+            return;
+        }
+
+        values.push({
+            property_id: propertyId,
+            value: value
+        });
+    }
+
+    if (!values.length) {
+        alert('No editable properties found.');
+        return;
+    }
+
+    const button = document.getElementById('submitLabBtn');
+    const originalHtml = button.innerHTML;
+
+    button.disabled = true;
+    button.innerHTML = `
+        <span class="spinner-border spinner-border-sm me-1"></span>
+        Saving...
+    `;
+
+    try {
+        const response = await fetch(
+            @json(route('lab-results.store')),
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.getElementById('lab_csrf_token').value
+                },
+                body: JSON.stringify({
+                    stage: stage,
+                    purchase_order_item_id: Number(currentLabItem.purchase_order_item_id),
+                    values: values
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            if (response.status === 422 && result.errors) {
+                throw new Error(
+                    Object.values(result.errors).flat().join('\n')
+                );
+            }
+
+            throw new Error(result.message || 'Unable to save values.');
+        }
+
+        // Update local data after successful database save.
+        values.forEach(saved => {
+            const property = currentLabItem.grade_reactions.find(
+                p => Number(p.property_id) === Number(saved.property_id)
+            );
+
+            if (property) {
+                if (stage === 'actual') {
+                    property.actual_value = saved.value;
+                } else {
+                    property.final_value = saved.value;
+                }
+            }
+        });
+
+        alert(result.message || 'Values saved successfully.');
+
+        // Re-render based on updated stage.
+        renderDynamicGradeSections(currentLabItem);
+
+        // Update listing button data.
+        document.querySelectorAll(
+            'button[onclick="openLabDetails(this)"]'
+        ).forEach(rowButton => {
+            try {
+                const rowItem = JSON.parse(rowButton.getAttribute('data-item'));
+
+                if (
+                    Number(rowItem.purchase_order_item_id) ===
+                    Number(currentLabItem.purchase_order_item_id)
+                ) {
+                    rowItem.grade_reactions = currentLabItem.grade_reactions;
+
+                    rowButton.setAttribute(
+                        'data-item',
+                        JSON.stringify(rowItem)
+                    );
+                }
+            } catch (error) {
+                // Ignore malformed listing data.
+            }
+        });
+
+    } catch (error) {
+        alert(error.message || 'Something went wrong.');
+    } finally {
+        button.disabled = false;
+        button.innerHTML = originalHtml;
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Escape Key
+|--------------------------------------------------------------------------
+*/
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeLabDetails();
+    }
+});
+
+    </script>
 
 @endsection

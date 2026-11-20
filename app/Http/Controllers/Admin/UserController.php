@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -918,5 +919,100 @@ class UserController extends Controller
             'success',
             "Operator '{$userName}' is now marked as {$statusLabel}."
         );
+    }
+
+    public function branches(Request $request)
+    {
+        // DELETE
+        if ($request->isMethod('delete')) {
+
+            $branch = Branch::findOrFail($request->id);
+
+            if ($branch->logo) {
+                Storage::disk('public')->delete($branch->logo);
+            }
+
+            if ($branch->favicon) {
+                Storage::disk('public')->delete($branch->favicon);
+            }
+
+            $branch->delete();
+
+            return redirect()->route('users.branches')
+                ->with('success', 'Company deleted successfully!');
+        }
+
+        // SAVE / UPDATE
+        if ($request->isMethod('post')) {
+
+            $request->validate([
+                'company_name' => 'required|string|max:255',
+                'logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+                'favicon' => 'nullable|image|mimes:jpg,jpeg,png,ico,webp|max:1024',
+                'gst' => 'nullable|string|max:50',
+                'pan' => 'nullable|string|max:20',
+                'address' => 'nullable|string',
+                'certificate_desc' => 'nullable|string',
+                'email' => 'nullable|email|max:255',
+                'website' => 'nullable|url|max:255',
+                'phone' => 'nullable|string|max:20',
+            ]);
+
+            // Find existing record or create new
+            $branch = $request->id
+                ? Branch::findOrFail($request->id)
+                : new Branch();
+
+            $branch->company_name = $request->company_name;
+            $branch->gst = $request->gst;
+            $branch->pan = $request->pan;
+            $branch->address = $request->address;
+            $branch->certificate_desc = $request->certificate_desc;
+            $branch->email = $request->email;
+            $branch->website = $request->website;
+            $branch->phone = $request->phone;
+
+            // Logo Upload
+            if ($request->hasFile('logo')) {
+
+                if ($branch->logo) {
+                    Storage::disk('public')->delete($branch->logo);
+                }
+
+                $branch->logo = $request->file('logo')
+                    ->store('branches/logos', 'public');
+            }
+
+            // Favicon Upload
+            if ($request->hasFile('favicon')) {
+
+                if ($branch->favicon) {
+                    Storage::disk('public')->delete($branch->favicon);
+                }
+
+                $branch->favicon = $request->file('favicon')
+                    ->store('branches/favicons', 'public');
+            }
+
+            $branch->save();
+
+            return redirect()->route('users.branches')
+                ->with('success', $request->id
+                    ? 'Company updated successfully!'
+                    : 'Company added successfully!');
+        }
+
+        // EDIT
+        $editBranch = $request->id
+            ? Branch::findOrFail($request->id)
+            : null;
+
+        // LIST
+        $branches = Branch::latest()->get();
+
+        return view('admin.users.branches', compact(
+            'branches',
+            'editBranch'
+        ));
     }
 }

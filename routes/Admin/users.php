@@ -2,7 +2,7 @@
 // Route::resource('users', UserController::class);
 Route::match(['get', 'post'], '/users', 'App\Http\Controllers\Admin\UserController@index')
     ->name('users.users');
-    
+
 Route::match(['get','post'],'/user/add', '\App\Http\Controllers\Admin\UserController@add')
     ->name('users.add');
 
@@ -24,3 +24,5 @@ Route::post('/users/bulkActions/{action}', '\App\Http\Controllers\Admin\UsersCon
 
 Route::get('/users/{id}/delete', '\App\Http\Controllers\Admin\UsersController@destroy')
     ->name('users.delete');
+
+Route::match(['get','post', 'delete'],'/users/branches', '\App\Http\Controllers\Admin\UserController@branches')->name('users.branches');

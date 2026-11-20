@@ -6,4 +6,5 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/purchase', [PurchaseController::class, 'index'])->name('purchase');
 Route::match(['get', 'post'], '/purchase-orders/add', [PurchaseController::class, 'add'])->name('purchase.add');
+Route::get('/purchase/{id}', [PurchaseController::class, 'view'])->name('purchase.view');
 Route::delete('/purchase/{id}', [PurchaseController::class, 'delete'])->name('purchase.delete');

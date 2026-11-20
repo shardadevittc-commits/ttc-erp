@@ -56,7 +56,7 @@
                         <input id="cust_code" type="text" name="cust_code" placeholder="Enter Party Short Code" class="form-control @error('cust_code') is-invalid @enderror" value="{{ old('cust_code', $customer?->cust_code) }}" required>
                         @error('cust_code')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    
+
                     <div class="col-xxl-6 col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
                         <label class="form-label" for="mobile">Contact No. <span class="text-danger">*</span></label>
                         <input id="mobile" type="text" name="mobile" placeholder="Enter Contact No." class="form-control @error('mobile') is-invalid @enderror" value="{{ old('mobile', $customer?->mobile) }}" required>

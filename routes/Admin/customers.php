@@ -27,3 +27,9 @@ Route::match(['get', 'post'], '/customers/{id}/edit', [CustomerController::class
 
 Route::get('/customers/{id}/delete', [CustomerController::class, 'destroy'])->whereNumber('id')
     ->name('customers.delete');
+
+Route::get('customers/export', [CustomerController::class, 'export'])
+    ->name('customers.export');
+
+Route::post('customers/import', [CustomerController::class, 'import'])
+    ->name('customers.import');

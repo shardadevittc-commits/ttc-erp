@@ -15,8 +15,13 @@ pr($row->toArray()); die;
         <td>10.210</td>
         <td>0.000</td>
         <td>10.210</td>
-        <td>TC</td>
-    </tr>    
+        <td>
+            <button style="background-color: green; color: white; padding: 8px 15px; border: none; cursor: pointer;"
+                onclick="window.open('{{ route('rawMaterials.print', $row->id) }}', '_blank')">
+                TC
+            </button>
+        </td>
+    </tr>
 @empty
     <tr>
         <td colspan="7" class="text-center py-3">No sale orders found.</td>
