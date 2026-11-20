@@ -23,7 +23,7 @@
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                 <h5 class="mb-0">Dispatch Material Details</h5>
-                <small class="text-muted">{{ $listing->total() }} records</small>
+                <small class="text-muted">{{ $listing->total() }} vehicles</small>
             </div>
 
             <form method="GET" action="{{ route('accounts') }}" class="row g-3 align-items-end mb-3">
@@ -88,31 +88,59 @@
                     </thead>
                     <tbody>
                         @forelse ($listing as $item)
-                            @php
-                                $qtyUnit = (int) $item->qty_type === 2 ? 'KG' : 'Tons';
-                            @endphp
                             <tr>
                                 <td>{{ $item->created_at ? \Illuminate\Support\Carbon::parse($item->created_at)->format('d-m-Y') : '-' }}</td>
                                 <td>{{ $item->company_name ?: '-' }}</td>
                                 <td>{{ $item->tokenno ?: '-' }}</td>
                                 <td>{{ $item->truckno ?: '-' }}</td>
                                 <td>
-                                    #{{ $item->sale_order_id }}
-                                    @if ($item->customer_po_no)
-                                        <small class="d-block text-muted">{{ $item->customer_po_no }}</small>
-                                    @endif
+                                    @foreach ($item->materials as $material)
+                                        <div @if (!$loop->last) class="pb-1 mb-1 border-bottom" @endif>
+                                            #{{ $material->sale_order_id }}
+                                            @if ($material->customer_po_no)
+                                                <small class="d-block text-muted">{{ $material->customer_po_no }}</small>
+                                            @endif
+                                        </div>
+                                    @endforeach
                                 </td>
                                 <td>
-                                    {{ $item->product_name ?: '-' }}
-                                    <small class="d-block text-muted">{{ $item->size_name ?: $item->size_unit ?: '-' }}</small>
+                                    @foreach ($item->materials as $material)
+                                        <div @if (!$loop->last) class="pb-1 mb-1 border-bottom" @endif>
+                                            {{ $material->product_name ?: '-' }}
+                                            <small class="d-block text-muted">{{ $material->size_name ?: $material->size_unit ?: '-' }}</small>
+                                        </div>
+                                    @endforeach
                                 </td>
                                 <td>
-                                    {{ $item->grade_name ?: '-' }}
-                                    <small class="d-block text-muted">{{ $item->brand_name ?: '-' }}</small>
+                                    @foreach ($item->materials as $material)
+                                        <div @if (!$loop->last) class="pb-1 mb-1 border-bottom" @endif>
+                                            {{ $material->grade_name ?: '-' }}
+                                            <small class="d-block text-muted">{{ $material->brand_name ?: '-' }}</small>
+                                        </div>
+                                    @endforeach
                                 </td>
-                                <td class="text-end">{{ number_format((float) ($item->actual_qty ?? 0), 3) }} KG</td>
-                                <td class="text-end">{{ number_format((float) ($item->dispatch_qty ?? 0), 3) }} {{ $qtyUnit }}</td>
-                                <td class="text-capitalize">{{ str_replace('_', ' ', $item->status ?: '-') }}</td>
+                                <td class="text-end">
+                                    @foreach ($item->materials as $material)
+                                        <div @if (!$loop->last) class="pb-1 mb-1 border-bottom" @endif>
+                                            {{ number_format((float) ($material->actual_qty ?? 0), 3) }} KG
+                                        </div>
+                                    @endforeach
+                                </td>
+                                <td class="text-end">
+                                    @foreach ($item->materials as $material)
+                                        @php $qtyUnit = (int) $material->qty_type === 2 ? 'KG' : 'Tons'; @endphp
+                                        <div @if (!$loop->last) class="pb-1 mb-1 border-bottom" @endif>
+                                            {{ number_format((float) ($material->dispatch_qty ?? 0), 3) }} {{ $qtyUnit }}
+                                        </div>
+                                    @endforeach
+                                </td>
+                                <td>
+                                    @foreach ($item->materials as $material)
+                                        <div class="text-capitalize @if (!$loop->last) pb-1 mb-1 border-bottom @endif">
+                                            {{ str_replace('_', ' ', $material->status ?: '-') }}
+                                        </div>
+                                    @endforeach
+                                </td>
                                 <td>
                                     <a href="{{ route('accounts.addInvoice', ['gate' => $item->gate_id]) }}"
                                         class="btn btn-sm btn-outline-primary" title="Add Invoice">

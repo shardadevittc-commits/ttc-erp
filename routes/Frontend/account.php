@@ -10,6 +10,10 @@ Route::get('/accounts/{gate}/add-invoice', [AccountController::class, 'addInvoic
     ->whereNumber('gate')
     ->name('accounts.addInvoice');
 
+Route::get('/accounts/{gate}/invoice-bill', [AccountController::class, 'invoiceBill'])
+    ->whereNumber('gate')
+    ->name('accounts.invoice.bill');
+
 Route::get('/accounts/{gate}', [AccountController::class, 'show'])
     ->whereNumber('gate')
     ->name('accounts.view');
