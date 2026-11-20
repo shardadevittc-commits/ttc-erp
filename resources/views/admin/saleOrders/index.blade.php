@@ -243,9 +243,9 @@
                                 <th>Deal Qty. (Tons)</th>
                                 <th>Pending Deal (Tons)</th>
                                 <th>Sale Rate - Product - Sizes - Grade</th>
-                                <th>Order Qty. (Tons)</th>
-                                <th>Dispatched Qty. (Tons)</th>
-                                <th>Pending Qty. (Tons)</th>
+                                <th>Ordered Qty.</th>
+                                <th>Dispatched Qty.</th>
+                                <th>Remaining Qty.</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>

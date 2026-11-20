@@ -33,13 +33,13 @@
     </div>
     <div class="card-body">
         <div class="row g-4">
-            
+
             @forelse($gate as $item)
                 <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
                     <div class="card vehicle-card h-100">
                         <div class="card-body">
                                 @php
-                                    $pencilAction = $pencilActionByGate->get($item->id);
+                                    $pencilAction = $dispatchStatusesByGate->get($item->id, collect())->pluck('status')->first();
                                     $vehicleStatuses = $dispatchStatusesByGate
                                         ->get($item->id, collect())
                                         ->pluck('status');
@@ -66,23 +66,20 @@
 
                                         {{-- EDIT + DELETE RIGHT SIDE --}}
                                         <div class="d-flex align-items-center gap-2 flex-shrink-0">
-
-                                            {{-- PENCIL BUTTON --}}
+                                            {{-- DISPATCH ACTION --}}
                                             @if($item->id && $pencilAction === 'dispatched')
-
                                                 <a href="{{ route('dispatch.truck-orders', ['gate' => $item->id]) }}"
-                                                class="action-icon edit-icon"
+                                                class="action-icon view-icon"
                                                 title="View Final Dispatch Details"
                                                 aria-label="View Final Dispatch Details">
-                                                    <i class="fas fa-pen"></i>
+                                                    <i class="fas fa-eye"></i>
                                                 </a>
 
                                             @elseif($item->id && $pencilAction === 'weight_completed')
-
                                                 <a href="{{ route('dispatch.selected-orders.form', ['gate_id' => $item->id]) }}"
                                                 class="action-icon edit-icon weight-completed"
-                                                title="View Selected Items and Dispatch Quantities"
-                                                aria-label="View Selected Items and Dispatch Quantities">
+                                                title="Edit Dispatch Entry"
+                                                aria-label="Edit Dispatch Entry">
                                                     <i class="fas fa-pen"></i>
                                                 </a>
 
@@ -192,7 +189,7 @@
                                     View Entry Slip
                                 </a>
                             @else
-                                <button type="button" class="btn btn-secondary w-100 mt-3" disabled> 
+                                <button type="button" class="btn btn-secondary w-100 mt-3" disabled>
                                     <i class="fas fa-image me-1"></i>
                                     Image Not Available
                                 </button>
@@ -454,8 +451,19 @@
         color: #997404;
     }
 
+    .view-icon {
+        background: #e8f5e9;
+        color: #198754;
+    }
+
     .edit-icon:hover {
         background: #0d6efd;
+        color: #fff;
+        transform: translateY(-2px);
+    }
+
+    .view-icon:hover {
+        background: #198754;
         color: #fff;
         transform: translateY(-2px);
     }

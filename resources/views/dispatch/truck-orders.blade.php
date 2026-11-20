@@ -201,6 +201,6 @@
         </div>
     </div>
 @empty
-    <div class="alert alert-info">No sale-order items have a production entry for this company.</div>
+    <div class="alert alert-info">No sale-order items have been sent for weight for this vehicle.</div>
 @endforelse
 @endsection

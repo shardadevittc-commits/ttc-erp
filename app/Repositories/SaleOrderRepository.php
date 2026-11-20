@@ -13,11 +13,54 @@ class SaleOrderRepository
 {
     public function listing(Request $request): LengthAwarePaginator
     {
-        $query = SaleOrder::query()->with(['customer','items.grade'])
-                ->withCount('items')
-                ->withSum('items as total_qty', 'item_qty')
-                ->withSum('items as total_dispatched_qty', 'dispatched_qty')
-                ->withSum('items as total_pending_qty', 'pending_qty');
+        $query = SaleOrder::query()
+            ->with([
+                'customer',
+                'items' => function ($itemsQuery) {
+                    $itemsQuery
+                        ->with(['product', 'size', 'grade'])
+                        ->withSum([
+                            'dispatchMaterials as dispatched_qty_total' => function ($dispatchQuery) {
+                                $dispatchQuery->where('status', 'dispatched');
+                            },
+                        ], 'dispatch_qty')
+                        ->addSelect([
+                            'has_purchase' => DB::table('purchase_order_items as purchase_items')
+                                ->selectRaw('1')
+                                ->whereColumn('purchase_items.ref_saleorder_id', 'sale_order_items.sale_order_id')
+                                ->whereColumn('purchase_items.grade_id', 'sale_order_items.grade_id')
+                                ->limit(1),
+                            'has_receiving' => DB::table('poitem_receiving as receiving')
+                                ->selectRaw('1')
+                                ->join('purchase_order_items as purchase_items', 'purchase_items.id', '=', 'receiving.purchase_order_item_id')
+                                ->whereColumn('purchase_items.ref_saleorder_id', 'sale_order_items.sale_order_id')
+                                ->whereColumn('purchase_items.grade_id', 'sale_order_items.grade_id')
+                                ->whereNull('receiving.deleted_at')
+                                ->limit(1),
+                            'has_lab_testing' => DB::table('poitem_receiving as receiving')
+                                ->selectRaw('1')
+                                ->join('purchase_order_items as purchase_items', 'purchase_items.id', '=', 'receiving.purchase_order_item_id')
+                                ->whereColumn('purchase_items.ref_saleorder_id', 'sale_order_items.sale_order_id')
+                                ->whereColumn('purchase_items.grade_id', 'sale_order_items.grade_id')
+                                ->whereNull('receiving.deleted_at')
+                                ->where(function ($labQuery) {
+                                    $labQuery->where('receiving.lab_test', '1')
+                                        ->orWhereExists(function ($resultQuery) {
+                                            $resultQuery->selectRaw('1')
+                                                ->from('lab_results')
+                                                ->whereColumn('lab_results.purchase_order_item_id', 'receiving.id');
+                                        });
+                                })
+                                ->limit(1),
+                            'has_production' => DB::table('work_orders_and_process as work_orders')
+                                ->selectRaw('1')
+                                ->whereColumn('work_orders.sale_order_item_id', 'sale_order_items.id')
+                                ->whereNull('work_orders.delete_at')
+                                ->limit(1),
+                        ]);
+                },
+            ])
+            ->withCount('items');
         // pr($query->toSql()); die;
         $search = trim((string) $request->query('search', ''));
 
@@ -78,6 +121,7 @@ class SaleOrderRepository
 
                     $item->update($itemRow);
                     $submittedIds[] = $item->id;
+
                     continue;
                 }
 

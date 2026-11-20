@@ -31,6 +31,7 @@
                             <th>Actual Dispatched Qty</th>
                             <th>Dispatch Request User</th>
                             <th>Status</th>
+                            <th>View</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -76,16 +77,24 @@
                                     </small>
                                 </td>
                                 <td>{{ number_format((float) ($dispatch->actual_qty ?? 0), 3) }} KG</td>
-                                <td>{{ number_format((float) $dispatch->dispatch_qty, 3) }} {{ $unit }}</td>
+                                <td>{{ number_format((float) $dispatch->dispatch_qty, 3) }} {{ $dispatch->dispatch_qty_unit ?: $unit }}</td>
                                 <td>
                                     {{ trim(($dispatch->dispatch_user_first_name ?? '') . ' ' . ($dispatch->dispatch_user_last_name ?? '')) ?: 'N/A' }}
                                     <small class="d-block text-muted">User #{{ $dispatch->dispatch_created_by ?? '-' }}</small>
                                 </td>
                                 <td><span class="badge bg-success">Final Dispatched</span></td>
+                                <td class="text-center">
+                                    <a href="{{ route('dispatch.history.show', ['dispatchMaterial' => $dispatch->id]) }}"
+                                        class="btn btn-sm btn-outline-primary"
+                                        title="View completed dispatch"
+                                        aria-label="View completed dispatch #{{ $dispatch->id }}">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="13" class="text-center text-muted py-4">No completed dispatches found.</td>
+                                <td colspan="14" class="text-center text-muted py-4">No completed dispatches found.</td>
                             </tr>
                         @endforelse
                     </tbody>

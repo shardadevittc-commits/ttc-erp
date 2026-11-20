@@ -6,8 +6,10 @@ use App\Models\Customer;
 use App\Models\DispatchMaterial;
 use App\Models\GateAndGaadi;
 use App\Models\PurchaseOrderitemReceiving;
+use App\Models\SaleOrderItem;
 use App\Models\UnloadWeight;
 use App\Models\Weight;
+use App\Models\WorkOrderProcess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -991,6 +993,7 @@ class WeightController extends Controller
                     'soi.grade_id',
                     'soi.size_id',
                     'soi.item_qty',
+                    'soi.qty_type',
                 ])
                 ->get()
                 ->keyBy('id');
@@ -1000,6 +1003,28 @@ class WeightController extends Controller
                 ]);
             }
 
+            $completedWorkOrders = WorkOrderProcess::query()
+                ->select([
+                    'id',
+                    'sale_order_item_id',
+                    'fs_bundle_weight',
+                    'fs_bundle_unit',
+                    'total_full_bundle_count',
+                    'lose_bundle_weight',
+                    'lose_bundle_count',
+                    'per_pcs_weight',
+                    'finished_pcs',
+                    'no_of_boxes',
+                    'loss_box_pcs',
+                    'loss_box_count',
+                ])
+                ->whereIn('sale_order_item_id', $itemIds)
+                ->where('status', 'completed')
+                ->orderByDesc('id')
+                ->get()
+                ->unique('sale_order_item_id')
+                ->keyBy('sale_order_item_id');
+
             foreach ($dispatchItems as $itemId => $dispatchItem) {
                 $actualQty = round((float) $actualQuantities[$itemId], 3);
                 $item = $itemDetails->get($itemId);
@@ -1008,8 +1033,15 @@ class WeightController extends Controller
                         'selected_item_ids' => 'A selected item does not match its dispatch sale order.',
                     ]);
                 }
+                $workOrder = $completedWorkOrders->get($itemId);
+                if (! $workOrder) {
+                    throw ValidationException::withMessages([
+                        'selected_item_ids' => "Sale order item #{$itemId} has no completed production record.",
+                    ]);
+                }
 
                 $dispatchItem->actual_qty = $actualQty;
+                $dispatchItem->applyProductionSnapshot((int) $item->qty_type, $workOrder);
                 $dispatchItem->status = 'weight_completed';
                 $dispatchItem->save();
 

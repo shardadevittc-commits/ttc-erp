@@ -3,15 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
-use App\Models\SaleOrder;
-use App\Models\Product;
-use App\Models\Grade;
-use App\Models\Brand;
-use App\Models\Size;
-use App\Models\User;
-use App\Models\Customer;
 
 class SaleOrderItem extends Model
 {
@@ -81,20 +74,23 @@ class SaleOrderItem extends Model
 
     // qty_type
     public const QTY_TONS = 1;
+
     public const QTY_KGS = 2;
 
     // s_marked_completed
     public const NOT_COMPLETED = 1;
+
     public const COMPLETED = 2;
 
     // Yes / No
     public const YES = 1;
+
     public const NO = 2;
 
     // fs_bundle_unit
     public const BUNDLE_KG = 1;
-    public const BUNDLE_TONS = 2;
 
+    public const BUNDLE_TONS = 2;
 
     public function saleOrder()
     {
@@ -129,5 +125,10 @@ class SaleOrderItem extends Model
     public function losses()
     {
         return $this->hasMany(WorkOrderLoss::class, 'sale_order_item_id');
+    }
+
+    public function dispatchMaterials(): HasMany
+    {
+        return $this->hasMany(DispatchMaterial::class, 'sale_order_item_id');
     }
 }

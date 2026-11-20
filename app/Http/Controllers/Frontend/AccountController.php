@@ -57,8 +57,14 @@ class AccountController extends Controller
 
         $gateIds = $listing->getCollection()->pluck('gate_id');
         $materialsByGate = collect();
+        $invoicedGateIds = collect();
 
         if ($gateIds->isNotEmpty()) {
+            $invoicedGateIds = Invoice::query()
+                ->whereIn('gate_id', $gateIds)
+                ->pluck('gate_id')
+                ->flip();
+
             $materialsByGate = DB::table('dispatch_material as dm')
                 ->join('gate_and_gaadi as gate', 'gate.id', '=', 'dm.gate_id')
                 ->leftJoin('customers as customer', 'customer.id', '=', 'gate.cust_id')
@@ -95,7 +101,7 @@ class AccountController extends Controller
                 ->groupBy('gate_id');
         }
 
-        $listing->setCollection($listing->getCollection()->map(function ($gateRow) use ($materialsByGate) {
+        $listing->setCollection($listing->getCollection()->map(function ($gateRow) use ($materialsByGate, $invoicedGateIds) {
             $materials = $materialsByGate->get($gateRow->gate_id, collect());
             $vehicle = $materials->first();
             if (! $vehicle) {
@@ -103,6 +109,7 @@ class AccountController extends Controller
             }
 
             $vehicle->materials = $materials;
+            $vehicle->invoice_submitted = $invoicedGateIds->has($gateRow->gate_id);
 
             return $vehicle;
         })->filter()->values());

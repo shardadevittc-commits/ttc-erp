@@ -73,6 +73,7 @@
                 <table class="table table-bordered table-sm align-middle mb-0">
                     <thead class="table-light">
                         <tr>
+                            <th>SR No.</th>
                             <th>Date</th>
                             <th>Party Name</th>
                             <th>Token No.</th>
@@ -87,9 +88,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse ($listing as $item)
+                        @forelse ($listing as $k => $item)
                             <tr>
-                                <td>{{ $item->created_at ? \Illuminate\Support\Carbon::parse($item->created_at)->format('d-m-Y') : '-' }}</td>
+                                <td>{{ $item->id }}</td>
+                                <td>{{ $item->created_at ? _dt($item->created_at) : '-' }}</td>
                                 <td>{{ $item->company_name ?: '-' }}</td>
                                 <td>{{ $item->tokenno ?: '-' }}</td>
                                 <td>{{ $item->truckno ?: '-' }}</td>
@@ -141,11 +143,20 @@
                                         </div>
                                     @endforeach
                                 </td>
+
                                 <td>
-                                    <a href="{{ route('accounts.addInvoice', ['gate' => $item->gate_id]) }}"
-                                        class="btn btn-sm btn-outline-primary" title="Add Invoice">
-                                        Add Invoice
-                                    </a>
+                                    @if ($item->invoice_submitted)
+                                        <a href="{{ route('accounts.addInvoice', ['gate' => $item->gate_id]) }}"
+                                            class="btn btn-sm btn-outline-primary" title="View Invoice"
+                                            aria-label="View Invoice">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    @else
+                                        <a href="{{ route('accounts.addInvoice', ['gate' => $item->gate_id]) }}"
+                                            class="btn btn-sm btn-outline-primary" title="Add Invoice">
+                                            Add Invoice
+                                        </a>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
