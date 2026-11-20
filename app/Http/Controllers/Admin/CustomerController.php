@@ -14,7 +14,7 @@ use Illuminate\Validation\Rule;
 
 class CustomerController extends Controller
 {
-  
+
     public function index(Request $request)
     {
         $query = Customer::query()->with(['country', 'state']);
@@ -107,7 +107,7 @@ class CustomerController extends Controller
             $validated['gst_details'] = $gstDetails ?? ($validated['gst_no'] === $customer->gst_no ? $customer->gst_details : null);
             $customer->update($validated);
             pr($customer); die;
-            
+
             return redirect()->route('customers')->with('success', 'Customer updated successfully.');
         }
 
@@ -283,5 +283,168 @@ class CustomerController extends Controller
         ));
 
         return $parts ? implode(', ', array_unique($parts)) : null;
+    }
+
+    public function export()
+    {
+        $customers = Customer::with(['country', 'state'])
+            ->latest()
+            ->get();
+
+        $fileName = 'customers_' . date('Y-m-d') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$fileName\"",
+        ];
+
+        $columns = [
+            'Company Name',
+            'Customer Code',
+            'GST No',
+            'Email',
+            'Mobile',
+            'Country',
+            'State',
+            'City',
+            'Pincode',
+            'Address',
+            'Buyer',
+            'Supplier',
+            'Status',
+        ];
+
+        $callback = function () use ($customers, $columns) {
+            $file = fopen('php://output', 'w');
+
+            // UTF-8 BOM for Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($file, $columns);
+
+            foreach ($customers as $customer) {
+                fputcsv($file, [
+                    $customer->company_name,
+                    $customer->cust_code,
+                    $customer->gst_no,
+                    $customer->email,
+                    $customer->mobile,
+                    $customer->country?->name,
+                    $customer->state?->name,
+                    $customer->city_name,
+                    $customer->pincode,
+                    $customer->address,
+                    $customer->buyer == 1 ? 'Yes' : 'No',
+                    $customer->supplier == 1 ? 'Yes' : 'No',
+                    $customer->status == 1 ? 'Active' : 'Inactive',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:csv,txt|max:5120',
+        ]);
+
+        $file = fopen($request->file('file')->getRealPath(), 'r');
+
+        // Remove BOM if present
+        $firstLine = fgets($file);
+        rewind($file);
+
+        if (str_starts_with($firstLine, "\xEF\xBB\xBF")) {
+            fgets($file);
+        }
+
+        $headers = fgetcsv($file);
+
+        $headers = array_map(
+            fn($value) => strtolower(trim(str_replace(' ', '_', $value))),
+            $headers
+        );
+
+        $imported = 0;
+        $skipped = 0;
+
+        while (($row = fgetcsv($file)) !== false) {
+
+            if (count($headers) !== count($row)) {
+                $skipped++;
+                continue;
+            }
+
+            $data = array_combine($headers, $row);
+
+            $gst = strtoupper(trim($data['gst_no'] ?? ''));
+
+            $country = Country::where('name', trim($data['country'] ?? 'India'))
+                ->where('status', 1)
+                ->first();
+
+            $state = State::where('name', trim($data['state'] ?? ''))
+                ->where('country_id', $country?->id)
+                ->where('status', 1)
+                ->first();
+
+            $validator = \Validator::make([
+                'company_name' => $data['company_name'] ?? null,
+                'cust_code' => $data['customer_code'] ?? null,
+                'gst_no' => $gst,
+                'email' => $data['email'] ?? null,
+                'mobile' => $data['mobile'] ?? null,
+                'country_id' => $country?->id,
+                'state_id' => $state?->id,
+            ], [
+                'company_name' => 'required|string|max:255',
+                'cust_code' => 'required|unique:customers,cust_code',
+                'gst_no' => [
+                    'required',
+                    'regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/',
+                    'unique:customers,gst_no',
+                ],
+                'email' => 'required|email',
+                'mobile' => 'required',
+                'country_id' => 'required',
+                'state_id' => 'required',
+            ]);
+
+            if ($validator->fails()) {
+                $skipped++;
+                continue;
+            }
+
+            Customer::create([
+                'company_name' => $data['company_name'],
+                'cust_code' => $data['customer_code'],
+                'gst_no' => $gst,
+                'gst_details' => null,
+                'email' => $data['email'],
+                'mobile' => $data['mobile'],
+                'country_id' => $country->id,
+                'state_id' => $state->id,
+                'city_name' => $data['city'] ?? null,
+                'pincode' => $data['pincode'] ?? null,
+                'address' => $data['address'] ?? null,
+                'buyer' => strtolower($data['buyer'] ?? 'no') === 'yes' ? 1 : 2,
+                'supplier' => strtolower($data['supplier'] ?? 'no') === 'yes' ? 1 : 2,
+                'status' => strtolower($data['status'] ?? 'active') === 'active' ? 1 : 2,
+                'created_by' => auth()->id(),
+            ]);
+
+            $imported++;
+        }
+
+        fclose($file);
+
+        return redirect()->route('customers')->with(
+            'success',
+            "Imported: {$imported}, Skipped: {$skipped}"
+        );
     }
 }

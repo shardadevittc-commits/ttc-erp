@@ -10,7 +10,9 @@ use App\Models\PurchaseOrderItem;
 use App\Models\SaleOrder;
 use App\Models\Size;
 use App\Models\Unit;
+use App\Models\GateAndGaadi;
 use App\Models\Brand;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -73,51 +75,51 @@ class PurchaseController extends Controller
             'items.grade',
             'items.sizeUnit',
         ]);
- 
+
         // Search functionality
         if ($request->filled('search')) {
- 
+
             $search = $request->search;
- 
+
             $query->where(function ($q) use ($search) {
- 
+
                 $q->where('id', 'like', "%{$search}%")
                     ->orWhere('basis', 'like', "%{$search}%")
                     ->orWhere('term', 'like', "%{$search}%")
- 
+
                     ->orWhereHas('customer', function ($customerQuery) use ($search) {
                         $customerQuery->where('company_name', 'like', "%{$search}%");
                     })
- 
+
                     ->orWhereHas('saleOrder.customer', function ($customerQuery) use ($search) {
                         $customerQuery->where('company_name', 'like', "%{$search}%");
                     })
- 
+
                     ->orWhereHas('items.product', function ($productQuery) use ($search) {
                         $productQuery->where('product_name', 'like', "%{$search}%");
                     });
             });
         }
- 
+
         // Sorting
         $sortBy = $request->get('sort_by', 'id');
         $sortOrder = $request->get('sort_order', 'desc');
- 
+
         $allowedSorts = ['id', 'basis', 'created_at'];
- 
+
         if (!in_array($sortBy, $allowedSorts)) {
             $sortBy = 'id';
         }
- 
+
         if (!in_array($sortOrder, ['asc', 'desc'])) {
             $sortOrder = 'desc';
         }
- 
+
         $purchaseOrders = $query
             ->orderBy($sortBy, $sortOrder)
             ->paginate(10)
             ->withQueryString();
- 
+
         return view('admin.purchases.index', compact('purchaseOrders'));
     }
 
@@ -368,68 +370,196 @@ class PurchaseController extends Controller
         return view('admin.rawMaterials.index', compact('listing','products','sizes','brands', 'grades'));
     }
 
+    public function indexFM(Request $request)
+    {
+        $data = DB::table('work_orders_and_process as wop')
+            ->join('sale_orders as so', 'wop.sale_order_id', '=', 'so.id')
+            ->join('sale_order_items as soi', 'so.id', '=', 'soi.sale_order_id')
+
+            ->leftJoin('grades as g', 'soi.grade_id', '=', 'g.id')
+            ->leftJoin('products as p', 'soi.product_id', '=', 'p.id')
+            ->leftJoin('sizes as s', 'soi.size_id', '=', 's.id')
+            ->leftJoin('customers as c', 'so.customer_id', '=', 'c.id')
+
+            ->select(
+                'wop.material_send_for_work',
+                'wop.fs_bundle_weight',
+                'wop.fs_bundle_unit',
+                'wop.total_full_bundle_count',
+                'wop.lose_bundle_weight',
+                'wop.lose_bundle_count',
+
+                'so.customer_id',
+                'so.order_qty',
+                'so.basic_rate',
+
+                'soi.grade_id',
+                'soi.size_id',
+                'soi.product_id',
+
+                'g.grade_name',
+                'p.product_name',
+                's.size_name',
+
+                'c.company_name'
+            )
+            ->get();
+
+        return view('admin.finishMaterials.index', compact('data'));
+    }
+
     public function indexVH(Request $request)
     {
-        $query = PurchaseOrderItem::with([
-                'customer',
-                'purchaseOrder',
-                'product',
-                'size',
-                'grade',
-                'sizeUnit',
-            ]);
+        $query = GateAndGaadi::with('customer')->whereNotNull('check_out');
 
-            // Search functionality
         if ($request->filled('search')) {
             $search = $request->search;
 
             $query->where(function ($q) use ($search) {
                 $q->where('id', 'like', "%{$search}%")
-                    ->orWhere('basis', 'like', "%{$search}%")
-                    ->orWhere('term', 'like', "%{$search}%")
-                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
-                        $customerQuery->where('company_name', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('items.product', function ($productQuery) use ($search) {
-                        $productQuery->where('product_name', 'like', "%{$search}%");
-                    });
+                ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                    $customerQuery->where('company_name', 'like', "%{$search}%");
+                });
             });
         }
 
-        // Sorting
-        $sortBy = $request->get('sort_by', 'id');
-        $sortOrder = $request->get('sort_order', 'desc');
-
-        $allowedSorts = ['id', 'basis', 'created_at'];
-
-        if (!in_array($sortBy, $allowedSorts)) {
-            $sortBy = 'id';
+        if ($request->filled('from_date')) {
+            $query->whereDate('check_out', '>=', $request->from_date);
         }
 
-        if (!in_array($sortOrder, ['asc', 'desc'])) {
-            $sortOrder = 'desc';
+        if ($request->filled('to_date')) {
+            $query->whereDate('check_out', '<=', $request->to_date);
         }
 
-        $listing = $query->orderBy($sortBy, $sortOrder)->paginate(10)->withQueryString();
-        // pr($listing); die;
+        $materialIns = $query->latest('id')->paginate(10)->withQueryString();
+        return view('admin.vehicleHistory.index', compact('materialIns'));
+    }
 
-        if ($request->ajax()) {
-            return response()->json([
-                'status' => true,
-                'html' => view('admin.rawMaterials.listingLoop', compact('listing'))->render(),
-                'page' => $listing->currentPage(),
-                'counter' => $listing->perPage(),
-                'count' => $listing->total(),
-                'lastPage' => $listing->lastPage(),
-                'pagination' => $listing->links('pagination::bootstrap-5')->toHtml(),
-            ]);
+    public function view(Request $request, $id)
+    {
+        $purchaseOrders = PurchaseOrder::with([
+            'items.product',
+            'items.size',
+            'items.grade',
+            'items.sizeUnit',
+        ])->findOrFail($id);
+
+        // Sale Order se customer ID fetch karo
+        $saleOrder = SaleOrder::find($purchaseOrders->ref_saleorder_id);
+
+        // Sale Order ke cust_id se customer details fetch karo
+        $customer = null;
+
+        if ($saleOrder) {
+            $customer = Customer::find($saleOrder->customer_id);
         }
 
-        $products = Product::query()->where('status', 1)->select(['id', 'product_name', 'status'])->get();
-        $sizes    = Size::query()->where('status', 1)->select(['id', 'size_name', 'created_at'])->get();
-        $brands   = Brand::query()->where('status', 1)->select(['id', 'brand_name','created_at'])->get();
-        $grades   = Grade::query()->where('status', 1)->select(['id', 'grade_name', 'created_at'])->get();
+        return view('admin.purchases.view', compact(
+            'purchaseOrders',
+            'customer',
+            'saleOrder'
+        ));
+    }
 
-        return view('admin.vehicleHistory.index', compact('listing','products','sizes','brands', 'grades'));
+    public function printRM(Request $request, $id)
+    {
+        // Unload weight ki single entry
+        $unloadWeight = DB::table('unload_weights as uw')
+            ->leftJoin('grades as g', 'g.id', '=', 'uw.grade_id')
+            ->leftJoin('sizes as s', 's.id', '=', 'uw.size_id')
+            ->leftJoin('customers as c', 'c.id', '=', 'uw.cust_id')
+            ->leftJoin('products as p', 'p.id', '=', 'uw.product_id')
+            ->leftJoin('gate_and_gaadi as v', 'v.id', '=', 'uw.vehicle_id')
+            ->select(
+                'uw.id',
+                'uw.purchase_order_item_id',
+                'uw.received_qty',
+                'uw.actual_qty',
+                'uw.formlist',
+                'g.grade_name',
+                's.size_name',
+                'c.company_name',
+                'p.product_name',
+                'v.truckno'
+            )
+            ->where('uw.id', $id)
+            ->first();
+
+        if (!$unloadWeight) {
+            abort(404, 'Unload Weight Not Found');
+        }
+
+        // Matching Lab Results - Multiple Records
+        $labResults = DB::table('lab_results as lr')
+            ->leftJoin('grade_properties as gp', 'gp.id', '=', 'lr.property_id')
+            ->select(
+                'lr.property_id',
+                'gp.name as property_name',
+                'gp.unit',
+                'lr.actual_value'
+            )
+            ->where(
+                'lr.purchase_order_item_id',
+                $unloadWeight->purchase_order_item_id
+            )
+            ->get();
+
+        return view('admin.rawMaterials.print', compact(
+            'unloadWeight',
+            'labResults'
+        ));
+    }
+
+    public function indexDM(Request $request)
+    {
+        $dispatches = DB::table('dispatch_material as dm')
+            ->leftJoin('sale_orders as so', 'dm.sale_order_id', '=', 'so.id')
+            ->leftJoin('customers as c', 'so.customer_id', '=', 'c.id')
+            ->leftJoin('gate_and_gaadi as gg', 'dm.gate_id', '=', 'gg.id')
+            ->leftJoin('sale_order_items as soi', 'dm.sale_order_id', '=', 'soi.sale_order_id')
+            ->leftJoin('products as p', 'soi.product_id', '=', 'p.id')
+            ->leftJoin('sizes as sz', 'soi.size_id', '=', 'sz.id')
+            ->leftJoin('grades as gr', 'soi.grade_id', '=', 'gr.id')
+            ->select(
+                // Dispatch Material
+                'dm.id',
+                'dm.gate_id',
+                'dm.sale_order_id',
+                'dm.sale_order_item_id',
+                'dm.dispatch_qty',
+                'dm.weight_id',
+                'dm.actual_qty',
+                'dm.status',
+
+                // Customer Details
+                'c.company_name',
+                'c.email',
+                'c.mobile',
+                'c.gst_no',
+                'c.cust_code',
+
+                // Gate and Vehicle
+                'gg.cust_id',
+                'gg.truckno',
+
+                // Sale Order Item
+                'soi.product_id',
+                'soi.size_id',
+                'soi.grade_id',
+                'soi.item_qty',
+
+                // Product Details
+                'p.product_name',
+
+                // Size Details
+                'sz.size_name',
+
+                // Grade Details
+                'gr.grade_name'
+            )
+            ->orderBy('dm.id', 'desc')
+            ->get();
+        $branch = Branch::first();
+        return view('dispatch.dispatch_report', compact('dispatches', 'branch'));
     }
 }
