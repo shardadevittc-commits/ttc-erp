@@ -39,6 +39,7 @@
 
         include "Frontend/unloader.php";
         include "Frontend/productions.php";
+        include "Frontend/account.php";
 
         include "Admin/purchase.php";
         include "Admin/finidhedMaterial.php";

@@ -23,6 +23,7 @@ class GateAndGaadi extends Model
         'drivername',
         'contactno',
         'created_by',
+        'check_out_by',
     ];
 
     protected $casts = [
@@ -37,5 +38,20 @@ class GateAndGaadi extends Model
     public function weights()
     {
         return $this->hasMany(Weight::class, 'vehicle_id', 'id');
+    }
+
+    public function dispatchMaterials()
+    {
+        return $this->hasMany(DispatchMaterial::class, 'gate_id', 'id');
+    }
+
+    public function entrySecurity()
+    {
+        return $this->belongsTo(User::class, 'created_by', 'id');
+    }
+
+    public function exitSecurity()
+    {
+        return $this->belongsTo(User::class, 'check_out_by', 'id');
     }
 }

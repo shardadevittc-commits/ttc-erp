@@ -73,13 +73,13 @@ class DispatchController extends Controller
             ->whereIn('gate_id', $gate->getCollection()->pluck('id'))
             ->get()
             ->groupBy('gate_id');
-        $weightCompletedGateIds = $dispatchStatusesByGate
-            ->filter(fn (Collection $statuses) => $statuses->contains(
-                fn ($dispatch) => in_array($dispatch->status, ['weight_completed', 'dispatched'], true)
-            ))
-            ->keys();
+        $pencilActionByGate = $dispatchStatusesByGate->map(fn (Collection $statuses) => match (true) {
+            $statuses->contains('dispatched') => 'dispatched',
+            $statuses->contains('weight_completed') => 'weight_completed',
+            default => null,
+        });
 
-        return view('dispatch.index', compact('gate', 'weightCompletedGateIds', 'dispatchStatusesByGate'));
+        return view('dispatch.index', compact('gate', 'pencilActionByGate', 'dispatchStatusesByGate'));
     }
 
     public function pendingOrders(GateAndGaadi $gate): JsonResponse

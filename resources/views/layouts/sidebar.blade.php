@@ -7,6 +7,7 @@
     $isLabUser    = $roleId === 8;
     $isDispatchUser = $roleId === 7;
     $isProdUser   = $roleId === 9;
+    $isAccountent   = $roleId === 11;
 
     $productsActive = request()->routeIs('brands*','products*','sizes*','grades*','units*', 'grades.composition*', 'grade_properties*', 'grade_min_max*');
     $locationsActive = request()->routeIs('cities*','states*');
@@ -287,6 +288,22 @@
                     </ul>
                 </div>
             </li>
+            @endif
+
+            @if($isAccountent)
+                <li class="sidebar-item">
+                    <a href="{{ route('dashboard.account') }}" class="sidebar-link {{ request()->routeIs('dashboard.account') ? 'active' : '' }}">
+                        <i class="fa-solid fa-gauge-high nav-icon"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+
+                <li class="sidebar-item">
+                    <a href="{{ route('accounts') }}" class="sidebar-link {{ request()->routeIs('accounts') ? 'active' : '' }}">
+                        <i class="fa-solid fa-right-to-bracket nav-icon"></i>
+                        <span>Accounts</span>
+                    </a>
+                </li>
             @endif
         </ul>
     </div>
