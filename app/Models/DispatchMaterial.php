@@ -15,6 +15,8 @@ class DispatchMaterial extends Model
         'weight_id',
         'actual_qty',
         'dispatch_qty',
+        'return_qty',
+        'return_remarks',
         'status',
         'created_by',
     ];
@@ -27,5 +29,26 @@ class DispatchMaterial extends Model
         'actual_qty' => 'decimal:3',
         'dispatch_qty' => 'decimal:3',
         'created_by' => 'integer',
+        'return_qty' => 'decimal:3',
     ];
+
+    public function gate()
+    {
+        return $this->belongsTo(GateAndGaadi::class, 'gate_id');
+    }
+
+    public function saleOrder()
+    {
+        return $this->belongsTo(SaleOrder::class, 'sale_order_id');
+    }
+
+    public function saleOrderItem()
+    {
+        return $this->belongsTo(SaleOrderItem::class, 'sale_order_item_id');
+    }
+
+    public function weight()
+    {
+        return $this->belongsTo(Weight::class, 'weight_id');
+    }
 }

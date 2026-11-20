@@ -31,77 +31,125 @@
             Total Records: {{ $gate->total() }}
         </small>
     </div>
-
     <div class="card-body">
         <div class="row g-4">
-
+            
             @forelse($gate as $item)
                 <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
                     <div class="card vehicle-card h-100">
                         <div class="card-body">
+                                @php
+                                    $pencilAction = $pencilActionByGate->get($item->id);
+                                    $vehicleStatuses = $dispatchStatusesByGate
+                                        ->get($item->id, collect())
+                                        ->pluck('status');
+                                @endphp
 
-                            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
-                                <div>
-                                    <small class="text-muted d-block">Truck Number</small>
-                                    <h6 class="truck-number mb-0">
-                                        <a href="{{ route('dispatch.truck-orders', ['gate' => $item->id]) }}"
-                                           target="_blank"
-                                           rel="noopener noreferrer"
-                                           class="text-decoration-none">
-                                            {{ $item->truckno ?: '-' }}
-                                        </a>
-                                    </h6>
+                                <div class="d-flex flex-column gap-2 mb-3">
+
+                                    {{-- TRUCK NUMBER LEFT + ACTION ICONS RIGHT --}}
+                                    <div class="d-flex justify-content-between align-items-center gap-2">
+
+                                        {{-- TRUCK NUMBER --}}
+                                        <div class="flex-grow-1 min-w-0">
+                                            <small class="text-muted d-block">Truck Number</small>
+
+                                            <h6 class="truck-number mb-0 text-nowrap">
+                                                <a href="{{ route('dispatch.truck-orders', ['gate' => $item->id]) }}"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="text-decoration-none">
+                                                    {{ $item->truckno ?: '-' }}
+                                                </a>
+                                            </h6>
+                                        </div>
+
+                                        {{-- EDIT + DELETE RIGHT SIDE --}}
+                                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+
+                                            {{-- PENCIL BUTTON --}}
+                                            @if($item->id && $pencilAction === 'dispatched')
+
+                                                <a href="{{ route('dispatch.truck-orders', ['gate' => $item->id]) }}"
+                                                class="action-icon edit-icon"
+                                                title="View Final Dispatch Details"
+                                                aria-label="View Final Dispatch Details">
+                                                    <i class="fas fa-pen"></i>
+                                                </a>
+
+                                            @elseif($item->id && $pencilAction === 'weight_completed')
+
+                                                <a href="{{ route('dispatch.selected-orders.form', ['gate_id' => $item->id]) }}"
+                                                class="action-icon edit-icon weight-completed"
+                                                title="View Selected Items and Dispatch Quantities"
+                                                aria-label="View Selected Items and Dispatch Quantities">
+                                                    <i class="fas fa-pen"></i>
+                                                </a>
+
+                                            @else
+
+                                                <button type="button"
+                                                    class="action-icon edit-icon"
+                                                    title="Edit Dispatch Plan"
+                                                    data-bs-toggle="offcanvas"
+                                                    data-bs-target="#editVehicleOffcanvas"
+                                                    data-id="{{ $item->id }}"
+                                                    data-truckno="{{ $item->truckno }}"
+                                                    data-entrytype="{{ $item->entrytype ?? 'Material Out' }}"
+                                                    data-vehicletype="{{ $item->vehicletype ?? '' }}"
+                                                    data-pending-url="{{ route('manage-dispatch.pending-orders', ['gate' => $item->id]) }}"
+                                                    data-partyname="{{ $item->customer->company_name ?? '-' }}"
+                                                    onclick="editVehicle(this)">
+                                                    <i class="fas fa-pen"></i>
+                                                </button>
+
+                                            @endif
+
+                                            {{-- DELETE BUTTON --}}
+                                            <form action="{{ url('/manage-dispatch/' . $item->id) }}"
+                                                method="POST"
+                                                class="m-0"
+                                                onsubmit="return confirm('Are you sure you want to delete this record?')">
+
+                                                @csrf
+                                                @method('DELETE')
+
+                                                <button type="submit"
+                                                    class="action-icon delete-icon"
+                                                    title="Delete Record">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+
+                                        </div>
+                                    </div>
+
+                                    {{-- MATERIAL OUT + VEHICLE STATUS --}}
+                                    <div class="d-flex flex-wrap align-items-center gap-2">
+
+                                        <span class="badge bg-primary">
+                                            {{ $item->formlist ?: '-' }}
+                                        </span>
+
+                                        @if($vehicleStatuses->contains('dispatched'))
+
+                                            <span class="badge bg-success">
+                                                Final Dispatched
+                                            </span>
+
+                                        @elseif($vehicleStatuses->contains('weight_completed'))
+
+                                            <span class="badge bg-info text-dark">
+                                                Weight Department Completed
+                                            </span>
+
+                                        @elseif($vehicleStatuses->contains('sent_for_weight'))
+                                            <span class="badge bg-info text-dark">
+                                                Vehicle Sent for Weight
+                                            </span>
+                                        @endif
+                                    </div>
                                 </div>
-
-                                <div class="d-flex align-items-center gap-2 flex-shrink-0">
-
-                                    <span class="badge bg-primary">
-                                        {{ $item->formlist ?: '-' }}
-                                    </span>
-                                    @php($vehicleStatuses = $dispatchStatusesByGate->get($item->id, collect())->pluck('status'))
-                                    @if($vehicleStatuses->contains('dispatched'))
-                                        <span class="badge bg-success">Final Dispatched</span>
-                                    @elseif($vehicleStatuses->contains('weight_completed') || $vehicleStatuses->contains('dispatched'))
-                                        <span class="badge bg-info text-dark">Weight Department Completed</span>
-                                    @elseif($vehicleStatuses->contains('sent_for_weight'))
-                                        <span class="badge bg-info text-dark">Vehicle Sent for Weight</span>
-                                    @endif
-
-                                    {{-- EDIT BUTTON --}}
-                                    <button type="button"
-                                        class="action-icon edit-icon {{ $weightCompletedGateIds->contains($item->id) ? 'weight-completed' : '' }}"
-                                        title="Edit Dispatch Plan"
-                                        data-bs-toggle="offcanvas"
-                                        data-bs-target="#editVehicleOffcanvas"
-                                        data-id="{{ $item->id }}"
-                                        data-truckno="{{ $item->truckno }}"
-                                        data-entrytype="{{ $item->entrytype ?? 'Material Out' }}"
-                                        data-vehicletype="{{ $item->vehicletype ?? '' }}"
-                                        data-pending-url="{{ route('manage-dispatch.pending-orders', ['gate' => $item->id]) }}"
-                                        data-partyname ="{{ $item->customer->company_name ?? '-'}}"
-                                        onclick="editVehicle(this)">
-
-                                        <i class="fas fa-pen"></i>
-                                    </button>
-
-                                    {{-- DELETE BUTTON --}}
-                                    <form action="{{ url('/manage-dispatch/' . $item->id) }}"
-                                        method="POST"
-                                        class="m-0"
-                                        onsubmit="return confirm('Are you sure you want to delete this record?')">
-
-                                        @csrf
-                                        @method('DELETE')
-
-                                        <button type="submit"
-                                            class="action-icon delete-icon"
-                                            title="Delete Record">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </form>
-
-                                </div>
-                            </div>
 
                             <div class="vehicle-detail">
                                 <span><i class="fas fa-hashtag"></i> Token ID</span>
@@ -139,19 +187,12 @@
                             </div>
 
                             @if(!empty($item->vehicleentryslip))
-                                <a href="{{ asset('storage/' . $item->vehicleentryslip) }}"
-                                   target="_blank"
-                                   rel="noopener noreferrer"
-                                   class="btn btn-primary w-100 mt-3">
-
+                                <a href="{{ asset('storage/' . $item->vehicleentryslip) }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-100 mt-3">
                                     <i class="fas fa-eye me-1"></i>
                                     View Entry Slip
                                 </a>
                             @else
-                                <button type="button"
-                                    class="btn btn-secondary w-100 mt-3"
-                                    disabled>
-
+                                <button type="button" class="btn btn-secondary w-100 mt-3" disabled> 
                                     <i class="fas fa-image me-1"></i>
                                     Image Not Available
                                 </button>
@@ -228,15 +269,15 @@
                     <tbody>
                         <tr>
                             <td>
-                                <input type="text" class="form-control" id="edit_token" name="id" readonly>
+                                <input type="text" class="form-control pe-none bg-body-secondary" id="edit_token" name="id" readonly>
                             </td>
 
                             <td>
-                                <input type="text" class="form-control" id="edit_truckno" name="truckno" required>
+                                <input type="text" class="form-control pe-none bg-body-secondary" id="edit_truckno" name="truckno" required>
                             </td>
 
                             <td>
-                                <select class="form-select" id="edit_entrytype" name="entrytype" required>
+                                <select class="form-select pe-none bg-body-secondary" id="edit_entrytype" name="entrytype" required>
 
                                     <option value="">Select Entry Type</option>
                                     <option value="Material In">Material In</option>

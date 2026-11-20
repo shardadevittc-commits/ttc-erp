@@ -163,7 +163,7 @@
                     </tbody>
                 </table>
             </div>
-
+            
             @foreach($order->items as $item)
                 <details class="mt-3">
                     <summary class="fw-semibold">
@@ -179,6 +179,7 @@
                                     <th>Status</th>
                                     <th>Material Sent for Work (Tons)</th>
                                     <th>Completed Output</th>
+                                    <th>Total Scrap</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -189,6 +190,7 @@
                                         <td>{{ str_replace('_', ' ', ucfirst($workOrder->status ?: 'pending')) }}</td>
                                         <td>{{ $workOrder->material_send_for_work ?? 0 }}</td>
                                         <td>{{ $workOrder->completed_output_qty }} {{ (int) $item->qty_type === 2 ? 'KG' : 'Tons' }}</td>
+                                        <td>{{ $workOrder->material_send_for_work - $workOrder->completed_output_qty }} {{ (int) $item->qty_type === 2 ? 'KG' : 'Tons' }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

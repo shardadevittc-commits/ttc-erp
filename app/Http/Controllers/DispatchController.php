@@ -8,6 +8,7 @@ use App\Models\SaleOrder;
 use App\Models\SaleOrderItem;
 use App\Models\Weight;
 use App\Models\WorkOrderProcess;
+use App\Models\WorkOrderLoss;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -72,13 +73,13 @@ class DispatchController extends Controller
             ->whereIn('gate_id', $gate->getCollection()->pluck('id'))
             ->get()
             ->groupBy('gate_id');
-        $weightCompletedGateIds = $dispatchStatusesByGate
-            ->filter(fn (Collection $statuses) => $statuses->contains(
-                fn ($dispatch) => in_array($dispatch->status, ['weight_completed', 'dispatched'], true)
-            ))
-            ->keys();
+        $pencilActionByGate = $dispatchStatusesByGate->map(fn (Collection $statuses) => match (true) {
+            $statuses->contains('dispatched') => 'dispatched',
+            $statuses->contains('weight_completed') => 'weight_completed',
+            default => null,
+        });
 
-        return view('dispatch.index', compact('gate', 'weightCompletedGateIds', 'dispatchStatusesByGate'));
+        return view('dispatch.index', compact('gate', 'pencilActionByGate', 'dispatchStatusesByGate'));
     }
 
     public function pendingOrders(GateAndGaadi $gate): JsonResponse
@@ -141,7 +142,15 @@ class DispatchController extends Controller
             default => 'Pending',
         };
 
-        return view('dispatch.truck-orders', compact('gate', 'orders', 'dispatchStatuses', 'vehicleStatus'));
+        $itemIds = collect($orders)
+            ->flatMap(fn($order) => collect($order['items'])->pluck('id'))
+            ->toArray();
+
+        $workOrderLosses = WorkOrderLoss::whereIn('sale_order_item_id', $itemIds)
+            ->get();
+         
+        
+        return view('dispatch.truck-orders', compact('gate', 'orders', 'dispatchStatuses', 'vehicleStatus', 'workOrderLosses'));
     }
 
     public function sendForWeight(Request $request)

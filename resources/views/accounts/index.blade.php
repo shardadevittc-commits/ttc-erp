@@ -1,0 +1,135 @@
+@extends('layouts.app')
+
+@section('title', 'Accounts')
+
+@section('content')
+<div class="container-fluid py-3">
+    <div class="page-header mb-3">
+        <div class="page-header__inner">
+            <div class="page-header__content">
+                <div class="page-header__title">
+                    <h6>Dispatch Material Details</h6>
+                </div>
+            </div>
+            <div class="page-header__actions">
+                <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-home me-1"></i>Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h5 class="mb-0">Dispatch Material Details</h5>
+                <small class="text-muted">{{ $listing->total() }} records</small>
+            </div>
+
+            <form method="GET" action="{{ route('accounts') }}" class="row g-3 align-items-end mb-3">
+                <div class="col-12 col-md-3">
+                    <label class="form-label" for="party_name">Party Name</label>
+                    <input type="text" class="form-control" id="party_name" name="party_name"
+                        value="{{ request('party_name') }}" placeholder="Search Party Name">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label" for="date_from">Date From</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request('date_from') }}">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label" for="date_to">Date To</label>
+                    <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request('date_to') }}">
+                </div>
+                <div class="col-6 col-md-1">
+                    <label class="form-label" for="token_no">Token No.</label>
+                    <input type="text" class="form-control" id="token_no" name="token_no"
+                        value="{{ request('token_no') }}" placeholder="Token">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label" for="vehicle_no">Vehicle No.</label>
+                    <input type="text" class="form-control" id="vehicle_no" name="vehicle_no"
+                        value="{{ request('vehicle_no') }}" placeholder="Vehicle">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label" for="status">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Statuses</option>
+                        @foreach ($statuses as $status)
+                            <option value="{{ $status }}" @selected(request('status') === $status)>
+                                {{ ucwords(str_replace('_', ' ', $status)) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-12 col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">Apply Filter</button>
+                    <a href="{{ route('accounts') }}" class="btn btn-outline-secondary" title="Reset">
+                        <i class="fas fa-rotate-left"></i>
+                    </a>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Party Name</th>
+                            <th>Token No.</th>
+                            <th>Vehicle No.</th>
+                            <th>Sale Order</th>
+                            <th>Material / Size</th>
+                            <th>Grade / Brand</th>
+                            <th class="text-end">Actual Qty</th>
+                            <th class="text-end">Dispatch Qty</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($listing as $item)
+                            @php
+                                $qtyUnit = (int) $item->qty_type === 2 ? 'KG' : 'Tons';
+                            @endphp
+                            <tr>
+                                <td>{{ $item->created_at ? \Illuminate\Support\Carbon::parse($item->created_at)->format('d-m-Y') : '-' }}</td>
+                                <td>{{ $item->company_name ?: '-' }}</td>
+                                <td>{{ $item->tokenno ?: '-' }}</td>
+                                <td>{{ $item->truckno ?: '-' }}</td>
+                                <td>
+                                    #{{ $item->sale_order_id }}
+                                    @if ($item->customer_po_no)
+                                        <small class="d-block text-muted">{{ $item->customer_po_no }}</small>
+                                    @endif
+                                </td>
+                                <td>
+                                    {{ $item->product_name ?: '-' }}
+                                    <small class="d-block text-muted">{{ $item->size_name ?: $item->size_unit ?: '-' }}</small>
+                                </td>
+                                <td>
+                                    {{ $item->grade_name ?: '-' }}
+                                    <small class="d-block text-muted">{{ $item->brand_name ?: '-' }}</small>
+                                </td>
+                                <td class="text-end">{{ number_format((float) ($item->actual_qty ?? 0), 3) }} KG</td>
+                                <td class="text-end">{{ number_format((float) ($item->dispatch_qty ?? 0), 3) }} {{ $qtyUnit }}</td>
+                                <td class="text-capitalize">{{ str_replace('_', ' ', $item->status ?: '-') }}</td>
+                                <td>
+                                    <a href="{{ route('accounts.addInvoice', ['gate' => $item->gate_id]) }}"
+                                        class="btn btn-sm btn-outline-primary" title="Add Invoice">
+                                        Add Invoice
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="11" class="text-center text-muted py-4">No dispatch material details found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-3">{{ $listing->links('pagination::bootstrap-5') }}</div>
+        </div>
+    </div>
+</div>
+@endsection

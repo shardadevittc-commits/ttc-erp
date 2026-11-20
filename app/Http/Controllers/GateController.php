@@ -92,6 +92,7 @@ class GateController extends Controller
         $item = GateAndGaadi::findOrFail($id);
 
         $item->check_out = now();
+        $item->check_out_by = auth()->id();
         $item->save();
 
         return redirect()->route('gate.index')->with('success', 'Vehicle checked out successfully.');
