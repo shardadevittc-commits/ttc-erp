@@ -65,17 +65,32 @@ class DispatchController extends Controller
             ])
             ->with('customer:id,company_name')
             ->where('formlist', 'Material Out')
+            ->whereNotExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('dispatch_material as completed_dispatch')
+                    ->whereColumn('completed_dispatch.gate_id', 'gate_and_gaadi.id')
+                    ->where('completed_dispatch.status', 'dispatched')
+                    ->whereNotExists(function ($incomplete) {
+                        $incomplete->selectRaw('1')
+                            ->from('dispatch_material as incomplete_dispatch')
+                            ->whereColumn('incomplete_dispatch.gate_id', 'gate_and_gaadi.id')
+                            ->where(function ($status) {
+                                $status->whereNull('incomplete_dispatch.status')
+                                    ->orWhere('incomplete_dispatch.status', '!=', 'dispatched');
+                            });
+                    });
+            })
             ->latest('id')
             ->paginate(20);
 
         $dispatchStatusesByGate = DB::table('dispatch_material')
-            ->select(['gate_id', 'status'])
+            ->select(['gate_id', 'status', ])
             ->whereIn('gate_id', $gate->getCollection()->pluck('id'))
             ->get()
             ->groupBy('gate_id');
         $pencilActionByGate = $dispatchStatusesByGate->map(fn (Collection $statuses) => match (true) {
-            $statuses->contains('dispatched') => 'dispatched',
             $statuses->contains('weight_completed') => 'weight_completed',
+            $statuses->isNotEmpty() && $statuses->every(fn ($status) => $status === 'dispatched') => 'dispatched',
             default => null,
         });
 
@@ -93,6 +108,18 @@ class DispatchController extends Controller
             ->where('gate_id', $gate->id)
             ->whereIn('sale_order_item_id', $itemIds)
             ->pluck('status', 'sale_order_item_id');
+        $orders = $orders->map(function (SaleOrder $order) use ($dispatchStatuses) {
+            $order->setRelation('items', $order->items
+                ->filter(fn (SaleOrderItem $item) => (float) ($item->dispatchable_qty ?? 0) > 0
+                    && ! in_array($dispatchStatuses->get($item->id), [
+                        'sent_for_weight',
+                        'weight_completed',
+                        'dispatched',
+                    ], true))
+                ->values());
+
+            return $order;
+        })->filter(fn (SaleOrder $order) => $order->items->isNotEmpty())->values();
 
         return response()->json([
             'success' => true,
@@ -130,10 +157,12 @@ class DispatchController extends Controller
         $this->ensureDepartment('dispatch');
         abort_unless($gate->formlist === 'Material Out', 404);
         $gate->load('customer:id,company_name');
-        $orders = $this->loadDispatchOrders($gate->cust_id, null, $gate->id, true);
         $dispatchStatuses = DispatchMaterial::query()
             ->where('gate_id', $gate->id)
+            ->whereIn('status', ['sent_for_weight', 'weight_completed', 'dispatched'])
             ->pluck('status', 'sale_order_item_id');
+        $itemIds = $dispatchStatuses->keys()->map(fn ($id) => (int) $id)->all();
+        $orders = $this->loadDispatchOrders($gate->cust_id, null, $gate->id, true, $itemIds);
         $statusValues = $dispatchStatuses->values();
         $vehicleStatus = match (true) {
             $statusValues->contains('dispatched') => 'Final Dispatched',
@@ -142,14 +171,10 @@ class DispatchController extends Controller
             default => 'Pending',
         };
 
-        $itemIds = collect($orders)
-            ->flatMap(fn($order) => collect($order['items'])->pluck('id'))
-            ->toArray();
-
         $workOrderLosses = WorkOrderLoss::whereIn('sale_order_item_id', $itemIds)
             ->get();
-         
-        
+
+
         return view('dispatch.truck-orders', compact('gate', 'orders', 'dispatchStatuses', 'vehicleStatus', 'workOrderLosses'));
     }
 
@@ -423,6 +448,28 @@ class DispatchController extends Controller
                 ]);
             }
 
+            $completedWorkOrders = WorkOrderProcess::query()
+                ->select([
+                    'id',
+                    'sale_order_item_id',
+                    'fs_bundle_weight',
+                    'fs_bundle_unit',
+                    'total_full_bundle_count',
+                    'lose_bundle_weight',
+                    'lose_bundle_count',
+                    'per_pcs_weight',
+                    'finished_pcs',
+                    'no_of_boxes',
+                    'loss_box_pcs',
+                    'loss_box_count',
+                ])
+                ->whereIn('sale_order_item_id', $itemIds)
+                ->where('status', 'completed')
+                ->orderByDesc('id')
+                ->get()
+                ->unique('sale_order_item_id')
+                ->keyBy('sale_order_item_id');
+
             $hasDispatch = false;
             foreach ($postedQuantities as $itemId => $posted) {
                 $item = $items->get($itemId);
@@ -450,10 +497,18 @@ class DispatchController extends Controller
                     continue;
                 }
 
+                $workOrder = $completedWorkOrders->get($itemId);
+                if (! $workOrder) {
+                    throw ValidationException::withMessages([
+                        "items.{$posted['order_id']}.{$itemId}.dispatch_qty" => 'A completed production record is required to save dispatch details.',
+                    ]);
+                }
+
                 $hasDispatch = true;
                 $newDispatchedQty = round((float) $item->already_dispatched_qty + ($quantityMilliunits / 1000), 3);
                 $pendingQty = round(max(0, (float) $item->item_qty - $newDispatchedQty), 3);
                 $dispatchRecord->dispatch_qty = $quantityMilliunits / 1000;
+                $dispatchRecord->applyProductionSnapshot((int) $item->qty_type, $workOrder);
                 $dispatchRecord->status = 'dispatched';
                 $dispatchRecord->save();
 
@@ -521,6 +576,7 @@ class DispatchController extends Controller
                 'dm.updated_at as dispatched_at',
                 'dm.created_by as dispatch_created_by',
                 'dm.dispatch_qty',
+                'dm.dispatch_qty_unit',
                 'dm.actual_qty',
                 'gate.truckno',
                 'customer.company_name',
@@ -552,6 +608,24 @@ class DispatchController extends Controller
             ->withQueryString();
 
         return view('dispatch.history', compact('dispatches'));
+    }
+
+    public function historyDetails(DispatchMaterial $dispatchMaterial)
+    {
+        $this->ensureDepartment('dispatch');
+        abort_unless($dispatchMaterial->status === 'dispatched', 404);
+
+        $dispatchMaterial->load([
+            'gate.customer:id,company_name',
+            'saleOrder',
+            'saleOrderItem.product:id,product_name,product_category',
+            'saleOrderItem.grade:id,grade_name',
+            'saleOrderItem.brand:id,brand_name',
+            'saleOrderItem.size:id,size_name',
+            'weight:id,vehicle_id,cust_id,tareweight,unload_loaded_weight,material_weight,second_weight,created_by,created_at',
+        ]);
+
+        return view('dispatch.history-details', compact('dispatchMaterial'));
     }
 
     private function ensureDepartment(string $shortName): void

@@ -28,35 +28,85 @@
 
         <td>
             @foreach ($row->items as $k => $i)
-
                 {{ '(' . ($k + 1) . ') ' .
                     _rz($i->sale_item_prices) .
-                    ' (' . $i->product->product_name .
-                    '-' . $i->size->size_name . ')' .
-                    ' (' . _rz($i->item_qty) . ' Ton)' .
-                    ' (' . $i->grade->grade_name . ')' }}
-
+                    ' (' . ($i->product?->product_name ?? '-') .
+                    '-' . ($i->size?->size_name ?? $i->size_unit ?? '-') . ')' .
+                    ' (' . _rz($i->item_qty) . ' ' .
+                    ((int) $i->qty_type === \App\Models\SaleOrderItem::QTY_KGS ? 'KG' : 'Tons') . ')' .
+                    ' (' . ($i->grade?->grade_name ?? '-') . ')' }}
                 <br>
-
             @endforeach
         </td>
 
         <td>
-            {{ isset($row->total_qty) && $row->total_qty
-                ? _rz($row->total_qty)
-                : '---' }}
+            @foreach ($row->items as $k => $i)
+                @php
+                    $orderedQty = (float) ($i->item_qty ?? 0);
+                    $quantityUnit = (int) $i->qty_type === \App\Models\SaleOrderItem::QTY_KGS
+                        ? 'KG'
+                        : 'Tons';
+                @endphp
+
+                {{ '(' . ($k + 1) . ') ' . _rz($orderedQty) . ' ' . $quantityUnit }}
+                <br>
+            @endforeach
         </td>
 
-        <td>---</td>
-
         <td>
-            {{ isset($row->total_qty) && $row->total_qty
-                ? _rz($row->total_qty)
-                : '---' }}
+            @foreach ($row->items as $k => $i)
+                {{ '(' . ($k + 1) . ') ' . _rz($i->dispatched_qty_total ?? 0) . ' ' .
+                    ((int) $i->qty_type === \App\Models\SaleOrderItem::QTY_KGS ? 'KG' : 'Tons') }}
+                <br>
+            @endforeach
         </td>
 
         <td>
-            According to the Purchase order
+            @foreach ($row->items as $k => $i)
+                @php
+                    $orderedQty = (float) ($i->item_qty ?? 0);
+                    $dispatchedQty = (float) ($i->dispatched_qty_total ?? 0);
+                    $remainingQty = max(0, $orderedQty - $dispatchedQty);
+                @endphp
+                {{ '(' . ($k + 1) . ') ' . _rz($remainingQty) . ' ' .
+                    ((int) $i->qty_type === \App\Models\SaleOrderItem::QTY_KGS ? 'KG' : 'Tons') }}
+                <br>
+            @endforeach
+        </td>
+
+        <td>
+            @foreach ($row->items as $k => $i)
+                @php
+                    $orderedQty = (float) ($i->item_qty ?? 0);
+                    $dispatchedQty = (float) ($i->dispatched_qty_total ?? 0);
+
+                    if ($orderedQty > 0 && $dispatchedQty >= $orderedQty) {
+                        $status = 'Dispatched';
+                    } elseif ($dispatchedQty > 0 && $orderedQty > 0) {
+                        $status = (int) round(($dispatchedQty / $orderedQty) * 100) . '% Dispatched';
+                    } elseif ($i->has_production) {
+                        $status = 'Under Production';
+                    } elseif ($i->has_lab_testing) {
+                        $status = 'Under Lab Testing';
+                    } elseif ($i->has_receiving) {
+                        $status = 'Under Unloader';
+                    } elseif ($i->has_purchase) {
+                        $status = 'Under Purchase';
+                    } else {
+                        $status = 'Not Started';
+                    }
+                @endphp
+
+                {{ '(' . ($k + 1) . ') ' . $status }}
+                @if ($orderedQty > 0 && $dispatchedQty <= 0)
+                    (0% Dispatched)
+                @endif
+                @if ($dispatchedQty > 0 && $dispatchedQty < $orderedQty && $orderedQty > 0)
+                    (Remaining: {{ _rz(max(0, $orderedQty - $dispatchedQty)) }}
+                    {{ (int) $i->qty_type === \App\Models\SaleOrderItem::QTY_KGS ? 'KG' : 'Tons' }})
+                @endif
+                <br>
+            @endforeach
         </td>
 
         <td>

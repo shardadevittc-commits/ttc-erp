@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\DispatchMaterial;
+use App\Models\SaleOrderItem;
 use Illuminate\Support\Facades\DB;
 use App\Models\GateAndGaadi;
 use App\Models\Invoice;
@@ -24,15 +25,9 @@ class AccountController extends Controller
             'per_page' => ['nullable', 'integer', 'in:10,25,50,100'],
         ]);
 
-        $listing = DB::table('dispatch_material as dm')
+        $matchingGates = DB::table('dispatch_material as dm')
             ->join('gate_and_gaadi as gate', 'gate.id', '=', 'dm.gate_id')
             ->leftJoin('customers as customer', 'customer.id', '=', 'gate.cust_id')
-            ->join('sale_orders as so', 'so.id', '=', 'dm.sale_order_id')
-            ->join('sale_order_items as soi', 'soi.id', '=', 'dm.sale_order_item_id')
-            ->leftJoin('products as product', 'product.id', '=', 'soi.product_id')
-            ->leftJoin('grades as grade', 'grade.id', '=', 'soi.grade_id')
-            ->leftJoin('brands as brand', 'brand.id', '=', 'soi.brand_id')
-            ->leftJoin('sizes as size', 'size.id', '=', 'soi.size_id')
             ->when($request->filled('party_name'), fn ($query) =>
                 $query->where('customer.company_name', 'like', '%' . $validated['party_name'] . '%')
             )
@@ -50,30 +45,74 @@ class AccountController extends Controller
             )
             ->when($request->filled('status'), fn ($query) =>
                 $query->where('dm.status', $validated['status'])
-            )
-            ->select([
-                'dm.id',
-                'dm.gate_id',
-                'dm.sale_order_id',
-                'dm.sale_order_item_id',
-                'dm.actual_qty',
-                'dm.dispatch_qty',
-                'dm.status',
-                'dm.created_at',
-                'gate.tokenno',
-                'gate.truckno',
-                'customer.company_name',
-                'so.customer_po_no',
-                'product.product_name',
-                'grade.grade_name',
-                'brand.brand_name',
-                'size.size_name',
-                'soi.size_unit',
-                'soi.qty_type',
-            ])
-            ->latest('dm.created_at')
+            );
+
+        $listing = (clone $matchingGates)
+            ->select('dm.gate_id')
+            ->groupBy('dm.gate_id')
+            ->orderByRaw('MAX(dm.created_at) DESC')
+            ->orderByDesc('dm.gate_id')
             ->paginate((int) ($validated['per_page'] ?? 25))
             ->withQueryString();
+
+        $gateIds = $listing->getCollection()->pluck('gate_id');
+        $materialsByGate = collect();
+        $invoicedGateIds = collect();
+
+        if ($gateIds->isNotEmpty()) {
+            $invoicedGateIds = Invoice::query()
+                ->whereIn('gate_id', $gateIds)
+                ->pluck('gate_id')
+                ->flip();
+
+            $materialsByGate = DB::table('dispatch_material as dm')
+                ->join('gate_and_gaadi as gate', 'gate.id', '=', 'dm.gate_id')
+                ->leftJoin('customers as customer', 'customer.id', '=', 'gate.cust_id')
+                ->join('sale_orders as so', 'so.id', '=', 'dm.sale_order_id')
+                ->join('sale_order_items as soi', 'soi.id', '=', 'dm.sale_order_item_id')
+                ->leftJoin('products as product', 'product.id', '=', 'soi.product_id')
+                ->leftJoin('grades as grade', 'grade.id', '=', 'soi.grade_id')
+                ->leftJoin('brands as brand', 'brand.id', '=', 'soi.brand_id')
+                ->leftJoin('sizes as size', 'size.id', '=', 'soi.size_id')
+                ->whereIn('dm.gate_id', $gateIds)
+                ->select([
+                    'dm.id',
+                    'dm.gate_id',
+                    'dm.sale_order_id',
+                    'dm.sale_order_item_id',
+                    'dm.actual_qty',
+                    'dm.dispatch_qty',
+                    'dm.status',
+                    'dm.created_at',
+                    'gate.cust_id',
+                    'gate.tokenno',
+                    'gate.truckno',
+                    'customer.company_name',
+                    'so.customer_po_no',
+                    'product.product_name',
+                    'grade.grade_name',
+                    'brand.brand_name',
+                    'size.size_name',
+                    'soi.size_unit',
+                    'soi.qty_type',
+                ])
+                ->orderByDesc('dm.created_at')
+                ->get()
+                ->groupBy('gate_id');
+        }
+
+        $listing->setCollection($listing->getCollection()->map(function ($gateRow) use ($materialsByGate, $invoicedGateIds) {
+            $materials = $materialsByGate->get($gateRow->gate_id, collect());
+            $vehicle = $materials->first();
+            if (! $vehicle) {
+                return null;
+            }
+
+            $vehicle->materials = $materials;
+            $vehicle->invoice_submitted = $invoicedGateIds->has($gateRow->gate_id);
+
+            return $vehicle;
+        })->filter()->values());
 
         $statuses = DispatchMaterial::select('status')
             ->distinct()
@@ -89,6 +128,29 @@ class AccountController extends Controller
         return $this->addInvoice($gate);
     }
 
+    public function invoiceBill(GateAndGaadi $gate)
+    {
+        $invoice = Invoice::query()
+            ->where('gate_id', $gate->id)
+            ->firstOrFail();
+
+        $gate->load([
+            'customer',
+            'dispatchMaterials.saleOrder',
+            'dispatchMaterials.saleOrderItem.product',
+            'dispatchMaterials.saleOrderItem.size',
+            'dispatchMaterials.saleOrderItem.grade',
+            'dispatchMaterials.saleOrderItem.brand',
+        ]);
+
+        return view('accounts.invoiceBill', [
+            'invoice' => $invoice,
+            'gate' => $gate,
+            'materials' => $gate->dispatchMaterials,
+            'customer' => $gate->customer,
+        ]);
+    }
+
     public function addInvoice(GateAndGaadi $gate)
     {
         $gate->load([
@@ -102,7 +164,7 @@ class AccountController extends Controller
                     'actual_qty', 'dispatch_qty', 'return_qty', 'return_remarks', 'status',
                 ])->with([
                     'weight:id,tareweight,loadedweight,unload_loaded_weight,material_weight',
-                    'saleOrderItem:id,sale_order_id,product_id,grade_id,brand_id,size_id,size_unit,pcs_length_unit,item_qty,qty_type,sale_item_prices,size_extra,fs_bundle_weight',
+                    'saleOrderItem:id,sale_order_id,product_id,grade_id,brand_id,size_id,size_unit,pcs_length_unit,item_qty,qty_type,sale_item_prices,size_extra,fs_bundle_weight,fs_bundle_unit',
                     'saleOrderItem.product:id,product_name',
                     'saleOrderItem.grade:id,grade_name',
                     'saleOrderItem.brand:id,brand_name',
@@ -114,25 +176,60 @@ class AccountController extends Controller
 
         $invoice = Invoice::where('gate_id', $gate->id)->first();
         $partyName = $gate->customer?->company_name ?: '-';
+        $suggestedInvoiceNo = $invoice ? null : $this->nextInvoiceNumber();
         $tareWeight = $gate->weights->max('tareweight') ?? $gate->dispatchMaterials->first()?->weight?->tareweight ?? 0;
         $loadedWeight = $gate->weights->max('loadedweight') ?? $gate->weights->max('unload_loaded_weight') ?? $gate->weights->max('material_weight') ?? $gate->dispatchMaterials->first()?->weight?->loadedweight ?? 0;
+        $totalDispatchTons = $gate->dispatchMaterials->sum(function (DispatchMaterial $dispatch) {
+            $dispatchQty = max(0, (float) ($dispatch->dispatch_qty ?? 0));
+
+            return (int) $dispatch->saleOrderItem?->qty_type === SaleOrderItem::QTY_KGS
+                ? $dispatchQty / 1000
+                : $dispatchQty;
+        });
         $subtotal = $gate->dispatchMaterials->sum(function (DispatchMaterial $dispatch) {
-            $actual = max(0, (float) ($dispatch->actual_qty ?? $dispatch->dispatch_qty ?? 0));
-            $returned = max(0, (float) ($dispatch->return_qty ?? 0));
+            $dispatchQty = max(0, (float) ($dispatch->dispatch_qty ?? 0));
+            $dispatchTons = (int) $dispatch->saleOrderItem?->qty_type === SaleOrderItem::QTY_KGS
+                ? $dispatchQty / 1000
+                : $dispatchQty;
             $netRate = (float) ($dispatch->saleOrderItem?->sale_item_prices ?? 0)
                 + (float) ($dispatch->saleOrderItem?->size_extra ?? 0);
 
-            return max(0, $actual - $returned) * $netRate;
+            return $dispatchTons * $netRate;
         });
 
         return view('accounts.addInVoice', compact(
             'gate',
             'invoice',
             'partyName',
+            'suggestedInvoiceNo',
+            'totalDispatchTons',
             'tareWeight',
             'loadedWeight',
             'subtotal'
         ));
+    }
+
+    private function nextInvoiceNumber(): string
+    {
+        $year = now()->format('Y');
+        $prefix = 'INV-'.$year.'-';
+        $sequence = Invoice::query()
+            ->where('invoice_no', 'like', $prefix.'%')
+            ->pluck('invoice_no')
+            ->reduce(function (int $highest, string $invoiceNo) use ($year) {
+                if (preg_match('/^INV-'.preg_quote($year, '/').'-(\d+)$/', $invoiceNo, $matches)) {
+                    return max($highest, (int) $matches[1]);
+                }
+
+                return $highest;
+            }, 0) + 1;
+
+        do {
+            $invoiceNo = $prefix.str_pad((string) $sequence, 3, '0', STR_PAD_LEFT);
+            $sequence++;
+        } while (Invoice::where('invoice_no', $invoiceNo)->exists());
+
+        return $invoiceNo;
     }
 
     public function storeInvoice(Request $request)
@@ -143,21 +240,23 @@ class AccountController extends Controller
             'invoice_no' => ['required', 'string', 'max:100', 'unique:invoices,invoice_no'],
             'invoice_date' => ['required', 'date'],
             'cash_discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'labor_charges' => ['nullable', 'numeric', 'min:0'],
+            'labor_rate_per_ton' => ['nullable', 'numeric', 'min:0'],
             'other_charges' => ['nullable', 'numeric', 'min:0'],
+            'freight_type' => ['required', 'integer', 'in:1,2'],
+            'freight_amount' => ['nullable', 'required_if:freight_type,2', 'numeric', 'min:0'],
             'tds_amount' => ['nullable', 'numeric', 'min:0'],
             'insurance_amount' => ['nullable', 'numeric', 'min:0'],
             'tcs_amount' => ['nullable', 'numeric', 'min:0'],
-            'due_days' => ['nullable', 'integer', 'min:0'],
+            'due_days' => ['nullable', 'text'],
             'advance_payment' => ['nullable', 'numeric', 'min:0'],
             'sgst_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'cgst_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'igst_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
 
-        $sgstPercent = round((float) ($validated['sgst_percent'] ?? 0), 3);
-        $cgstPercent = round((float) ($validated['cgst_percent'] ?? 0), 3);
-        $igstPercent = round((float) ($validated['igst_percent'] ?? 0), 3);
+        $sgstPercent = (float) ($validated['sgst_percent'] ?? 0);
+        $cgstPercent = (float) ($validated['cgst_percent'] ?? 0);
+        $igstPercent = (float) ($validated['igst_percent'] ?? 0);
 
         if ($igstPercent > 0 && ($sgstPercent > 0 || $cgstPercent > 0)) {
             throw ValidationException::withMessages([
@@ -165,7 +264,8 @@ class AccountController extends Controller
             ]);
         }
 
-        $invoice = DB::transaction(function () use ($validated, $sgstPercent, $cgstPercent, $igstPercent) {
+        try {
+            $invoice = DB::transaction(function () use ($validated, $sgstPercent, $cgstPercent, $igstPercent) {
             $gate = GateAndGaadi::query()->lockForUpdate()->findOrFail($validated['gate_id']);
 
             if (Invoice::where('gate_id', $gate->id)->exists()) {
@@ -175,7 +275,7 @@ class AccountController extends Controller
             }
 
             $materials = DispatchMaterial::query()
-                ->with('saleOrderItem:id,sale_item_prices,size_extra')
+                ->with('saleOrderItem:id,sale_item_prices,size_extra,qty_type')
                 ->where('gate_id', $gate->id)
                 ->get();
 
@@ -185,19 +285,33 @@ class AccountController extends Controller
                 ]);
             }
 
+            $totalDispatchTons = $materials->sum(function (DispatchMaterial $dispatch) {
+                $dispatchQty = max(0, (float) ($dispatch->dispatch_qty ?? 0));
+
+                return (int) $dispatch->saleOrderItem?->qty_type === SaleOrderItem::QTY_KGS
+                    ? $dispatchQty / 1000
+                    : $dispatchQty;
+            });
             $subtotal = $materials->sum(function (DispatchMaterial $dispatch) {
-                $actual = max(0, (float) ($dispatch->actual_qty ?? $dispatch->dispatch_qty ?? 0));
-                $returned = max(0, (float) ($dispatch->return_qty ?? 0));
+                $dispatchQty = max(0, (float) ($dispatch->dispatch_qty ?? 0));
+                $dispatchTons = (int) $dispatch->saleOrderItem?->qty_type === SaleOrderItem::QTY_KGS
+                    ? $dispatchQty / 1000
+                    : $dispatchQty;
                 $item = $dispatch->saleOrderItem;
                 $netRate = (float) ($item?->sale_item_prices ?? 0) + (float) ($item?->size_extra ?? 0);
-                return max(0, $actual - $returned) * $netRate;
+
+                return $dispatchTons * $netRate;
             });
 
-            $discountPercent = round((float) ($validated['cash_discount_percent'] ?? 0), 3);
-            $discountAmount = round($subtotal * $discountPercent / 100, 3);
-            $labor = round((float) ($validated['labor_charges'] ?? 0), 3);
-            $other = round((float) ($validated['other_charges'] ?? 0), 3);
-            $taxable = round(max(0, $subtotal - $discountAmount + $labor + $other), 3);
+            $discountPercent = (float) ($validated['cash_discount_percent'] ?? 0);
+            $discountAmount = $subtotal * $discountPercent / 100;
+            $labor = $totalDispatchTons * (float) ($validated['labor_rate_per_ton'] ?? 0);
+            $other = (float) ($validated['other_charges'] ?? 0);
+            $freightType = (int) ($validated['freight_type'] ?? 1);
+            $freight = $freightType === 2
+                ? (float) ($validated['freight_amount'] ?? 0)
+                : 0;
+            $taxable = max(0, $subtotal - $discountAmount + $labor + $freight + $other);
 
             $gstType = null;
             if ($sgstPercent > 0 || $cgstPercent > 0) {
@@ -207,17 +321,17 @@ class AccountController extends Controller
             }
 
             $sgstAmount = $gstType === 'SGST_CGST'
-                ? round($taxable * $sgstPercent / 100, 3)
+                ? $taxable * $sgstPercent / 100
                 : 0;
             $cgstAmount = $gstType === 'SGST_CGST'
-                ? round($taxable * $cgstPercent / 100, 3)
+                ? $taxable * $cgstPercent / 100
                 : 0;
             $igstAmount = $gstType === 'IGST'
-                ? round($taxable * $igstPercent / 100, 3)
+                ? $taxable * $igstPercent / 100
                 : 0;
-            $gstAmount = round($sgstAmount + $cgstAmount + $igstAmount, 3);
-            $tcs = round((float) ($validated['tcs_amount'] ?? 0), 3);
-            $total = round($taxable + $gstAmount + $tcs, 3);
+            $gstAmount = $sgstAmount + $cgstAmount + $igstAmount;
+            $tcs = (float) ($validated['tcs_amount'] ?? 0);
+            $total = $taxable + $gstAmount + $tcs;
 
             return Invoice::create([
                 'gate_id' => $gate->id,
@@ -229,6 +343,8 @@ class AccountController extends Controller
                 'cash_discount_amount' => $discountAmount,
                 'labor_charges' => $labor,
                 'other_charges' => $other,
+                'freight_type' => $freightType,
+                'freight_amount' => $freight,
                 'taxable_amount' => $taxable,
                 'sgst_percent' => $gstType === 'SGST_CGST' ? $sgstPercent : 0,
                 'sgst_amount' => $sgstAmount,
@@ -237,21 +353,28 @@ class AccountController extends Controller
                 'igst_percent' => $gstType === 'IGST' ? $igstPercent : 0,
                 'igst_amount' => $igstAmount,
                 'gst_amount' => $gstAmount,
-                'tds_amount' => round((float) ($validated['tds_amount'] ?? 0), 3),
-                'insurance_amount' => round((float) ($validated['insurance_amount'] ?? 0), 3),
+                'tds_amount' => (float) ($validated['tds_amount'] ?? 0),
+                'insurance_amount' => (float) ($validated['insurance_amount'] ?? 0),
                 'tcs_amount' => $tcs,
                 'due_days' => (int) ($validated['due_days'] ?? 0),
-                'advance_payment' => round((float) ($validated['advance_payment'] ?? 0), 3),
+                'advance_payment' => (float) ($validated['advance_payment'] ?? 0),
                 'total_amount' => $total,
                 'created_by' => auth()->id(),
             ]);
-        });
+            });
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            report($exception);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Invoice created successfully.',
-            'invoice_id' => $invoice->id,
-        ]);
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Unable to create the invoice. Please review the entered values and try again.');
+        }
+
+        return redirect()
+            ->route('accounts.addInvoice', ['gate' => $validated['gate_id']])
+            ->with('success', 'Invoice created successfully.');
     }
 
     public function storeReturn(Request $request)

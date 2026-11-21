@@ -17,6 +17,25 @@
         </div>
     </div>
 
+    @if (session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+
+    @if (session('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
+
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <div class="fw-semibold mb-1">Please correct the following errors:</div>
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     @php $materials = $gate->dispatchMaterials; @endphp
     <div class="card mb-4 gate-account-group" data-gate-id="{{ $gate->id }}">
         <div class="card-body">
@@ -100,15 +119,10 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>Weight &amp; Material (Dispatch Slip No.: {{ $gate->id }})</strong>
-                    <div>
-                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#invoiceModal{{ $gate->id }}" @disabled($invoice)>
-                            <i class="fas fa-plus me-1"></i>{{ $invoice ? 'Invoice Added' : 'Add Invoice' }}
-                        </button>
-                    </div>
                 </div>
                 <div class="card-body">
                     <div class="mb-2"><strong>Party Name:</strong> {{ $partyName }}</div>
-                    <div class="mb-3"><strong>Vehicle Tare Weight:</strong> {{ number_format((float) $tareWeight, 3) }} Tons</div>
+                    <div class="mb-3"><strong>Vehicle Tare Weight:</strong> {{ _rz($tareWeight) }} Kgs</div>
                     <div class="table-responsive">
                         <table class="table table-bordered table-sm align-middle mb-0">
                             <thead class="table-light">
@@ -121,19 +135,20 @@
                                     <th rowspan="2">BRAND</th>
 
                                     <th colspan="2" class="text-center">PLANNED</th>
-                                    <th colspan="2" class="text-center">ACTUAL</th>
+                                    {{-- <th colspan="2" class="text-center">ACTUAL</th> --}}
+                                    <th colspan="2" class="text-center">DISPATCH ACTUAL</th>
                                     {{-- <th colspan="2" class="text-center">RETURN</th> --}}
                                     <th colspan="4" class="text-center">PRICING</th>
                                 </tr>
 
                                 <tr>
                                     <!-- PLANNED -->
-                                    <th class="text-end">WEIGHT QTY (MT)</th>
-                                    <th class="text-end">PCS/BUNDLES</th>
+                                    <th class="text-end">WEIGHT QTY (Kgs)</th>
+                                    <th class="text-end">PCS/BUNDLES (Kgs)</th>
 
                                     <!-- ACTUAL -->
-                                    <th class="text-end">WEIGHT (MT)</th>
-                                    <th class="text-end">PCS/BUNDLES</th>
+                                    <th class="text-end">WEIGHT (Kgs)</th>
+                                    <th class="text-end">DISPATCH QTY (TONS)</th>
 
                                     <!-- RETURN -->
                                     {{-- <th class="text-end">RETURN QTY (MT)</th>
@@ -150,12 +165,15 @@
                                 @forelse ($materials as $dispatch)
                                     @php
                                         $item = $dispatch->saleOrderItem;
-                                        $actual = (float) ($dispatch->actual_qty ?? $dispatch->dispatch_qty ?? 0);
-                                        $returned = (float) ($dispatch->return_qty ?? 0);
-                                        $remaining = max(0, $actual - $returned);
+                                        $actual = max(0, (float) ($dispatch->actual_qty ?? 0));
+                                        $dispatchQty = max(0, (float) ($dispatch->dispatch_qty ?? 0));
+                                        $dispatchTons = strtolower($dispatch->dispatch_qty_unit) == "kgs" || strtolower($dispatch->dispatch_qty_unit) == "kg"
+                                            ? $dispatchQty / 1000
+                                            : $dispatchQty;
                                         $price = (float) ($item?->sale_item_prices ?? 0);
                                         $extra = (float) ($item?->size_extra ?? 0);
                                         $netRate = $price + $extra;
+                                        $lineSubtotal = $dispatchTons * $netRate;
                                     @endphp
                                     <tr>
                                         <td>{{ $dispatch->sale_order_id }}</td>
@@ -164,25 +182,36 @@
                                         {{-- <td>{{ $item?->pcs_length_unit ?: '-' }}</td> --}}
                                         <td>{{ $item?->grade?->grade_name ?: '-' }}</td>
                                         <td>{{ $item?->brand?->brand_name ?: '-' }}</td>
-                                        <td class="text-end">{{ number_format((float) ($item?->item_qty ?? 0), 3) }}</td>
-                                        <td class="text-end">{{ number_format((float) ($item?->fs_bundle_weight ?? 0), 3) }}</td>
-                                        <td class="text-end">{{ number_format($actual, 3) }}</td>
-                                        <td class="text-end">{{ number_format((float) ($dispatch->dispatch_qty ?? 0), 3) }}</td>
-                                        {{-- <td class="text-end">{{ number_format($returned, 3) }}</td>
-                                        <td class="text-end">{{ number_format($remaining, 3) }}</td> --}}
-                                        <td class="text-end">{{ number_format($price, 3) }}</td>
-                                        <td class="text-end">{{ number_format($extra, 3) }}</td>
-                                        <td class="text-end">{{ number_format($netRate, 3) }}</td>
-                                        <td class="text-end">{{ number_format($remaining * $netRate, 3) }}</td>
+                                         <!-- Start PLANNED -->
+                                        <td class="text-end">
+                                            {{ _rz(($item?->item_qty ?? 0) * ($item?->qty_type == 1 ? 1000 : 1)) }}
+                                        </td>
+
+                                        <td class="text-end">
+                                            {{ _rz(($item?->fs_bundle_weight ?? 0) * ($item?->fs_bundle_unit == 2 ? 1000 : 1)) }}
+                                        </td>
+                                        <!-- End PLANNED -->
+                                        {{-- ACTUAL --}}
+                                        <td class="text-end">{{ _rz($actual) ?? 0 }}</td>
+                                        <td class="text-end">{{ _rz($dispatchTons) }}</td>
+                                        {{-- ACTUAL --}}
+                                        {{-- <td class="text-end">{{ _rz($returned, 3) }}</td>
+                                        <td class="text-end">{{ _rz($remaining, 3) }}</td> --}}
+                                        {{-- PRICING --}}
+                                        <td class="text-end">{{ _rz($price) ?? 0 }}</td>
+                                        <td class="text-end">{{ _rz($extra) ?? 0 }}</td>
+                                        <td class="text-end">{{ _rz($netRate) ?? 0 }}</td>
+                                        <td class="text-end">{{ _rz($lineSubtotal) }}</td>
+                                        {{-- PRICING --}}
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="16" class="text-center text-muted py-3">No dispatch materials found.</td>
+                                        <td colspan="13" class="text-center text-muted py-3">No dispatch materials found.</td>
                                     </tr>
                                 @endforelse
                                 <tr class="table-light fw-semibold">
                                     <td colspan="12" class="text-end">Total</td>
-                                    <td class="text-end">{{ number_format($subtotal, 3) }}</td>
+                                    <td class="text-end">{{ _rz($subtotal) }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -190,16 +219,19 @@
 
                     @php
                         $displayInvoice = $invoice;
+
                         $labor = (float) ($displayInvoice?->labor_charges ?? 0);
                         $other = (float) ($displayInvoice?->other_charges ?? 0);
+                        $freight = (float) ($displayInvoice?->freight_amount ?? 0);
                         $cd = (float) ($displayInvoice?->cash_discount_amount ?? 0);
-                        $taxable = (float) ($displayInvoice?->taxable_amount ?? max(0, $subtotal - $cd + $labor + $other));
+                        $taxable = (float) ($displayInvoice?->taxable_amount ?? max(0, $subtotal - $cd + $labor + $freight + $other));
                         $sgst = (float) ($displayInvoice?->sgst_amount ?? 0);
                         $cgst = (float) ($displayInvoice?->cgst_amount ?? 0);
                         $igst = (float) ($displayInvoice?->igst_amount ?? 0);
                         $tcs = (float) ($displayInvoice?->tcs_amount ?? 0);
                         $grand = (float) ($displayInvoice?->total_amount ?? 0);
                     @endphp
+                    @if(isset($invoice) && $invoice)
                     <table class="table table-bordered table-sm mt-3 mb-3">
                         <tbody>
                             <tr>
@@ -215,7 +247,11 @@
                                 <td class="text-end">{{ number_format($other, 3) }}</td>
                             </tr>
                             <tr>
-                                <td class="text-end fw-semibold">Total (After CD, Labor, Other Charges)</td>
+                                <td class="text-end">Freight ({{ (int) ($displayInvoice?->freight_type ?? 1) === 2 ? 'FOR' : 'EX' }})</td>
+                                <td class="text-end">{{ number_format($freight, 3) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-end fw-semibold">Total (After CD, Labor, Other Charges, Freight)</td>
                                 <td class="text-end fw-semibold">{{ number_format($taxable, 3) }}</td>
                             </tr>
                             @if ($displayInvoice?->gst_type === 'SGST_CGST')
@@ -243,9 +279,10 @@
                             </tr>
                         </tbody>
                     </table>
+                    @endif
                     <div {{-- class="text-end" --}}>
-                        <strong>Vehicle Loaded Weight:</strong> 
-                        {{ number_format((float) $loadedWeight, 3) }}
+                        <strong>Vehicle Loaded Weight:</strong>
+                        {{ _rz($loadedWeight) }} Kgs
                     </div>
 
                     {{-- <div class="card mt-3">
@@ -270,181 +307,249 @@
                         </div>
                     </div> --}}
 
-                    @if ($invoice)
-                        <div class="card mt-3">
-                            <div class="card-header fw-semibold">Add Invoice Details</div>
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-3">
-                                        <label class="form-label">Billed To</label>
-                                        <input class="form-control" value="{{ $invoice->billed_to }}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Invoice No.</label>
-                                        <input class="form-control" value="{{ $invoice->invoice_no }}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Invoice Date</label>
-                                        <input class="form-control" value="{{ $invoice->invoice_date->format('d-m-Y') }}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">GST Type</label>
-                                        <input class="form-control" value="{{ $invoice->gst_type ?: '-' }}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Taxable Amount (INR)</label>
-                                        <input class="form-control" value="{{ number_format((float) $invoice->taxable_amount, 3) }}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">GST (INR)</label>
-                                        <input class="form-control" value="{{ number_format((float) $invoice->gst_amount, 3) }}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">TDS Amount (INR)</label>
-                                        <input class="form-control" value="{{ number_format((float) $invoice->tds_amount, 3) }}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Insurance Amount (INR)</label>
-                                        <input class="form-control" value="{{ number_format((float) $invoice->insurance_amount, 3) }}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">TCS Amount (INR)</label>
-                                        <input class="form-control" value="{{ number_format((float) $invoice->tcs_amount, 3) }}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Cash Discount (%)</label>
-                                        <input class="form-control" value="{{ number_format((float) $invoice->cash_discount_percent, 3) }}" >
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Due Days</label>
-                                        <input class="form-control" value="{{ $invoice->due_days }}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Advance Payment</label>
-                                        <input class="form-control" value="{{ number_format((float) $invoice->advance_payment, 3) }}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Other Charges (INR)</label>
-                                        <input class="form-control" value="{{ number_format((float) $invoice->other_charges, 3) }}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Labor Charges (INR)</label>
-                                        <input class="form-control" value="{{ number_format((float) $invoice->labor_charges, 3) }}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Total Amount (INR)</label>
-                                        <input class="form-control" value="{{ number_format((float) $invoice->total_amount, 3) }}" readonly>
-                                    </div>
-                                    @if ($invoice->gst_type === 'SGST_CGST')
-                                    <div class="col-md-3">
-                                        <label class="form-label">S-GST</label>
-                                        <input class="form-control" value="{{ number_format((float) $invoice->sgst_percent, 3) }}% / {{ number_format((float) $invoice->sgst_amount, 3) }}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">C-GST</label>
-                                        <input class="form-control" value="{{ number_format((float) $invoice->cgst_percent, 3) }}% / {{ number_format((float) $invoice->cgst_amount, 3) }}" readonly>
-                                    </div>
-                                    @elseif ($invoice->gst_type === 'IGST')
-                                    <div class="col-md-3">
-                                        <label class="form-label">I-GST</label>
-                                        <input class="form-control" value="{{ number_format((float) $invoice->igst_percent, 3) }}% / {{ number_format((float) $invoice->igst_amount, 3) }}" readonly>
-                                    </div>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    @endif
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="modal fade" id="invoiceModal{{ $gate->id }}" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <form method="POST" action="{{ route('accounts.invoice.store') }}" class="invoice-form" data-gate-id="{{ $gate->id }}">
-                    @csrf
-                    <input type="hidden" name="gate_id" value="{{ $gate->id }}">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Add Invoice - {{ $partyName }} / {{ $gate->truckno }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Billed To</label>
-                                <input type="text" class="form-control" name="billed_to" value="{{ $partyName }}">
+    @if (!$invoice)
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Add Invoice - {{ $partyName }} / {{ $gate->truckno }}</h5>
+                <div class="small text-muted">Review the material subtotal above, enter invoice details, and check the live totals before submitting.</div>
+            </div>
+            <form method="POST" action="{{ route('accounts.invoice.store') }}" class="invoice-form" data-gate-id="{{ $gate->id }}" data-subtotal="{{ $subtotal }}" data-dispatch-tons="{{ $totalDispatchTons }}">
+                @csrf
+                <input type="hidden" name="gate_id" value="{{ $gate->id }}">
+                <div class="card-body">
+                        <fieldset class="mb-4">
+                            <legend class="fs-6 fw-semibold">Invoice Details</legend>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="invoice-billed-to-{{ $gate->id }}">Billed To</label>
+                                    <input id="invoice-billed-to-{{ $gate->id }}" type="text" class="form-control" name="billed_to" value="{{ old('billed_to', $partyName !== '-' ? $partyName : '') }}" maxlength="255">
+                                    <div class="invalid-feedback" data-error-for="billed_to"></div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="invoice-number-{{ $gate->id }}">Invoice No.</label>
+                                    <input id="invoice-number-{{ $gate->id }}" type="text" class="form-control" name="invoice_no" value="{{ old('invoice_no', $suggestedInvoiceNo) }}" maxlength="100" required>
+                                    <div class="form-text">Suggested number; you can edit it.</div>
+                                    <div class="invalid-feedback" data-error-for="invoice_no"></div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="invoice-date-{{ $gate->id }}">Invoice Date</label>
+                                    <input id="invoice-date-{{ $gate->id }}" type="date" class="form-control" name="invoice_date" value="{{ old('invoice_date', now()->toDateString()) }}" required>
+                                    <div class="invalid-feedback" data-error-for="invoice_date"></div>
+                                </div>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Invoice No.</label>
-                                <input type="text" class="form-control" name="invoice_no" required>
+                        </fieldset>
+
+                        <div class="card bg-light mb-4">
+                            <div class="card-body d-flex flex-wrap justify-content-between gap-2">
+                                <div><span class="text-muted">Party:</span> <strong>{{ $partyName }}</strong></div>
+                                <div><span class="text-muted">Vehicle:</span> <strong>{{ $gate->truckno ?: '-' }}</strong></div>
+                                <div><span class="text-muted">Dispatch Slip:</span> <strong>{{ $gate->id }}</strong></div>
+                                <div><span class="text-muted">Total Dispatch Quantity:</span> <strong>{{ _rz($totalDispatchTons) }} Tons</strong></div>
+                                <div><span class="text-muted">Material Subtotal:</span> <strong>INR {{ _rz($subtotal) }}</strong></div>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Invoice Date</label>
-                                <input type="date" class="form-control" name="invoice_date" value="{{ date('Y-m-d') }}" required>
+                        </div>
+
+                        <fieldset class="mb-3">
+                            <legend class="fs-6 fw-semibold">Charges &amp; Discount</legend>
+                            <div class="row g-3">
+                                <div class="col-md-2">
+                                    <label class="form-label" for="invoice-discount-{{ $gate->id }}">Cash Discount (%)</label>
+                                    <input id="invoice-discount-{{ $gate->id }}" type="number" step="0.001" min="0" max="100" class="form-control" name="cash_discount_percent" value="{{ old('cash_discount_percent', '0') }}">
+                                    <div class="invalid-feedback" data-error-for="cash_discount_percent"></div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label" for="invoice-labor-{{ $gate->id }}">Labor Rate per Ton (INR)</label>
+                                    <input id="invoice-labor-{{ $gate->id }}" type="number" step="0.001" min="0" class="form-control" name="labor_rate_per_ton" value="{{ old('labor_rate_per_ton', '0') }}">
+                                    {{-- <div class="form-text">Applied to {{ number_format((float) $totalDispatchTons, 6) }} dispatch tons.</div> --}}
+                                    <div class="invalid-feedback" data-error-for="labor_rate_per_ton"></div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label" for="invoice-other-{{ $gate->id }}">Other Charges (INR)</label>
+                                    <input id="invoice-other-{{ $gate->id }}" type="number" step="0.001" min="0" class="form-control" name="other_charges" value="{{ old('other_charges', '0') }}">
+                                    <div class="invalid-feedback" data-error-for="other_charges"></div>
+                                </div>
+                                 <div class="col-md-2">
+                                    <label class="form-label" for="invoice-tds-{{ $gate->id }}">TDS Amount (INR)</label>
+                                    <input id="invoice-tds-{{ $gate->id }}" type="number" step="0.001" min="0" class="form-control" name="tds_amount" value="{{ old('tds_amount', '0') }}">
+                                    <div class="invalid-feedback" data-error-for="tds_amount"></div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label" for="invoice-insurance-{{ $gate->id }}">Insurance Amount (INR)</label>
+                                    <input id="invoice-insurance-{{ $gate->id }}" type="number" step="0.001" min="0" class="form-control" name="insurance_amount" value="{{ old('insurance_amount', '0') }}">
+                                    <div class="invalid-feedback" data-error-for="insurance_amount"></div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label" for="invoice-tcs-{{ $gate->id }}">TCS Amount (INR)</label>
+                                    <input id="invoice-tcs-{{ $gate->id }}" type="number" step="0.001" min="0" class="form-control" name="tcs_amount" value="{{ old('tcs_amount', '0') }}">
+                                    <div class="invalid-feedback" data-error-for="tcs_amount"></div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label" for="invoice-due-days-{{ $gate->id }}">Due Days</label>
+                                    <input id="invoice-due-days-{{ $gate->id }}" type="text" class="form-control" placeholder="Enter Due Days" name="due_days" value="{{ old('due_days') }}">
+                                    <div class="invalid-feedback" data-error-for="due_days"></div>
+                                </div>
+                                {{-- Freight Type --}}
+                                <div class="col-md-2">
+                                    <label class="form-label d-block">Freight Type</label>
+
+                                    <div class="d-flex align-items-center gap-3 mt-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input freight-type-radio" type="radio"
+                                                name="freight_type" id="freight-ex-{{ $gate->id }}"
+                                                value="1" {{ old('freight_type', '1') == '1' ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="freight-ex-{{ $gate->id }}">EX</label>
+                                        </div>
+
+                                        <div class="form-check">
+                                            <input class="form-check-input freight-type-radio" type="radio"
+                                                name="freight_type" id="freight-for-{{ $gate->id }}"
+                                                value="2" {{ old('freight_type') == '2' ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="freight-for-{{ $gate->id }}">FOR</label>
+                                        </div>
+                                    </div>
+                                    <div class="invalid-feedback" data-error-for="freight_type"></div>
+                                </div>
+
+                                <div class="col-md-2" id="freight-amount-wrapper-{{ $gate->id }}"
+                                    style="{{ old('freight_type', '1') == '2' ? '' : 'display:none;' }}">
+
+                                    <label class="form-label" for="freight-amount-{{ $gate->id }}">Freight</label>
+
+                                    <input id="freight-amount-{{ $gate->id }}" type="number"
+                                        step="0.001" min="0" class="form-control"
+                                        placeholder="Enter Freight Amount"
+                                        name="freight_amount" value="{{ old('freight_amount') }}">
+
+                                    <div class="invalid-feedback" data-error-for="freight_amount"></div>
+                                </div>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Cash Discount (%)</label>
-                                <input type="number" step="0.001" min="0" max="100" class="form-control" name="cash_discount_percent" value="0">
+                            <div class="row g-3 mt-3">
+                                <div class="col-md-4">
+                                    <label class="form-label" for="invoice-sgst-{{ $gate->id }}">S-GST (%)</label>
+                                    <input id="invoice-sgst-{{ $gate->id }}" type="number" step="0.001" min="0" max="100" class="form-control gst-mode-local" name="sgst_percent" value="{{ old('sgst_percent', '0') }}">
+                                    <div class="invalid-feedback" data-error-for="sgst_percent"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="invoice-cgst-{{ $gate->id }}">C-GST (%)</label>
+                                    <input id="invoice-cgst-{{ $gate->id }}" type="number" step="0.001" min="0" max="100" class="form-control gst-mode-local" name="cgst_percent" value="{{ old('cgst_percent', '0') }}">
+                                    <div class="invalid-feedback" data-error-for="cgst_percent"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="invoice-igst-{{ $gate->id }}">I-GST (%)</label>
+                                    <input id="invoice-igst-{{ $gate->id }}" type="number" step="0.001" min="0" max="100" class="form-control gst-mode-local" name="igst_percent" value="{{ old('igst_percent', '0') }}">
+                                    <div class="invalid-feedback" data-error-for="igst_percent"></div>
+                                </div>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Due Days</label>
-                                <input type="number" min="0" class="form-control" name="due_days" value="0">
+                            <div class="form-text">Use either S-GST/C-GST or I-GST, not both.</div>
+                        </fieldset>
+
+                       {{--  <fieldset class="mb-4">
+                            <legend class="fs-6 fw-semibold">Tax Rates</legend>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label" for="invoice-sgst-{{ $gate->id }}">S-GST (%)</label>
+                                    <input id="invoice-sgst-{{ $gate->id }}" type="number" step="0.001" min="0" max="100" class="form-control gst-mode-local" name="sgst_percent" value="{{ old('sgst_percent', '0') }}">
+                                    <div class="invalid-feedback" data-error-for="sgst_percent"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="invoice-cgst-{{ $gate->id }}">C-GST (%)</label>
+                                    <input id="invoice-cgst-{{ $gate->id }}" type="number" step="0.001" min="0" max="100" class="form-control gst-mode-local" name="cgst_percent" value="{{ old('cgst_percent', '0') }}">
+                                    <div class="invalid-feedback" data-error-for="cgst_percent"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="invoice-igst-{{ $gate->id }}">I-GST (%)</label>
+                                    <input id="invoice-igst-{{ $gate->id }}" type="number" step="0.001" min="0" max="100" class="form-control gst-mode-local" name="igst_percent" value="{{ old('igst_percent', '0') }}">
+                                    <div class="invalid-feedback" data-error-for="igst_percent"></div>
+                                </div>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Advance Payment</label>
-                                <input type="number" step="0.001" min="0" class="form-control" name="advance_payment" value="0">
+                            <div class="form-text">Use either S-GST/C-GST or I-GST, not both.</div>
+                        </fieldset> --}}
+
+                        {{-- <fieldset>
+                            <legend class="fs-6 fw-semibold">Payments &amp; Adjustments</legend>
+                            <div class="row g-3">
+
+                                <div class="col-md-3">
+                                    <label class="form-label" for="invoice-advance-{{ $gate->id }}">Advance Payment (INR)</label>
+                                    <input id="invoice-advance-{{ $gate->id }}" type="number" step="0.001" min="0" class="form-control" name="advance_payment" value="{{ old('advance_payment', '0') }}">
+                                    <div class="invalid-feedback" data-error-for="advance_payment"></div>
+                                </div>
+
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label">TDS Amount</label>
-                                <input type="number" step="0.001" min="0" class="form-control" name="tds_amount" value="0">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Insurance Amount</label>
-                                <input type="number" step="0.001" min="0" class="form-control" name="insurance_amount" value="0">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">TCS Amount</label>
-                                <input type="number" step="0.001" min="0" class="form-control" name="tcs_amount" value="0">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Other Charges</label>
-                                <input type="number" step="0.001" min="0" class="form-control" name="other_charges" value="0">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Labor Charges</label>
-                                <input type="number" step="0.001" min="0" class="form-control" name="labor_charges" value="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">S-GST (%)</label>
-                                <input type="number" step="0.001" min="0" max="100" class="form-control gst-mode-local" name="sgst_percent" value="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">C-GST (%)</label>
-                                <input type="number" step="0.001" min="0" max="100" class="form-control gst-mode-local" name="cgst_percent" value="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">I-GST (%)</label>
-                                <input type="number" step="0.001" min="0" max="100" class="form-control gst-mode-local" name="igst_percent" value="0">
+                        </fieldset> --}}
+
+                        <div class="card border-primary mt-4">
+                            <div class="card-header fw-semibold">Invoice Calculation Preview (INR)</div>
+                            <div class="card-body">
+                                <div class="row g-3 text-end">
+                                    <div class="col-6 col-md-3"><div class="small text-muted">Material Subtotal</div><strong data-total="subtotal">{{ number_format((float) $subtotal, 3) }}</strong></div>
+                                    <div class="col-6 col-md-3"><div class="small text-muted">Cash Discount</div><strong data-total="discount">0.000</strong></div>
+                                    <div class="col-6 col-md-3"><div class="small text-muted">Labor Charges</div><strong data-total="labor">0.000</strong></div>
+                                    <div class="col-6 col-md-3"><div class="small text-muted">Other Charges</div><strong data-total="other">0.000</strong></div>
+                                    <div class="col-6 col-md-3"><div class="small text-muted">Freight Amount</div><strong data-total="freight">0.000</strong></div>
+                                    <div class="col-6 col-md-3"><div class="small text-muted">Taxable Amount</div><strong data-total="taxable">{{ number_format((float) $subtotal, 3) }}</strong></div>
+                                    <div class="col-6 col-md-3"><div class="small text-muted">GST Amount</div><strong data-total="gst">0.000</strong></div>
+                                    <div class="col-6 col-md-3"><div class="small text-muted">TCS Amount</div><strong data-total="tcs">0.000</strong></div>
+                                    <div class="col-6 col-md-3"><div class="small text-muted">Invoice Total</div><strong data-total="grand">{{ number_format((float) $subtotal, 3) }}</strong></div>
+                                </div>
+                                <div class="small text-muted mt-2">TDS, insurance, and advance are recorded separately and are not included in the invoice total, matching the saved invoice calculation.</div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    <div class="card-footer text-end">
                         <button type="submit" class="btn btn-primary invoice-submit">Submit Invoice</button>
                     </div>
-                </form>
+            </form>
+        </div>
+    @else
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Invoice Details</h5>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ route('accounts.invoice.bill', ['gate' => $gate->id]) }}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener">
+                        <i class="fas fa-file-invoice me-1"></i>View Invoice Bill
+                    </a>
+                    <span class="badge bg-success">Invoice Submitted</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3"><label class="form-label">Billed To</label><input class="form-control" value="{{ $invoice->billed_to }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">Invoice No.</label><input class="form-control" value="{{ $invoice->invoice_no }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">Invoice Date</label><input class="form-control" value="{{ $invoice->invoice_date->format('d-m-Y') }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">GST Type</label><input class="form-control" value="{{ $invoice->gst_type ?: '-' }}" readonly></div>
+
+                    <div class="col-md-3"><label class="form-label">Cash Discount (%)</label><input class="form-control" value="{{ number_format((float) $invoice->cash_discount_percent, 3) }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">Cash Discount (INR)</label><input class="form-control" value="{{ number_format((float) $invoice->cash_discount_amount, 3) }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">Labor Charges (INR)</label><input class="form-control" value="{{ number_format((float) $invoice->labor_charges, 3) }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">Other Charges (INR)</label><input class="form-control" value="{{ number_format((float) $invoice->other_charges, 3) }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">Freight Type</label><input class="form-control" value="{{ (int) ($invoice->freight_type ?? 1) === 2 ? 'FOR' : 'EX' }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">Freight Amount (INR)</label><input class="form-control" value="{{ number_format((float) ($invoice->freight_amount ?? 0), 3) }}" readonly></div>
+
+                    <div class="col-md-3"><label class="form-label">Taxable Amount (INR)</label><input class="form-control" value="{{ number_format((float) $invoice->taxable_amount, 3) }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">S-GST (%) / Amount (INR)</label><input class="form-control" value="{{ number_format((float) $invoice->sgst_percent, 3) }}% / {{ number_format((float) $invoice->sgst_amount, 3) }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">C-GST (%) / Amount (INR)</label><input class="form-control" value="{{ number_format((float) $invoice->cgst_percent, 3) }}% / {{ number_format((float) $invoice->cgst_amount, 3) }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">I-GST (%) / Amount (INR)</label><input class="form-control" value="{{ number_format((float) $invoice->igst_percent, 3) }}% / {{ number_format((float) $invoice->igst_amount, 3) }}" readonly></div>
+
+                    <div class="col-md-3"><label class="form-label">GST Amount (INR)</label><input class="form-control" value="{{ number_format((float) $invoice->gst_amount, 3) }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">TDS Amount (INR)</label><input class="form-control" value="{{ number_format((float) $invoice->tds_amount, 3) }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">Insurance Amount (INR)</label><input class="form-control" value="{{ number_format((float) $invoice->insurance_amount, 3) }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">TCS Amount (INR)</label><input class="form-control" value="{{ number_format((float) $invoice->tcs_amount, 3) }}" readonly></div>
+
+                    <div class="col-md-3"><label class="form-label">Due Days</label><input class="form-control" value="{{ $invoice->due_days }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">Advance Payment (INR)</label><input class="form-control" value="{{ number_format((float) $invoice->advance_payment, 3) }}" readonly></div>
+                    <div class="col-md-3"><label class="form-label">Invoice Total (INR)</label><input class="form-control fw-semibold" value="{{ number_format((float) $invoice->total_amount, 3) }}" readonly></div>
+                </div>
             </div>
         </div>
-    </div>
+    @endif
 </div>
 
-<div id="invoicePageLoader" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);align-items:center;justify-content:center;">
-    <div class="text-center text-white">
-        <div class="spinner-border mb-3" role="status"></div>
-        <div>Please wait, invoice is being processed...</div>
-    </div>
-</div>
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -458,54 +563,67 @@ document.addEventListener('DOMContentLoaded', function () {
             const cgstValue = parseFloat(cgst.value || '0');
             const igstValue = parseFloat(igst.value || '0');
             if (changed === igst && igstValue > 0) {
-                sgst.value = 0; cgst.value = 0;
-                sgst.disabled = true; cgst.disabled = true;
-            } else if (changed === sgst || changed === cgst) {
-                if (sgstValue > 0 || cgstValue > 0) {
-                    igst.value = 0; igst.disabled = true;
-                } else {
-                    igst.disabled = false;
-                }
-            } else if (sgstValue > 0 || cgstValue > 0) {
-                igst.disabled = true;
-            } else if (igstValue > 0) {
-                sgst.disabled = true; cgst.disabled = true;
-            } else {
-                sgst.disabled = false; cgst.disabled = false; igst.disabled = false;
+                sgst.value = 0;
+                cgst.value = 0;
+            } else if ((changed === sgst || changed === cgst) && (sgstValue > 0 || cgstValue > 0)) {
+                igst.value = 0;
             }
         }
+
         [sgst, cgst, igst].forEach(function (input) {
             input.addEventListener('input', function () { syncTaxMode(input); });
         });
 
-        form.addEventListener('submit', function (event) {
-            event.preventDefault();
-            if (form.dataset.submitting === '1') return;
-            form.dataset.submitting = '1';
-            const submit = form.querySelector('.invoice-submit');
-            submit.disabled = true;
-            const loader = document.getElementById('invoicePageLoader');
-            loader.style.display = 'flex';
-            const formData = new FormData(form);
-            fetch(form.action, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData
-            }).then(async function (response) {
-                const data = await response.json().catch(function () { return {}; });
-                if (!response.ok) {
-                    const message = data.message || Object.values(data.errors || {}).flat().join(' ');
-                    throw new Error(message || 'Unable to create invoice.');
+        function fieldValue(name) {
+            const input = form.querySelector('[name="' + name + '"]');
+            return input ? (parseFloat(input.value || '0') || 0) : 0;
+        }
+
+        function updateTotals() {
+            const subtotal = parseFloat(form.dataset.subtotal) || 0;
+            const labor = (parseFloat(form.dataset.dispatchTons) || 0) * fieldValue('labor_rate_per_ton');
+            const discount = subtotal * fieldValue('cash_discount_percent') / 100;
+            const other = fieldValue('other_charges');
+            const freightType = form.querySelector('[name="freight_type"]:checked');
+            const freight = freightType && freightType.value === '2' ? fieldValue('freight_amount') : 0;
+            const taxable = Math.max(0, subtotal - discount + labor + freight + other);
+            const sgstAmount = taxable * fieldValue('sgst_percent') / 100;
+            const cgstAmount = taxable * fieldValue('cgst_percent') / 100;
+            const igstAmount = taxable * fieldValue('igst_percent') / 100;
+            const gst = sgstAmount + cgstAmount + igstAmount;
+            const tcs = fieldValue('tcs_amount');
+            const grand = taxable + gst + tcs;
+            const totals = { subtotal: subtotal, discount: discount, labor: labor, other: other, freight: freight, taxable: taxable, gst: gst, tcs: tcs, grand: grand };
+
+            Object.keys(totals).forEach(function (key) {
+                const value = totals[key];
+                form.querySelector('[data-total="' + key + '"]').textContent = String(value);
+            });
+        }
+
+        ['cash_discount_percent', 'labor_rate_per_ton', 'other_charges', 'freight_amount', 'sgst_percent', 'cgst_percent', 'igst_percent', 'tcs_amount']
+            .forEach(function (name) {
+                const input = form.querySelector('[name="' + name + '"]');
+                if (input) input.addEventListener('input', updateTotals);
+            });
+
+        form.querySelectorAll('[name="freight_type"]').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                const gateId = form.dataset.gateId;
+                const wrapper = document.getElementById('freight-amount-wrapper-' + gateId);
+                const freightInput = wrapper ? wrapper.querySelector('[name="freight_amount"]') : null;
+
+                if (radio.checked && radio.value === '2') {
+                    if (wrapper) wrapper.style.display = '';
+                } else if (radio.checked) {
+                    if (wrapper) wrapper.style.display = 'none';
+                    if (freightInput) freightInput.value = '';
                 }
-                window.location.reload();
-            }).catch(function (error) {
-                alert(error.message);
-            }).finally(function () {
-                loader.style.display = 'none';
-                submit.disabled = false;
-                form.dataset.submitting = '0';
+                updateTotals();
             });
         });
+
+        updateTotals();
     });
 });
 </script>
