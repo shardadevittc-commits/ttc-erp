@@ -6,13 +6,53 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\DispatchMaterial;
 use App\Models\SaleOrderItem;
+use App\Models\Customer;
 use Illuminate\Support\Facades\DB;
 use App\Models\GateAndGaadi;
 use App\Models\Invoice;
+use App\Models\ScrapDispatch;
+use App\Models\ScrapTotal;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class AccountController extends Controller
 {
+    private const SCRAP_CATEGORIES = [
+        'acid_pickling' => [
+            'label' => 'Acid Pickling',
+            'stock' => 'acid_pickling',
+            'recoverability' => 'Non-recoverable',
+        ],
+        'short_blasting' => [
+            'label' => 'Short Blasting',
+            'stock' => 'short_blasting',
+            'recoverability' => 'Non-recoverable',
+        ],
+        'pointing' => [
+            'label' => 'Pointing Scrap',
+            'stock' => 'pointing',
+            'recoverability' => 'Recoverable',
+        ],
+        'point_discard' => [
+            'label' => 'Point Discard',
+            'stock' => 'point_discard',
+            'recoverability' => 'Recoverable',
+        ],
+        'bedsawcut' => [
+            'label' => 'Bend Saw Cut',
+            'stock' => 'bedsawcut',
+            'recoverability' => 'Recoverable',
+        ],
+        'misc' => [
+            'label' => 'Misc Scrap',
+            'stock' => 'misc',
+            'recoverability' => 'Recoverable',
+        ],
+    ];
+
     public function index(Request $request)
     {
         $validated = $request->validate([
@@ -134,6 +174,21 @@ class AccountController extends Controller
             ->where('gate_id', $gate->id)
             ->firstOrFail();
 
+        return $this->renderAccountInvoice($invoice);
+    }
+
+    public function publicAccountInvoice(string $token)
+    {
+        $invoice = Invoice::query()
+            ->where('public_token', $token)
+            ->firstOrFail();
+
+        return $this->renderAccountInvoice($invoice);
+    }
+
+    private function renderAccountInvoice(Invoice $invoice)
+    {
+        $gate = GateAndGaadi::withTrashed()->findOrFail($invoice->gate_id);
         $gate->load([
             'customer',
             'dispatchMaterials.saleOrder',
@@ -143,12 +198,14 @@ class AccountController extends Controller
             'dispatchMaterials.saleOrderItem.brand',
         ]);
 
-        return view('accounts.invoiceBill', [
+        return response()->view('accounts.invoiceBill', [
             'invoice' => $invoice,
             'gate' => $gate,
             'materials' => $gate->dispatchMaterials,
             'customer' => $gate->customer,
-        ]);
+        ])->header('Cache-Control', 'private, no-store')
+            ->header('Referrer-Policy', 'no-referrer')
+            ->header('X-Robots-Tag', 'noindex, nofollow');
     }
 
     public function addInvoice(GateAndGaadi $gate)
@@ -405,5 +462,294 @@ class AccountController extends Controller
         });
 
         return redirect()->back()->with('success', 'Return quantity saved successfully.');
+    }
+
+    // Scrap dispatch related methods
+    public function scrapDispatch()
+    {
+        $this->authorizeScrapDispatch();
+
+        $stock = ScrapTotal::query()->orderBy('id')->first() ?? new ScrapTotal();
+        $usedVehicleIds = ScrapDispatch::query()
+                    ->pluck('vehicle_id')
+                    ->toArray();
+
+        $vehicles = GateAndGaadi::query()
+            ->select(['id', 'cust_id', 'truckno', 'formlist'])
+            ->with('customer:id,company_name')
+            ->whereNotNull('truckno')
+            ->where('formlist', 'Scrap Vehicle')
+            ->whereNotIn('id', $usedVehicleIds)
+            ->orderByDesc('id')
+            ->limit(500)
+            ->get();
+
+        return view('accounts.scrapDispatch', [
+            'stock' => $stock,
+            'categories' => self::SCRAP_CATEGORIES,
+            'vehicles' => $vehicles,
+            'submissionToken' => (string) Str::uuid(),
+        ]);
+    }
+
+    public function storeScrapDispatch(Request $request)
+    {
+        $this->authorizeScrapDispatch();
+
+        $rules = [
+            'submission_token' => ['required', 'uuid'],
+            'vehicle_id' => ['required', 'integer', 'exists:gate_and_gaadi,id'],
+            'first_weight' => ['required', 'numeric', 'min:0'],
+            'last_weight' => ['required', 'numeric', 'min:0'],
+            'weight_slip' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+            'invoice_no' => ['required', 'string', 'max:10'],
+            'invoice_date' => ['required', 'date'],
+            'invoice_amt' => ['required', 'numeric', 'min:0'],
+            'invoice_gst' => ['nullable', 'numeric', 'min:0'],
+            'misc_amt' => ['nullable', 'numeric', 'min:0'],
+            'mode_of_payment' => ['required', 'string', 'in:Cash,Bank Transfer,Cheque,UPI,Credit'],
+            'remarks' => ['nullable', 'string', 'max:255'],
+        ];
+
+        foreach (array_keys(self::SCRAP_CATEGORIES) as $category) {
+            $rules[$category . '_dispatch'] = ['nullable', 'numeric', 'min:0'];
+            $rules[$category . '_rate'] = ['nullable', 'numeric', 'min:0'];
+        }
+
+        $validated = $request->validate($rules);
+        $requestedQuantities = [];
+        $projectedAmount = 0.0;
+        $rateErrors = [];
+
+        foreach (self::SCRAP_CATEGORIES as $category => $definition) {
+            $quantity = (float) ($validated[$category . '_dispatch'] ?? 0);
+            $rate = (float) ($validated[$category . '_rate'] ?? 0);
+            $requestedQuantities[$category] = $quantity;
+            $projectedAmount += $quantity * $rate;
+
+            if ($quantity > 0 && ! isset($validated[$category . '_rate'])) {
+                $rateErrors[$category . '_rate'] = 'Enter a rate for ' . $definition['label'] . '.';
+            }
+        }
+
+        if ($rateErrors) {
+            throw ValidationException::withMessages($rateErrors);
+        }
+
+        if (array_sum($requestedQuantities) <= 0) {
+            throw ValidationException::withMessages([
+                'scrap' => 'Enter a dispatch quantity for at least one scrap category.',
+            ]);
+        }
+
+        $invoiceAmount = (float) $validated['invoice_amt'];
+        $gstAmount = (float) ($validated['invoice_gst'] ?? 0);
+        $miscAmount = (float) ($validated['misc_amt'] ?? 0);
+        $finalAmount = $invoiceAmount + $gstAmount + $miscAmount;
+        $storedSlip = null;
+
+        try {
+            if ($request->hasFile('weight_slip')) {
+                $storedSlip = $request->file('weight_slip')->store('scrap-dispatch/weight-slips', 'public');
+            }
+
+            DB::transaction(function () use (
+                $validated,
+                $requestedQuantities,
+                $storedSlip,
+                $invoiceAmount,
+                $gstAmount,
+                $miscAmount,
+                $finalAmount
+            ) {
+                $usedVehicleIds = ScrapDispatch::query()
+                    ->pluck('vehicle_id')
+                    ->toArray();
+
+                $vehicles = GateAndGaadi::query()
+                    ->where('formlist', 'Scrap Vehicle')
+                    ->whereNotIn('id', $usedVehicleIds)
+                    ->get();
+
+                $customer = Customer::query()
+                    ->findOrFail((int) $vehicle->cust_id);
+
+                $stock = ScrapTotal::query()
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $stock) {
+                    DB::table('scrap_totals')->insertOrIgnore([
+                        'id' => 1,
+                        'acid_pickling' => 0,
+                        'short_blasting' => 0,
+                        'pointing' => 0,
+                        'point_discard' => 0,
+                        'bedsawcut' => 0,
+                        'misc' => 0,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $stock = ScrapTotal::query()
+                        ->orderBy('id')
+                        ->lockForUpdate()
+                        ->firstOrFail();
+                }
+
+                if (ScrapDispatch::query()->where('submission_token', $validated['submission_token'])->exists()) {
+                    throw ValidationException::withMessages([
+                        'submission_token' => 'This scrap dispatch has already been submitted.',
+                    ]);
+                }
+
+                $dispatchData = [
+                    'submission_token' => $validated['submission_token'],
+                    'vehicle_id' => $vehicle->id,
+                    'customer_id' => $customer->id,
+                    'vehicle_type' => $vehicle->formlist,
+                    'first_weight' => (float) $validated['first_weight'],
+                    'last_weight' => (float) $validated['last_weight'],
+                    'actual_weight' => abs((float) $validated['first_weight'] - (float) $validated['last_weight']),
+                    'weight_slip' => $storedSlip,
+                    'invoice_no' => $validated['invoice_no'],
+                    'invoice_date' => $validated['invoice_date'],
+                    'invoice_amt' => $invoiceAmount,
+                    'invoice_gst' => $gstAmount,
+                    'misc_amt' => $miscAmount,
+                    'final_amt' => $finalAmount,
+                    'mode_of_payment' => $validated['mode_of_payment'],
+                    'remarks' => $validated['remarks'] ?? null,
+                    'created_by' => auth()->id(),
+                ];
+
+                foreach (self::SCRAP_CATEGORIES as $category => $definition) {
+                    $quantity = $requestedQuantities[$category];
+                    $rate = (float) ($validated[$category . '_rate'] ?? 0);
+                    $available = (float) ($stock->{$definition['stock']} ?? 0);
+
+                    if ($quantity > $available) {
+                        throw ValidationException::withMessages([
+                            $category . '_dispatch' => $definition['label'] . ' dispatch quantity exceeds the available stock of ' . $available . ' kg.',
+                        ]);
+                    }
+
+                    $dispatchData[$category . '_dispatch'] = $quantity;
+                    $dispatchData[$category . '_type'] = $definition['recoverability'];
+                    $dispatchData[$category . '_rate'] = $rate;
+                    $dispatchData[$category . '_total'] = $quantity * $rate;
+
+                    if ($quantity > 0) {
+                        $stock->{$definition['stock']} = $available - $quantity;
+                    }
+                }
+
+                $stock->save();
+                ScrapDispatch::query()->create($dispatchData);
+            });
+        } catch (ValidationException $exception) {
+            if ($storedSlip) {
+                Storage::disk('public')->delete($storedSlip);
+            }
+
+            throw $exception;
+        } catch (Throwable $exception) {
+            if ($storedSlip) {
+                Storage::disk('public')->delete($storedSlip);
+            }
+
+            report($exception);
+
+            return redirect()->back()
+                ->withInput()
+                ->with(
+                    'error',
+                    $exception instanceof QueryException
+                        ? 'A database error prevented saving the scrap dispatch. No stock was deducted. Please contact the administrator to verify the Scrap Dispatch database setup.'
+                        : 'Unable to save the scrap dispatch. No stock was deducted. Please try again or contact the administrator if the problem continues.'
+                );
+        }
+
+        return redirect()
+            ->route('scrapDispatch.index')
+            ->with('success', 'Scrap dispatch saved successfully. Projected scrap value: ' . number_format($projectedAmount, 2, '.', '') . '.');
+    }
+
+    public function scrapDispatchHistory(Request $request)
+    {
+        $this->authorizeScrapDispatch();
+
+        $validated = $request->validate([
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'buyer' => ['nullable', 'string', 'max:255'],
+            'vehicle_no' => ['nullable', 'string', 'max:50'],
+            'per_page' => ['nullable', 'integer', 'in:10,25,50,100'],
+        ]);
+
+        $listing = ScrapDispatch::query()
+            ->leftJoin('customers', 'customers.id', '=', 'scrap_dispatch.customer_id')
+            ->leftJoin('gate_and_gaadi', 'gate_and_gaadi.id', '=', 'scrap_dispatch.vehicle_id')
+            ->select([
+                'scrap_dispatch.*',
+                'customers.company_name as buyer_name',
+                'gate_and_gaadi.truckno as vehicle_no',
+            ])
+            ->when($request->filled('date_from'), fn ($query) =>
+                $query->whereDate('scrap_dispatch.created_at', '>=', $validated['date_from'])
+            )
+            ->when($request->filled('date_to'), fn ($query) =>
+                $query->whereDate('scrap_dispatch.created_at', '<=', $validated['date_to'])
+            )
+            ->when($request->filled('buyer'), fn ($query) =>
+                $query->where('customers.company_name', 'like', '%' . $validated['buyer'] . '%')
+            )
+            ->when($request->filled('vehicle_no'), fn ($query) =>
+                $query->where('gate_and_gaadi.truckno', 'like', '%' . $validated['vehicle_no'] . '%')
+            )
+            ->latest('scrap_dispatch.created_at')
+            ->paginate((int) ($validated['per_page'] ?? 25))
+            ->withQueryString();
+
+        return view('accounts.scrapDispatchHistory', [
+            'listing' => $listing,
+            'categories' => self::SCRAP_CATEGORIES,
+        ]);
+    }
+
+    public function scrapDispatchInvoice(ScrapDispatch $scrapDispatch)
+    {
+        $this->authorizeScrapDispatch();
+
+        abort_if(blank($scrapDispatch->invoice_no), 404);
+
+        return $this->renderScrapDispatchInvoice($scrapDispatch);
+    }
+
+    public function publicScrapDispatchInvoice(string $token)
+    {
+        $scrapDispatch = ScrapDispatch::query()
+            ->where('public_token', $token)
+            ->whereNotNull('invoice_no')
+            ->firstOrFail();
+
+        return $this->renderScrapDispatchInvoice($scrapDispatch);
+    }
+
+    private function renderScrapDispatchInvoice(ScrapDispatch $scrapDispatch)
+    {
+        return response()->view('accounts.scrapDispatchInvoice', [
+            'dispatch' => $scrapDispatch,
+            'customer' => Customer::withTrashed()->find($scrapDispatch->customer_id),
+            'vehicle' => GateAndGaadi::withTrashed()->find($scrapDispatch->vehicle_id),
+            'categories' => self::SCRAP_CATEGORIES,
+        ])->header('Cache-Control', 'private, no-store')
+            ->header('Referrer-Policy', 'no-referrer')
+            ->header('X-Robots-Tag', 'noindex, nofollow');
+    }
+
+    private function authorizeScrapDispatch(): void
+    {
+        abort_unless(auth()->user()?->role?->short_name === 'account', 403);
     }
 }

@@ -316,6 +316,20 @@
                         <span>Accounts</span>
                     </a>
                 </li>
+
+                <li class="sidebar-item">
+                    <a href="{{ route('scrapDispatch.index') }}" class="sidebar-link {{ request()->routeIs('scrapDispatch.index') ? 'active' : '' }}">
+                        <i class="fa-solid fa-recycle nav-icon"></i>
+                        <span>Scrap Dispatch</span>
+                    </a>
+                </li>
+
+                <li class="sidebar-item">
+                    <a href="{{ route('scrapDispatch.history') }}" class="sidebar-link {{ request()->routeIs('scrapDispatch.history') ? 'active' : '' }}">
+                        <i class="fa-solid fa-clock-rotate-left nav-icon"></i>
+                        <span>Scrap Dispatch History</span>
+                    </a>
+                </li>
             @endif
         </ul>
     </div>

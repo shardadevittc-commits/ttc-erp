@@ -177,9 +177,9 @@
                                                     Material Out
                                                 </option>
 
-                                                <option value="Return"
-                                                    {{ old('formlist', $materialIn->formlist ?? '') == 'Return' ? 'selected' : '' }}>
-                                                    Return
+                                                <option value="Scrap Vehicle"
+                                                    {{ old('formlist', $materialIn->formlist ?? '') == 'Scrap Vehicle' ? 'selected' : '' }}>
+                                                    Scrap Vehicle
                                                 </option>
 
                                             </select>
