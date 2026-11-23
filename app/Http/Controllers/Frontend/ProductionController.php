@@ -18,7 +18,7 @@ class ProductionController extends Controller
 {
     private const PRODUCT_TYPE_OPERATIONS = [
         1 => 'operation6', /* Bright Bar */
-        2 => 'operation5', /* HB Wire */
+        2 => 'operation2', /* HB Wire */
         3 => 'operation5', /* HHB Wire */
         4 => 'operation7', /* Annealing Bar */
         5 => 'operation8', /* Bolt Road */
@@ -97,9 +97,7 @@ class ProductionController extends Controller
             'created_on' => ['sometimes', 'array'],
             'created_on.0' => ['nullable', 'date_format:Y-m-d'],
             'created_on.1' => ['nullable', 'date_format:Y-m-d'],
-            'status' => ['nullable', Rule::in($productionHistory
-                ? ['under_process', 'completed']
-                : ['1', '2'])],
+            'status' => ['nullable', Rule::in($productionHistory ? ['under_process', 'completed'] : ['1', '2'])],
         ]);
 
         // Apply search across the sale item and its related order, customer, and product data.
@@ -257,7 +255,7 @@ class ProductionController extends Controller
             $existingWorkOrder = WorkOrderProcess::query()
                 ->where('submission_token', $validated['submission_token'])
                 ->first();
-            
+
             if ($existingWorkOrder) {
                 if ((int) $existingWorkOrder->sale_order_item_id !== (int) $lockedSaleOrderItem->id) {
                     throw ValidationException::withMessages([
@@ -273,7 +271,7 @@ class ProductionController extends Controller
                 ->where('grade_id', $lockedSaleOrderItem->grade_id)
                 ->orderBy('id')
                 ->get();
-           
+
             if ($purchaseOrderItems->isEmpty()) {
                 throw ValidationException::withMessages([
                     'send_rm_qty' => 'No purchase order items match this sale order item grade.',
@@ -427,7 +425,7 @@ class ProductionController extends Controller
     {
         $workOrder->loadMissing(['saleOrderItem.product', 'saleOrderItem.size']);
         abort_unless($workOrder->saleOrderItem, 404);
-    
+
         // Product type ke hisaab se uska apna function chalega.
         match ((int) $workOrder->saleOrderItem->product_type) {
             1 => $this->brightBarProduction($request, $workOrder, $operation),
@@ -437,7 +435,7 @@ class ProductionController extends Controller
             5 => $this->boldRoadProduction($request, $workOrder, $operation),
             default => abort(404),
         };
-    
+
         return redirect()
             ->route('productions.workflow', ['workOrder' => $workOrder->id])
             ->with('success', "Operation {$operation} completed successfully.");
@@ -451,7 +449,7 @@ class ProductionController extends Controller
     {
         $finalOperation = 6;
         abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
-    
+
         // Validation
         $validated = match ($operation) {
             1 => $request->validate([
@@ -472,15 +470,15 @@ class ProductionController extends Controller
             ]),
             6 => [],
         };
-    
+
         DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
             $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
-    
+
             // Operation pehle hi complete ho chuka hai (double submit / refresh).
             if ($lockedWorkOrder === null) {
                 return;
             }
-    
+
             // Save
             switch ($operation) {
                 case 1:
@@ -504,9 +502,9 @@ class ProductionController extends Controller
                     $this->calculateBundles($lockedWorkOrder);
                     break;
             }
-    
+
             calculateProductionScrap($request, $lockedWorkOrder);
-    
+
             $lockedWorkOrder->status = $operation === $finalOperation ? 'completed' : 'under_process';
             $lockedWorkOrder->current_operation = $operation + 1;
             $lockedWorkOrder->save();
@@ -517,7 +515,7 @@ class ProductionController extends Controller
     {
         $finalOperation = 6;
         abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
-    
+
         // Validation (readonly SO values request se nahi liye jaate)
         $validated = match ($operation) {
             1 => $request->validate([
@@ -546,41 +544,41 @@ class ProductionController extends Controller
                 'reco_scrap' => ['nullable', 'numeric', 'min:0', 'decimal:0,4'],
             ]),
         };
-    
+
         DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
             $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
-    
+
             // Operation pehle hi complete ho chuka hai (double submit / refresh).
             if ($lockedWorkOrder === null) {
                 return;
             }
-    
+
             // Save (yes = 1, no = 2)
-            switch ($operation) {    
+            switch ($operation) {
                 case 1:
                     $lockedWorkOrder->shot_blasting = $validated['surface_process'] === 'shot_blasting' ? 1 : 2;
                     $lockedWorkOrder->acid_pickling = $validated['surface_process'] === 'acid_pickling' ? 1 : 2;
                     break;
-    
+
                 case 2:
                     $lockedWorkOrder->pointing = (int) $validated['pointing'];
                     break;
-    
+
                 case 3:
                     $lockedWorkOrder->fs_size = $validated['fs_size'];
                     $lockedWorkOrder->fs_size_unit = $validated['fs_size_unit'];
                     $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
                     $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'];
                     break;
-    
+
                 case 4:
                     $lockedWorkOrder->poin_discard = (int) $validated['poin_discard'];
                     break;
-    
+
                 case 5:
                     $lockedWorkOrder->straightening = (int) $validated['straightening'];
                     break;
-    
+
                 case 6:
                     // $lockedWorkOrder->final_observed_size = $validated['final_observed_size'];
                     // $lockedWorkOrder->final_observed_unit = $validated['final_observed_unit'];
@@ -683,13 +681,13 @@ class ProductionController extends Controller
 
                 calculateProductionScrap($request, $lockedWorkOrder);
             }
-    
+
             $lockedWorkOrder->status = $operation === $finalOperation ? 'completed' : 'under_process';
             $lockedWorkOrder->current_operation = $operation + 1;
             $lockedWorkOrder->save();
         });
     }
-    
+
     /**
      * HB Wire (product_type = 2): operations 1 to 2.
      */
@@ -697,7 +695,7 @@ class ProductionController extends Controller
     {
         $finalOperation = 2;
         abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
-    
+
         // Validation
         $validated = match ($operation) {
             1 => $request->validate([
@@ -712,16 +710,16 @@ class ProductionController extends Controller
                 'fs_size_unit' => ['required', Rule::in(['MM', 'THOU'])],
                 'fs_observed_size' => 'required',
                 'fs_observed_unit' => ['required', Rule::in(['MM', 'THOU'])],
-                
+
                 'rm_observed_size' => 'required',
                 'rm_observed_unit' => ['required', Rule::in(['MM', 'THOU'])],
                 'rm_size' => 'required',
                 'rm_size_unit' => ['required', Rule::in(['MM', 'THOU'])],
             ]),
         };
-    
+
         // Acid pickling aur phosphating mein se exactly ek select hona chahiye.
-        if ($operation === 1 && !isset($validated['acid_pickling']) && !isset($validated['phosphating'])) 
+        if ($operation === 1 && !isset($validated['acid_pickling']) && !isset($validated['phosphating']))
         {
             throw ValidationException::withMessages([
                 'acid_pickling' => 'Select acid pickling or phosphating before completing this operation.',
@@ -730,11 +728,11 @@ class ProductionController extends Controller
 
         DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
             $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
-    
+
             if ($lockedWorkOrder === null) {
                 return;
             }
-    
+
             // Save
             switch ($operation) {
                 case 1:
@@ -765,7 +763,7 @@ class ProductionController extends Controller
 
                         $bundleWeightKg = $this->truncateToThreeDecimals($bundleWeight * ($bundleUnit === 'KG' ? 1 : 1000));
                         $initialWeightKg = $this->truncateToThreeDecimals((float) $lockedWorkOrder->material_send_for_work * 1000);
-                        
+
                         $nonRecoverableScrapKg = $this->truncateToThreeDecimals(
                             (float) WorkOrderLoss::query()
                                 ->where('work_order_id', $lockedWorkOrder->id)
@@ -851,10 +849,10 @@ class ProductionController extends Controller
     {
         $finalOperation = 5;
         abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
-    
+
         $sizeUnits = Rule::in(['MM', 'THOU']);
         $hardnessUnits = Rule::in(['BHN', 'HRC']);
-    
+
         // Validation (readonly fields jaise SO size/bundle weight request se nahi liye jaate)
         $validated = match ($operation) {
             1 => $request->validate([
@@ -869,7 +867,7 @@ class ProductionController extends Controller
                 'fs_size_unit' => ['required', $sizeUnits],
                 'fs_observed_size' => 'required',
                 'fs_observed_unit' => ['required', $sizeUnits],
-                
+
                 'rm_observed_size' => 'required',
                 'rm_observed_unit' => ['required', $sizeUnits],
                 'rm_size' => 'required',
@@ -897,15 +895,15 @@ class ProductionController extends Controller
                 'final_observed_unit' => ['required', $sizeUnits],
             ]),
         };
-    
+
         DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
             $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
-    
+
             // Operation pehle hi complete ho chuka hai (double submit / refresh).
             if ($lockedWorkOrder === null) {
                 return;
             }
-    
+
             // Save (checkbox: selected = 1, otherwise 2)
             switch ($operation) {
                 case 1:
@@ -913,7 +911,7 @@ class ProductionController extends Controller
                     $lockedWorkOrder->phosphating = isset($validated['phosphating']) ? 1 : 2;
                     $lockedWorkOrder->acid_remarks = $validated['acid_remarks'] ?? null;
                     break;
-    
+
                 case 2:
                     $lockedWorkOrder->fs_observed_size  = $validated['fs_observed_size'];
                     $lockedWorkOrder->fs_observed_unit  = $validated['fs_observed_unit'];
@@ -976,7 +974,7 @@ class ProductionController extends Controller
                         calculateProductionScrap($request, $lockedWorkOrder);
                     }
                     break;
-    
+
                 case 3:
                     $lockedWorkOrder->batch_no = $validated['batch_no'];
                     $lockedWorkOrder->hardness = $validated['hardness'] ?? $saleOrderItem->hardness;
@@ -984,28 +982,28 @@ class ProductionController extends Controller
                     $lockedWorkOrder->hardness_observed = $validated['hardness_observed'];
                     $lockedWorkOrder->hardness_observed_unit = $validated['hardness_observed_unit'];
                     break;
-    
+
                 case 4:
                     $lockedWorkOrder->second_acid_pickling = isset($validated['second_acid_pickling']) ? 1 : 2;
                     $lockedWorkOrder->second_phosphating = isset($validated['second_phosphating']) ? 1 : 2;
                     // $lockedWorkOrder->second_batch_no = $validated['batch_no_old'] ?? null;
                     $lockedWorkOrder->second_acid_remarks = $validated['second_acid_remarks'] ?? null;
                     break;
-    
+
                 case 5:
                     $lockedWorkOrder->final_fs_observed_size = $validated['final_observed_size'];
                     $lockedWorkOrder->final_fs_observed_unit = $validated['final_observed_unit'];
                     $this->calculateBundles($lockedWorkOrder);
-                    
+
                     $bundleUnit          = $this->bundleUnitLabel($lockedWorkOrder->fs_bundle_unit);
                     $bundleWeight        = (float) $lockedWorkOrder->fs_bundle_weight;
                     $bundleWeightKg      = $this->truncateToThreeDecimals($bundleWeight * ($bundleUnit === 'KG' ? 1 : 1000));
-                    
+
                     $bundleTotalWeightKg = $this->truncateToThreeDecimals(
                         ((int) $lockedWorkOrder->total_full_bundle_count * $bundleWeightKg)
                         + ((float) $lockedWorkOrder->lose_bundle_weight * ($bundleUnit === 'KG' ? 1 : 1000))
                     );
-                        
+
                     $scrapAdjustmentKg = 0.0;
                     if (isset($validated['manage_misc_scrap'])) {
                         $recoverableLosses = WorkOrderLoss::query()
@@ -1019,7 +1017,7 @@ class ProductionController extends Controller
                                 0,(float) $loss->loss_weight - (float) ($loss->adjustable_material ?? 0)
                             )
                         ));
-                        
+
                         $requestedScrapKg = $this->truncateToThreeDecimals((float) $validated['manage_misc_scrap']);
                         $remainingAdjustmentKg = max(0, $this->truncateToThreeDecimals($recordedScrapKg - $requestedScrapKg));
 
@@ -1073,9 +1071,9 @@ class ProductionController extends Controller
                     }
                     break;
             }
-    
+
             calculateProductionScrap($request, $lockedWorkOrder);
-    
+
             $lockedWorkOrder->status = $operation === $finalOperation ? 'completed' : 'under_process';
             $lockedWorkOrder->current_operation = $operation + 1;
             $lockedWorkOrder->save();
@@ -1087,7 +1085,7 @@ class ProductionController extends Controller
         // pr($request->toArray()); die;
         $finalOperation = 7;
         abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
-    
+
         // Validation (readonly SO values request se nahi liye jaate)
         $validated = match ($operation) {
             1 => $request->validate([
@@ -1122,15 +1120,15 @@ class ProductionController extends Controller
                 'reco_scrap' => ['nullable', 'numeric', 'min:0', 'decimal:0,4'],
             ]),
         };
-    
+
         DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
             $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
-    
+
             // Operation pehle hi complete ho chuka hai (double submit / refresh).
             if ($lockedWorkOrder === null) {
                 return;
             }
-    
+
             // Save (yes = 1, no = 2)
             switch ($operation) {
                 case 1:
@@ -1139,31 +1137,31 @@ class ProductionController extends Controller
                     $lockedWorkOrder->hardness_observed = $validated['hardness_observed'];
                     $lockedWorkOrder->hardness_observed_unit = $validated['hardness_observed_unit'];
                     break;
-    
+
                 case 2:
                     $lockedWorkOrder->shot_blasting = $validated['surface_process'] === 'shot_blasting' ? 1 : 2;
                     $lockedWorkOrder->acid_pickling = $validated['surface_process'] === 'acid_pickling' ? 1 : 2;
                     break;
-    
+
                 case 3:
                     $lockedWorkOrder->pointing = (int) $validated['pointing'];
                     break;
-    
+
                 case 4:
                     $lockedWorkOrder->fs_size = $validated['fs_size'];
                     $lockedWorkOrder->fs_size_unit = $validated['fs_size_unit'];
                     $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
                     $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'];
                     break;
-    
+
                 case 5:
                     $lockedWorkOrder->poin_discard = (int) $validated['poin_discard'];
                     break;
-    
+
                 case 6:
                     $lockedWorkOrder->straightening = (int) $validated['straightening'];
                     break;
-    
+
                 case 7:
                     // $lockedWorkOrder->final_observed_size = $validated['final_observed_size'];
                     // $lockedWorkOrder->final_observed_unit = $validated['final_observed_unit'];
@@ -1266,7 +1264,7 @@ class ProductionController extends Controller
 
                 calculateProductionScrap($request, $lockedWorkOrder);
             }
-    
+
             $lockedWorkOrder->status = $operation === $finalOperation ? 'completed' : 'under_process';
             $lockedWorkOrder->current_operation = $operation + 1;
             $lockedWorkOrder->save();
@@ -1323,36 +1321,36 @@ class ProductionController extends Controller
                 'loose_handling' => ['nullable', Rule::in(['adjust_last_box', 'extra_box'])],
             ])
         };
-    
+
         DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
             $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
-    
+
             // Operation pehle hi complete ho chuka hai (double submit / refresh).
             if ($lockedWorkOrder === null) {
                 return;
             }
-    
+
             // Save
             switch ($operation) {
                 case 1:
                     $lockedWorkOrder->shot_blasting = $validated['surface_process'] === 'shot_blasting' ? 1 : 2;
                     $lockedWorkOrder->acid_pickling = $validated['surface_process'] === 'acid_pickling' ? 1 : 2;
                     break;
-    
+
                 case 2:
                     $lockedWorkOrder->pointing = (int) $validated['pointing'];
                     break;
-    
+
                 case 3:
                     // Required size (fs_size) work order banate waqt hi save hota hai, request se nahi liya.
                     $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
                     $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'];
                     break;
-    
+
                 case 4:
                     $enteredRecoverableKg = $this->truncateToThreeDecimals((float) $validated['recoverable_scrap']);
                     $finishedKg = $this->truncateToThreeDecimals((float) ($validated['finish_qty'] ?? 0));
-                    
+
                     $lockedWorkOrder->cutting_type = $validated['cutting_type'];
                     $lockedWorkOrder->per_pcs_weight = $validated['per_pcs_weight'];
                     $lockedWorkOrder->finished_pcs = (int) $validated['finished_pcs'];
@@ -1373,23 +1371,23 @@ class ProductionController extends Controller
                     $bendSawScrapKg = $this->truncateToThreeDecimals(
                         ((float) $lockedWorkOrder->material_send_for_work * 1000) * 0.75 / 100
                     );
-                
+
                     // Bend Saw ki entry sirf tab, jab recoverable scrap D + B se kam nahi kiya gaya.
                     $recordBendSaw = $validated['cutting_type'] === 'bend_saw_cutting'
                         && $enteredRecoverableKg >= $this->truncateToThreeDecimals($dbRecoverableBeforeKg + $bendSawScrapKg);
-                
+
                     if ($recordBendSaw) {
                         $request->merge(['processtype' => 'bendsawcut']);
                         calculateProductionScrap($request, $lockedWorkOrder);
                     }
-                
+
                     // Baaki farak: R > D (ab tak ka) -> naya scrap record, R < D -> purana scrap adjust.
                     $this->reconcileRecoverableScrap($request, $lockedWorkOrder, $enteredRecoverableKg, $finishedKg, 'operation4');
-                
+
                     // Is operation ne jitna naya recoverable scrap jodha, wahi scrap_weight mein (sirf dikhane ke liye).
                     // $this->reconcileRecoverableScrap($request, $lockedWorkOrder, $enteredRecoverableKg, $finishedKg, 'operation4');
                     break;
-                
+
                 case 5:
                     $finishedPcs = (int) $lockedWorkOrder->finished_pcs;
                     $rejectedPcs = (int) $validated['rejected_pcs'];
@@ -1422,58 +1420,58 @@ class ProductionController extends Controller
                         $scrapHandled = true;
                     }
                     break;
-    
+
                 case 6:
                     // Pichle operations se carry-forward (blade mein readonly).
                    /*  $lockedWorkOrder->threading_finish = (int) $lockedWorkOrder->finished_pcs;
                     $lockedWorkOrder->threading_rejected = (int) $lockedWorkOrder->rejected_pcs; */
                     break;
-    
+
                 case 7:
                     /* $available = (int) $lockedWorkOrder->threading_finish;
                     $finishPcs = (int) $validated['auto_black_finish'];
                     $rejectedPcs = (int) $validated['auto_black_rejected'];
-    
+
                     if ($finishPcs > $available || $rejectedPcs > $available) {
                         throw ValidationException::withMessages([
                             'auto_black_finish' => 'Finish or rejected pieces cannot exceed the pieces received from threading.',
                         ]);
                     }
-    
+
                     $lockedWorkOrder->auto_black_finish = $finishPcs;
                     $lockedWorkOrder->auto_black_rejected = $rejectedPcs;
                     $lockedWorkOrder->weight_per_pcs = $validated['weight_per_pcs']; */
                     break;
-    
+
                 case 8:
                     // Packing ke liye available pcs = Auto Black (operation 7) ke finish pcs
                     $availablePcs = (int) $lockedWorkOrder->finished_pcs - (int) $lockedWorkOrder->rejected_pcs;
-                
+
                     if ($availablePcs <= 0) {
                         throw ValidationException::withMessages([
                             'no_of_boxes' => 'No finished pieces are available for packing.',
                         ]);
                     }
-                
+
                     $boxes = (int) $validated['no_of_boxes'];
                     $perBox = (int) $validated['pcs_per_box'];
                     $packedPcs = $boxes * $perBox;
-                
+
                     if ($packedPcs > $availablePcs) {
                         throw ValidationException::withMessages([
                             'no_of_boxes' => "Boxes x pcs per box ({$packedPcs}) cannot exceed the finished pieces ({$availablePcs}).",
                         ]);
                     }
-                
+
                     $loosePcs = $availablePcs - $packedPcs;
                     $handling = $validated['loose_handling'] ?? null;
-                
+
                     if ($loosePcs > 0 && $handling === null) {
                         throw ValidationException::withMessages([
                             'loose_handling' => "Choose how to pack the remaining {$loosePcs} pcs (adjust in last box or pack in an extra box).",
                         ]);
                     }
-                
+
                     $lockedWorkOrder->no_of_boxes = $boxes;
                     $lockedWorkOrder->pcs_per_box = $perBox;
                     $lockedWorkOrder->loss_box_pcs = $loosePcs;
@@ -1481,7 +1479,7 @@ class ProductionController extends Controller
                     // pr($lockedWorkOrder->toArray()); die;
                     break;
             }
-    
+
             // Operation 4 apna scrap upar hi handle kar chuka hai.
             if ($operation !== 4) {
                 $scrapProcess = match ($operation) {
@@ -1489,7 +1487,7 @@ class ProductionController extends Controller
                     2 => 'pointing',
                     default => null,
                 };
-    
+
                 if ($scrapProcess !== null) {
                     $request->merge([
                         'processtype' => $scrapProcess,
@@ -1497,16 +1495,16 @@ class ProductionController extends Controller
                         'product_type' => 'bolt_rod',
                     ]);
                 }
-    
+
                 calculateProductionScrap($request, $lockedWorkOrder);
             }
-    
+
             $lockedWorkOrder->status = $operation === $finalOperation ? 'completed' : 'under_process';
             $lockedWorkOrder->current_operation = $operation + 1;
             $lockedWorkOrder->save();
         });
     }
-    
+
     /**
      * Entered recoverable scrap ko DB ke recoverable scrap se match karta hai.
      *  - Entered zyada  -> farak ko misc scrap ki tarah record karta hai.
@@ -1518,9 +1516,9 @@ class ProductionController extends Controller
         $recoverableLosses = fn () => WorkOrderLoss::query()
             ->where('sale_order_item_id', $workOrder->sale_order_item_id)
             ->where('scrap_type', 1);
-    
+
         $dbRecoverableKg = $this->truncateToThreeDecimals((float) $recoverableLosses()->sum('loss_weight'));
-    
+
         if ($enteredKg > $dbRecoverableKg) {
             $request->merge([
                 'processtype' => 'misc',
@@ -1530,39 +1528,39 @@ class ProductionController extends Controller
                 'finish_qty' => max(0, $finishedKg),
             ]);
             calculateProductionScrap($request, $workOrder);
-    
+
             return;
         }
-    
+
         if ($enteredKg < $dbRecoverableKg) {
             $remainingKg = $this->truncateToThreeDecimals($dbRecoverableKg - $enteredKg);
-    
+
             $losses = $recoverableLosses()->orderBy('id')->lockForUpdate()->get();
-    
+
             foreach ($losses as $loss) {
                 if ($remainingKg <= 0) {
                     break;
                 }
-    
+
                 $previousKg = $this->truncateToThreeDecimals((float) ($loss->adjustable_material ?? 0));
                 $adjustableKg = max(0, $this->truncateToThreeDecimals((float) $loss->loss_weight - $previousKg));
                 $adjustmentKg = min($remainingKg, $adjustableKg);
-    
+
                 if ($adjustmentKg <= 0) {
                     continue;
                 }
-    
+
                 $loss->adjustable_material = $this->truncateToThreeDecimals($previousKg + $adjustmentKg);
                 $loss->weight_after_adjustable_material = $this->truncateToThreeDecimals(
                     (float) ($loss->weight_after_adjustable_material ?? $loss->weight_after_loss ?? 0) + $adjustmentKg
                 );
                 $loss->save();
-    
+
                 $remainingKg = $this->truncateToThreeDecimals($remainingKg - $adjustmentKg);
             }
         }
     }
-    
+
     /**
      * Transaction ke andar work order lock karta hai.
      * - Operation pehle ho chuka ho -> null return karta hai.
@@ -1574,25 +1572,25 @@ class ProductionController extends Controller
             ->whereKey($workOrder->id)
             ->lockForUpdate()
             ->firstOrFail();
-    
+
         // Loaded relations calculateProductionScrap() jaise helpers ke liye available rahein.
         $lockedWorkOrder->setRelations($workOrder->getRelations());
-    
+
         $currentOperation = (int) ($lockedWorkOrder->current_operation ?: 1);
-    
+
         if ($currentOperation > $operation) {
             return null;
         }
-    
+
         if ($currentOperation < $operation) {
             throw ValidationException::withMessages([
                 'operation' => 'Complete the previous operation before continuing.',
             ]);
         }
-    
+
         return $lockedWorkOrder;
     }
-    
+
     /**
      * Full aur loose bundles sale-order unit mein calculate karta hai (full bundle round-up nahi hota).
      */
@@ -1604,28 +1602,28 @@ class ProductionController extends Controller
                 'fs_bundle_weight' => 'The sale order bundle weight must be greater than zero.',
             ]);
         }
-    
+
         $unit = $this->bundleUnitLabel($workOrder->fs_bundle_unit);
         if ($unit === null) {
             throw ValidationException::withMessages([
                 'fs_bundle_weight' => 'The sale order bundle unit must be KG or Tons.',
             ]);
         }
-    
+
         $bundleWeightKg = $this->truncateToThreeDecimals($bundleWeight * ($unit === 'KG' ? 1 : 1000));
         $materialWeightKg = $this->truncateToThreeDecimals(
             $materialWeightKg ?? ((float) $workOrder->material_send_for_work * 1000)
         );
-    
+
         if ($bundleWeightKg <= 0 || $materialWeightKg <= 0) {
             throw ValidationException::withMessages([
                 'fs_bundle_weight' => 'A positive material quantity and bundle weight are required.',
             ]);
         }
-    
+
         $fullBundleCount = (int) floor(($materialWeightKg + 0.000000001) / $bundleWeightKg);
         $remainingWeightKg = $this->truncateToThreeDecimals($materialWeightKg - ($fullBundleCount * $bundleWeightKg));
-    
+
         $workOrder->fs_bundle_unit = $unit;
         $workOrder->total_full_bundle_count = $fullBundleCount;
         $workOrder->lose_bundle_weight = $unit === 'KG'
