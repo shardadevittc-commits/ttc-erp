@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\GateAndGaadi;
 use App\Models\PurchaseOrder;
 use App\Models\Weight;
+use App\Models\ScrapDispatch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -16,20 +17,23 @@ class GateController extends Controller
 {
     public function index(Request $request)
     {
-        $parties = Customer::orderBy('id')->get();
-        $materialIns = GateAndGaadi::with('customer')->whereNull('check_out')->latest('id')->paginate(10)->withQueryString();
-        $weighedIds = Weight::whereNotNull('vehicle_id')->where('second_weight', 'done')->pluck('vehicle_id')->toArray();
+        $parties        = Customer::orderBy('id')->get();
+        $materialIns    = GateAndGaadi::with('customer')->whereNull('check_out')->latest('id')->paginate(10)->withQueryString();
+        $weighedIds     = Weight::whereNotNull('vehicle_id')->where('second_weight', 'done')->pluck('vehicle_id')->toArray();
         $weightEntryIds = Weight::whereNotNull('vehicle_id')->pluck('vehicle_id')->unique()->toArray();
-        return view('gate.index', compact('parties', 'materialIns', 'weighedIds', 'weightEntryIds'));
+        $dispatchScrapIds = ScrapDispatch::whereIn('vehicle_id', $materialIns->getCollection()->pluck('id'))
+            ->pluck('vehicle_id')
+            ->unique()
+            ->toArray();
+        return view('gate.index', compact('parties', 'materialIns', 'weighedIds', 'weightEntryIds', 'dispatchScrapIds'));
     }
 
     public function add(Request $request)
     {
+        // pr($request->all()); die;
         $id = $request->input('id') ?? $request->query('id');
 
-        $materialIn = $id
-            ? GateAndGaadi::findOrFail($id)
-            : null;
+        $materialIn = $id ? GateAndGaadi::findOrFail($id) : null;
 
         if ($request->isMethod('post')) {
 

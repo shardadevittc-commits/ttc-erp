@@ -119,7 +119,12 @@
 
                                     <td>
                                         <div class="d-flex align-items-center gap-2">
-                                            @if(!in_array($item->id, $weightEntryIds))
+                                            @if($item->formlist === 'Scrap Vehicle' && in_array($item->id, $dispatchScrapIds))
+                                                <a href="{{ route('material_out', ['id' => $item->id]) }}"
+                                                class="btn btn-sm btn-success">
+                                                    <i class="fas fa-sign-out-alt"></i> Check Out
+                                                </a>
+                                            @elseif(!in_array($item->id, $weightEntryIds))
                                                 <a href="{{ route('material_in', ['id' => $item->id]) }}" class="btn btn-link text-warning p-0" title="Edit">
                                                     <i class="fas fa-pencil-alt"></i>
                                                 </a>

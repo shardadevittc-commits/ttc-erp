@@ -5,8 +5,22 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\HtmlString;
 use App\Models\WorkOrderProcess;
 use App\Models\WorkOrderLoss;
+
+function invoiceQrCode(string $invoiceUrl, string $label = 'Scan to View Invoice'): HtmlString
+{
+    $url = htmlspecialchars($invoiceUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $accessibleLabel = htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+    return new HtmlString(
+        '<div class="invoice-qr" data-invoice-qr data-invoice-url="' . $url . '" role="img" aria-label="' . $accessibleLabel . '">' .
+            '<span class="invoice-qr__code" aria-hidden="true"></span>' .
+            '<small class="invoice-qr__label">' . $accessibleLabel . '</small>' .
+        '</div>'
+    );
+}
 
 function _dt($datetime)
 {
@@ -391,4 +405,3 @@ function calculateProductionScrap(Request $request, WorkOrderProcess $workOrder)
 
     return $inserted;
 } */
-

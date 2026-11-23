@@ -3,10 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Invoice extends Model
 {
     protected $table = 'invoices';
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $invoice): void {
+            if (blank($invoice->public_token)) {
+                $invoice->public_token = (string) Str::uuid();
+            }
+        });
+    }
 
     protected $fillable = [
         'gate_id',

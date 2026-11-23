@@ -3,7 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
     <title>Invoice {{ $invoice->invoice_no }}</title>
+    @vite('resources/js/invoice-qr.js')
     <style>
         * {
             box-sizing: border-box;
@@ -45,11 +47,48 @@
         }
 
         .bill {
+            position: relative;
+            isolation: isolate;
             width: 100%;
             max-width: 760px;
             margin: 0 auto;
             border: 1px solid #111;
             background: #fff;
+        }
+
+        .bill-watermark {
+            position: absolute;
+            z-index: 0;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            overflow: hidden;
+            color: #23364a;
+            opacity: 0.07;
+            pointer-events: none;
+            text-align: center;
+        }
+
+        .bill-watermark img {
+            display: block;
+            width: min(42%, 260px);
+            height: auto;
+            object-fit: contain;
+        }
+
+        .bill-watermark span {
+            max-width: 90%;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .bill > :not(.bill-watermark) {
+            position: relative;
+            z-index: 1;
         }
 
         .bill-header {
@@ -199,6 +238,43 @@
             font-size: 11px;
         }
 
+        .invoice-qr {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding: 10px 8px;
+            border-top: 1px solid #111;
+            text-align: center;
+        }
+
+        .invoice-qr__code,
+        .invoice-qr__code svg {
+            display: block;
+            width: 108px;
+            height: 108px;
+        }
+
+        .invoice-qr__label {
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .invoice-qr--error .invoice-qr__label {
+            color: #b42318;
+        }
+
+        .invoice-action-status {
+            align-self: center;
+            margin-right: auto;
+            color: #475569;
+            font-size: 11px;
+        }
+
+        .invoice-action-status--error {
+            color: #b42318;
+        }
+
         @media print {
             @page {
                 size: A4 portrait;
@@ -219,6 +295,12 @@
             .bill {
                 max-width: none;
                 margin: 0;
+            }
+
+            .bill-watermark {
+                opacity: 0.07;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
             }
         }
 
@@ -296,11 +378,16 @@
 
     <div class="bill-actions no-print">
         <a href="{{ route('accounts.addInvoice', ['gate' => $gate->id]) }}">Back to Account</a>
-        <button type="button" onclick="window.print()">Print</button>
-        <button type="button" class="primary" onclick="window.print()">Download PDF</button>
+        <span class="invoice-action-status" data-invoice-status role="status" aria-live="polite"></span>
+        <button type="button" data-invoice-action="print">Print</button>
+        <button type="button" class="primary" data-invoice-action="download">Download PDF</button>
     </div>
 
-    <main class="bill">
+    <main class="bill" data-invoice-number="{{ $invoice->invoice_no }}">
+        <div class="bill-watermark" aria-hidden="true">
+            <img src="{{ asset('assets/images/ttc-logo.png') }}" alt="">
+            <span>TTC Robotronics Private Limited</span>
+        </div>
         <header class="bill-header">
             <h1>INVOICE</h1>
             <div class="company">{{ $customerName }}</div>
@@ -438,6 +525,7 @@
                 Due days {{ $invoice->due_days }}
             </div>
         @endif
+        {!! invoiceQrCode(route('invoices.public.account', ['token' => $invoice->public_token])) !!}
     </main>
 </body>
 </html>

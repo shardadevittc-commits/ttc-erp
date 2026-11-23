@@ -272,6 +272,12 @@
                 $productsActive = request()->routeIs('productions*', 'production-history');
             @endphp
             <li class="sidebar-item">
+                <li class="sidebar-item">
+                    <a href="{{ route('dashboard.production') }}" class="sidebar-link {{ request()->routeIs('dashboard.production') ? 'active' : '' }}">
+                        <i class="fa-solid fa-gauge-high nav-icon"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
                 <a href="#productsCollapse" class="sidebar-link {{ $productsActive ? 'active' : '' }}" data-bs-toggle="collapse" data-bs-target="#productsCollapse" role="button" aria-expanded="{{ $productsActive ? 'true' : 'false' }}" aria-controls="productsCollapse">
                     <i class="fa-solid fa-boxes nav-icon"></i>
                     <span>Work Order</span>
@@ -285,12 +291,12 @@
                                 <span>Pending Work Order's</span>
                             </a>
                         </li>
-                         <li class="submenu-item">
+                        {{-- <li class="submenu-item">
                             <a href="{{ route('productions.unlinked-listings') }}" class="submenu-link {{ request()->routeIs('productions.unlinked-listings') ? 'active' : '' }}">
                                 <span class="submenu-dot"></span>
                                 <span>Self Production</span>
                             </a>
-                        </li>
+                        </li> --}}
                         <li class="submenu-item">
                             <a href="{{ route('production-history') }}" class="submenu-link {{ request()->routeIs('production-history') ? 'active' : '' }}">
                                 <span class="submenu-dot"></span>
@@ -314,6 +320,20 @@
                     <a href="{{ route('accounts') }}" class="sidebar-link {{ request()->routeIs('accounts') ? 'active' : '' }}">
                         <i class="fa-solid fa-right-to-bracket nav-icon"></i>
                         <span>Accounts</span>
+                    </a>
+                </li>
+
+                <li class="sidebar-item">
+                    <a href="{{ route('scrapDispatch.index') }}" class="sidebar-link {{ request()->routeIs('scrapDispatch.index') ? 'active' : '' }}">
+                        <i class="fa-solid fa-recycle nav-icon"></i>
+                        <span>Scrap Dispatch</span>
+                    </a>
+                </li>
+
+                <li class="sidebar-item">
+                    <a href="{{ route('scrapDispatch.history') }}" class="sidebar-link {{ request()->routeIs('scrapDispatch.history') ? 'active' : '' }}">
+                        <i class="fa-solid fa-clock-rotate-left nav-icon"></i>
+                        <span>Scrap Dispatch History</span>
                     </a>
                 </li>
             @endif

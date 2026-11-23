@@ -24,5 +24,18 @@ Route::post('/accounts/invoice', [AccountController::class, 'storeInvoice'])
 Route::post('/accounts/return', [AccountController::class, 'storeReturn'])
     ->name('accounts.return.store');
 
+Route::get('/scrap-dispatch', [AccountController::class, 'scrapDispatch'])
+    ->name('scrapDispatch.index');
+
+Route::post('/scrap-dispatch', [AccountController::class, 'storeScrapDispatch'])
+    ->name('scrapDispatch.store');
+
+Route::get('/scrap-dispatch/history', [AccountController::class, 'scrapDispatchHistory'])
+    ->name('scrapDispatch.history');
+
+Route::get('/scrap-dispatch/{scrapDispatch}/invoice', [AccountController::class, 'scrapDispatchInvoice'])
+    ->whereNumber('scrapDispatch')
+    ->name('scrapDispatch.invoice');
+
 Route::get('/accounts-history', [AccountController::class, 'index'])
     ->name('accounts.history');
