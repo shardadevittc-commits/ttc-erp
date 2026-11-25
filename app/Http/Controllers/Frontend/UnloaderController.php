@@ -134,17 +134,19 @@ class UnloaderController extends Controller
             'purchaseOrderItem.product',
         ])
             ->where('customer_id', $vehicle->cust_id)
+
             ->where(function ($query) use ($vehicle) {
                 $query->where('weight_id', $vehicle->id)
-                    ->orWhere('vehical_id', $vehicle->id);
-
-                if ($vehicle->vehicle_id) {
-                    $query->orWhere('vehical_id', $vehicle->vehicle_id);
-                }
+                    ->orWhere(function ($sub) use ($vehicle) {
+                        $sub->where('vehical_id', $vehicle->vehicle_id)
+                            ->whereNotNull('vehical_id');
+                    });
             })
+
             ->whereHas('purchaseOrderItem', function ($query) use ($vehicle) {
                 $query->where('cust_id', $vehicle->cust_id);
             })
+
             ->orderBy('id');
     }
 
@@ -154,7 +156,7 @@ class UnloaderController extends Controller
             $vehicalDetails = Weight::with('customer')->findOrFail($weightId);
 
             // Pehle receiving quantities ka total calculate karein
-            $receivedTotals = PurchaseOrderitemReceiving::select('purchase_order_item_id')
+            /*$receivedTotals = PurchaseOrderitemReceiving::select('purchase_order_item_id')
                 ->selectRaw('SUM(received_qty) as total_received')
                 ->where('vehical_id', $vehicalDetails->vehicle_id)
                 ->groupBy('purchase_order_item_id');
@@ -168,26 +170,46 @@ class UnloaderController extends Controller
                 ->where('purchase_order_items.cust_id', $vehicalDetails->cust_id)
                 ->whereRaw('purchase_order_items.qty > COALESCE(recTotal.total_received, 0)')
                 ->select('purchase_order_items.*')
+                ->get();*/
+
+            $receivedTotals = PurchaseOrderitemReceiving::select('purchase_order_item_id')
+                ->selectRaw('SUM(received_qty) as total_received')
+                ->groupBy('purchase_order_item_id');
+
+            $purchaseOrderItems = PurchaseOrderItem::query()
+                ->with(['grade', 'size', 'product'])
+                ->leftJoinSub($receivedTotals, 'recTotal', function ($join) {
+                    $join->on(
+                        'purchase_order_items.id',
+                        '=',
+                        'recTotal.purchase_order_item_id'
+                    );
+                })
+                ->where('purchase_order_items.cust_id', $vehicalDetails->cust_id)
+                ->whereRaw('purchase_order_items.qty > COALESCE(recTotal.total_received, 0)')
+                ->select('purchase_order_items.*')
+                ->addSelect(DB::raw('COALESCE(recTotal.total_received, 0) as total_received'))
                 ->get();
-                // Is vehicle ka receiving data
-                $poItemsReceived = PurchaseOrderitemReceiving::with([
-                    'customer',
-                    'grade',
-                    'size',
-                    'purchaseOrderItem.product',
-                    'purchaseOrderItem.purchaseOrder',
-                    'purchaseOrderItem.saleOrder.items.product',
-                    'purchaseOrderItem.saleOrder.items.size',
-                    'purchaseOrderItem.saleOrder.items.grade',
-                    'purchaseOrderItem.saleOrder.items.brand',
-                    'purchaseOrderItem.purchaseOrder.saleOrder.items.product',
-                    'purchaseOrderItem.purchaseOrder.saleOrder.items.size',
-                    'purchaseOrderItem.purchaseOrder.saleOrder.items.grade',
-                    'purchaseOrderItem.purchaseOrder.saleOrder.items.brand',
-                    'purchaseOrderItem.size',
-                    'purchaseOrderItem.grade',
-                    'weight',
-                ])->where('vehical_id', $vehicalDetails->vehicle_id)->get();
+            //echo"<pre>";print_r($purchaseOrderItems->toArray());die;
+            // Is vehicle ka receiving data
+            $poItemsReceived = PurchaseOrderitemReceiving::with([
+                'customer',
+                'grade',
+                'size',
+                'purchaseOrderItem.product',
+                'purchaseOrderItem.purchaseOrder',
+                'purchaseOrderItem.saleOrder.items.product',
+                'purchaseOrderItem.saleOrder.items.size',
+                'purchaseOrderItem.saleOrder.items.grade',
+                'purchaseOrderItem.saleOrder.items.brand',
+                'purchaseOrderItem.purchaseOrder.saleOrder.items.product',
+                'purchaseOrderItem.purchaseOrder.saleOrder.items.size',
+                'purchaseOrderItem.purchaseOrder.saleOrder.items.grade',
+                'purchaseOrderItem.purchaseOrder.saleOrder.items.brand',
+                'purchaseOrderItem.size',
+                'purchaseOrderItem.grade',
+                'weight',
+            ])->where('vehical_id', $vehicalDetails->vehicle_id)->get();
         }
 
         if ($request->isMethod('post')) {
@@ -296,6 +318,7 @@ class UnloaderController extends Controller
                 $q->from('poitem_receiving as pir')
                     ->selectRaw('COUNT(*)')
                     ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->whereColumn('pir.weight_id', 'weights.id')
                     ->where(function ($sub) {
                         $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
                             ->orWhereColumn('pir.weight_id', 'weights.id')
@@ -307,6 +330,7 @@ class UnloaderController extends Controller
                 $q->from('poitem_receiving as pir')
                     ->selectRaw('COALESCE(SUM(pir.received_qty), 0)')
                     ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->whereColumn('pir.weight_id', 'weights.id')
                     ->where(function ($sub) {
                         $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
                             ->orWhereColumn('pir.weight_id', 'weights.id')
@@ -318,6 +342,7 @@ class UnloaderController extends Controller
                 $q->from('poitem_receiving as pir')
                     ->selectRaw('MAX(pir.created_at)')
                     ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->whereColumn('pir.weight_id', 'weights.id')
                     ->where(function ($sub) {
                         $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
                             ->orWhereColumn('pir.weight_id', 'weights.id')
@@ -329,6 +354,7 @@ class UnloaderController extends Controller
                 $q->select(DB::raw(1))
                     ->from('poitem_receiving as pir')
                     ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->whereColumn('pir.weight_id', 'weights.id')
                     ->where(function ($sub) {
                         $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
                             ->orWhereColumn('pir.weight_id', 'weights.id')

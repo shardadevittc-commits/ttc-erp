@@ -72,7 +72,7 @@ class ProductionController extends Controller
                                                 ->from('lab_results')
                                                 ->whereColumn(
                                                     'lab_results.purchase_order_item_id',
-                                                    'receiving.id'
+                                                    'receiving.purchase_order_item_id'
                                                 );
                                         });
                                 });

@@ -232,6 +232,7 @@ class LabController extends Controller
 
     public function store(Request $request)
     {
+
         $validated = $request->validate([
 
             'stage' => [
@@ -268,25 +269,15 @@ class LabController extends Controller
 
         DB::transaction(function () use ($validated) {
 
-            $purchaseOrderItem = PurchaseOrderItem::where(
-                'id',
-                $validated['purchase_order_item_id']
-            )
-                ->lockForUpdate()
-                ->firstOrFail();
-
+            $purchaseOrderItem = PurchaseOrderItem::where('id', $validated['purchase_order_item_id'])->lockForUpdate()->firstOrFail();
             /*
              * Check Production ID
              */
 
-            if (
-                $validated['stage'] === 'final' &&
-                empty($purchaseOrderItem->production_id)
-            ) {
+            if ($validated['stage'] === 'final' && empty($purchaseOrderItem->production_id)) {
 
                 throw ValidationException::withMessages([
-                    'production_id' =>
-                        'Production ID not found.'
+                    'production_id' => 'Production ID not found.'
                 ]);
             }
 
@@ -294,15 +285,13 @@ class LabController extends Controller
              * Get Grade Properties
              */
 
-            $gradeProperties = GradeReaction::where(
-                'grade_id',
-                $purchaseOrderItem->grade_id
-            )
+            $gradeProperties = GradeReaction::where('grade_id',$purchaseOrderItem->grade_id)
                 ->pluck('property_id')
                 ->map(fn ($id) => (int) $id)
                 ->unique()
                 ->values()
                 ->all();
+            // pr($gradeProperties);die;
 
             if (empty($gradeProperties)) {
 
@@ -351,11 +340,41 @@ class LabController extends Controller
                 ->get()
                 ->keyBy('property_id');
 
+            $assertCompleteSubmission = function ($expectedIds) use ($submittedIds) {
+                $expectedIds = collect($expectedIds);
+                $missingIds = $expectedIds->diff($submittedIds);
+                $unexpectedIds = $submittedIds->diff($expectedIds);
+
+                if ($missingIds->isNotEmpty()) {
+                    throw ValidationException::withMessages([
+                        'values' => 'Submit all unsaved property values.'
+                    ]);
+                }
+
+                if ($unexpectedIds->isNotEmpty()) {
+                    throw ValidationException::withMessages([
+                        'values' => 'Only unsaved property values can be submitted.'
+                    ]);
+                }
+            };
+
             /*
              * ACTUAL VALUE SAVE
              */
 
             if ($validated['stage'] === 'actual') {
+
+                $pendingActualIds = collect($gradeProperties)
+                    ->filter(function ($propertyId) use ($savedResults) {
+                        $saved = $savedResults->get($propertyId);
+
+                        return !$saved ||
+                            $saved->actual_value === null ||
+                            $saved->actual_value === '';
+                    })
+                    ->values();
+
+                $assertCompleteSubmission($pendingActualIds);
 
                 foreach ($validated['values'] as $row) {
 
@@ -423,6 +442,18 @@ class LabController extends Controller
                         ]);
                     }
                 }
+
+                $pendingFinalIds = collect($gradeProperties)
+                    ->filter(function ($propertyId) use ($savedResults) {
+                        $saved = $savedResults->get($propertyId);
+
+                        return !$saved ||
+                            $saved->final_value === null ||
+                            $saved->final_value === '';
+                    })
+                    ->values();
+
+                $assertCompleteSubmission($pendingFinalIds);
 
                 /*
                  * Save Final Values

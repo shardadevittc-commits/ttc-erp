@@ -245,6 +245,7 @@ class DashboardController extends Controller
                 $q->from('poitem_receiving as pir')
                     ->selectRaw('COUNT(*)')
                     ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->whereColumn('pir.weight_id', 'weights.id')
                     ->where(function ($sub) {
                         $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
                             ->orWhereColumn('pir.weight_id', 'weights.id')
@@ -256,6 +257,7 @@ class DashboardController extends Controller
                 $q->from('poitem_receiving as pir')
                     ->selectRaw('COALESCE(SUM(pir.received_qty), 0)')
                     ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->whereColumn('pir.weight_id', 'weights.id')
                     ->where(function ($sub) {
                         $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
                             ->orWhereColumn('pir.weight_id', 'weights.id')
@@ -267,6 +269,7 @@ class DashboardController extends Controller
                 $q->from('poitem_receiving as pir')
                     ->selectRaw('MAX(pir.created_at)')
                     ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->whereColumn('pir.weight_id', 'weights.id')
                     ->where(function ($sub) {
                         $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
                             ->orWhereColumn('pir.weight_id', 'weights.id')
@@ -278,6 +281,7 @@ class DashboardController extends Controller
                 $q->select(DB::raw(1))
                     ->from('poitem_receiving as pir')
                     ->whereColumn('pir.customer_id', 'weights.cust_id')
+                    ->whereColumn('pir.weight_id', 'weights.id')
                     ->where(function ($sub) {
                         $sub->whereColumn('pir.vehical_id', 'weights.vehicle_id')
                             ->orWhereColumn('pir.weight_id', 'weights.id')

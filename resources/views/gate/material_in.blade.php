@@ -127,7 +127,9 @@
 
                                             <select name="cust_id"
                                                 id="cust_id"
-                                                class="form-select" required>
+                                                class="form-select select2"
+                                                data-placeholder="Search Party Name"
+                                                required>
 
                                                 <option value="">
                                                     Select Party
@@ -161,7 +163,8 @@
 
                                             <select name="formlist"
                                                 id="formlist"
-                                                class="form-select">
+                                                class="form-select select2"
+                                                data-placeholder="Search Form List">
 
                                                 <option value="">
                                                     Select Form List
