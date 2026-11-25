@@ -620,6 +620,8 @@
 
                                <input type="hidden" name="id" value="{{ $weight->id ?? '' }}">
 
+                               <input type="hidden" name="vehicle_id" value="{{ $materialIn->id ?? '' }}">
+
                                 <input type="hidden"
                                        name="vehicle_id"
                                        value="{{ old('vehicle_id', $materialIn->id ?? $id ?? '') }}">

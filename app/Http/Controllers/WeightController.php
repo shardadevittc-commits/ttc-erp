@@ -64,9 +64,9 @@ class WeightController extends Controller
     // 18/11/26
     /* public function add(Request $request)
     {
-        
+
         $this->ensureWeightDepartment();
-        //  POST: Save First Weight 
+        //  POST: Save First Weight
 
         if ($request->isMethod('post')) {
 
@@ -198,7 +198,7 @@ class WeightController extends Controller
         $formlist = $request->query('formlist', 'Material In');
 
         $materialIn = $id ? GateAndGaadi::find($id) : null;
-        
+
         //  if ($formlist === 'Material Out') {
         //     abort_unless($materialIn
         //         && (int) $materialIn->cust_id === (int) $custId
@@ -265,7 +265,7 @@ class WeightController extends Controller
         }
 
         // Material Out Items
-        
+
         if ($formlist === 'Material Out') {
             $po_receiving = DB::table('dispatch_material as dm')
                 ->join('sale_order_items as soi', 'soi.id', '=', 'dm.sale_order_item_id')
@@ -351,10 +351,10 @@ class WeightController extends Controller
         ));
     } */
 
-    
-    public function add(Request $request)
+
+    /*public function add(Request $request)
     {
-        $this->ensureWeightDepartment();
+        //$this->ensureWeightDepartment();
 
         // ==========================================
         // POST: SAVE FIRST WEIGHT
@@ -776,8 +776,379 @@ class WeightController extends Controller
             'weigh',
             'hasSelectedDispatchItems'
         ));
-    }
+    }*/
 
+
+    public function add(Request $request)
+    {
+        // ==================================================
+        // POST: SAVE FIRST WEIGHT
+        // ==================================================
+
+        if ($request->isMethod('post')) {
+
+            $validated = $request->validate([
+                'id' => 'nullable|integer|required_without:vehicle_id',
+                'vehicle_id' => 'nullable|integer|required_without:id',
+
+                'truckno' => 'required|string|max:20',
+                'cust_id' => 'required|exists:customers,id',
+                'formlist' => 'required|in:Material In,Material Out,Return',
+                'rstno' => 'required|string|max:100',
+
+                'loadedweight' => 'required_if:formlist,Material In|nullable|numeric|min:0',
+                'tareweight' => 'required_if:formlist,Material Out,Return|nullable|numeric|min:0',
+
+                'vehicleentryslip' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+                'weighmentslip' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+
+                'existing_vehicleentryslip' => 'nullable|string',
+            ]);
+
+            // Vehicle ID, not Weight ID
+            $vehicleId = $request->input('vehicle_id') ?: $request->input('id');
+
+            $vehicle = GateAndGaadi::find($vehicleId);
+
+            if (!$vehicle) {
+                return back()->withInput()->withErrors([
+                    'vehicle_id' => 'Vehicle record not found.'
+                ]);
+            }
+
+            if (
+                (int) $vehicle->cust_id !== (int) $request->cust_id ||
+                $vehicle->formlist !== $request->formlist ||
+                strtoupper((string) $vehicle->truckno) !== strtoupper($request->truckno)
+            ) {
+                return back()->withInput()->withErrors([
+                    'vehicle_id' => 'Vehicle details do not match.'
+                ]);
+            }
+
+            $data = [
+                'vehicle_id' => $vehicle->id,
+                'truckno' => strtoupper($request->truckno),
+                'cust_id' => $request->cust_id,
+                'formlist' => $vehicle->formlist,
+                'rstno' => $request->rstno,
+
+                'loadedweight' => null,
+                'tareweight' => null,
+
+                'first_weight' => 'done',
+                'second_weight' => 'pending',
+
+                'created_by' => Auth::id(),
+            ];
+
+            // First weight according to entry type
+            if ($vehicle->formlist === 'Material In') {
+                $data['loadedweight'] = $request->loadedweight;
+            } else {
+                $data['tareweight'] = $request->tareweight;
+            }
+
+            // Vehicle Entry Slip
+            if ($request->hasFile('vehicleentryslip')) {
+
+                $data['vehicleentryslip'] = $request
+                    ->file('vehicleentryslip')
+                    ->store('vehicle-entry-slips', 'public');
+
+            } elseif ($request->filled('existing_vehicleentryslip')) {
+
+                $data['vehicleentryslip'] = $request->existing_vehicleentryslip;
+            }
+
+            // Weighment Slip
+            if ($request->hasFile('weighmentslip')) {
+
+                $data['weighmentslip'] = $request
+                    ->file('weighmentslip')
+                    ->store('weighment-slips', 'public');
+            }
+
+            try {
+
+                DB::transaction(function () use ($data, $vehicle) {
+
+                    GateAndGaadi::whereKey($vehicle->id)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    $existingWeight = Weight::where('vehicle_id', $vehicle->id)
+                        ->where('cust_id', $vehicle->cust_id)
+                        ->where('formlist', $vehicle->formlist)
+                        ->lockForUpdate()
+                        ->exists();
+
+                    if ($existingWeight) {
+                        throw ValidationException::withMessages([
+                            'vehicle_id' => 'First weight already exists for this vehicle.'
+                        ]);
+                    }
+
+                    Weight::create($data);
+                });
+
+            } catch (\Illuminate\Validation\ValidationException $e) {
+
+                throw $e;
+
+            }
+
+            return redirect()->route('material_weight', [
+                'id' => $vehicle->id,
+                'cust_id' => $vehicle->cust_id,
+                'formlist' => $vehicle->formlist,
+            ])->with('success', 'First weight saved successfully.');
+        }
+
+
+        // ==================================================
+        // GET: LOAD VEHICLE WEIGHT FORM
+        // ==================================================
+
+        $user = Auth::user();
+
+        $parties = Customer::select('id', 'company_name')
+            ->orderBy('company_name')
+            ->get();
+
+        // URL ID is always GateAndGaadi vehicle ID
+        $id = $request->query('id') ?: $request->query('vehicle_id');
+
+        $materialIn = $id ? GateAndGaadi::find($id) : null;
+
+        if ($id && !$materialIn) {
+            abort(404, 'Vehicle not found.');
+        }
+
+        // Get customer and entry type from vehicle if not supplied
+        $custId = $request->query('cust_id') ?: ($materialIn->cust_id ?? null);
+
+        $formlist = $request->query('formlist')
+            ?: ($materialIn->formlist ?? 'Material In');
+
+        if ($materialIn && (
+            (int) $materialIn->cust_id !== (int) $custId ||
+            $materialIn->formlist !== $formlist
+        )) {
+            abort(422, 'Vehicle details do not match.');
+        }
+
+        // ==================================================
+        // FETCH WEIGHT TABLE RECORD
+        // ==================================================
+
+        $weight = null;
+
+        if ($id) {
+
+            $weight = Weight::where('vehicle_id', $id)
+                ->where('cust_id', $custId)
+                ->where('formlist', $formlist)
+                ->first();
+        }
+
+        $weigh = $weight;
+
+        $po_receiving = collect();
+
+        $hasSelectedDispatchItems = false;
+
+
+        // ==================================================
+        // FORM TYPE WISE ITEMS
+        // ==================================================
+
+        switch ($formlist) {
+
+            // ==============================================
+            // MATERIAL IN / RETURN
+            // ==============================================
+
+            case 'Material In':
+            case 'Return':
+
+                if ($weight) {
+
+                    $po_receiving = PurchaseOrderitemReceiving::query()
+
+                        ->leftJoin(
+                            'purchase_order_items as poi',
+                            'poitem_receiving.purchase_order_item_id',
+                            '=',
+                            'poi.id'
+                        )
+
+                        ->leftJoin(
+                            'products as p',
+                            'poi.product_id',
+                            '=',
+                            'p.id'
+                        )
+
+                        ->leftJoin(
+                            'grades as g',
+                            'poitem_receiving.grade_id',
+                            '=',
+                            'g.id'
+                        )
+
+                        ->leftJoin(
+                            'sizes as s',
+                            'poitem_receiving.size_id',
+                            '=',
+                            's.id'
+                        )
+
+                        // IMPORTANT: Weight table ID, NOT vehicle ID
+                        ->where('poitem_receiving.weight_id', $weight->id)
+
+                        ->where('poitem_receiving.customer_id', $custId)
+
+                        ->select(
+                            'poitem_receiving.size_id',
+                            's.size_name',
+                            'poitem_receiving.purchase_order_item_id',
+                            'poi.product_id',
+                            'p.product_name',
+                            'poitem_receiving.grade_id',
+                            'g.grade_name',
+                            'poitem_receiving.po_item_qty',
+                            'poitem_receiving.received_qty'
+                        )
+
+                        ->get();
+                }
+
+                $hasSelectedDispatchItems = true;
+
+                break;
+
+
+            // ==============================================
+            // MATERIAL OUT
+            // ==============================================
+
+            case 'Material Out':
+
+                if ($id && $weight) {
+
+                    $po_receiving = DB::table('dispatch_material as dm')
+
+                        ->join(
+                            'sale_order_items as soi',
+                            'soi.id',
+                            '=',
+                            'dm.sale_order_item_id'
+                        )
+
+                        ->leftJoin('products as p', 'soi.product_id', '=', 'p.id')
+                        ->leftJoin('grades as g', 'soi.grade_id', '=', 'g.id')
+                        ->leftJoin('sizes as s', 'soi.size_id', '=', 's.id')
+                        ->leftJoin('brands as b', 'soi.brand_id', '=', 'b.id')
+
+                        ->where('dm.gate_id', $id)
+
+                        ->where('dm.weight_id', $weight->id)
+
+                        ->whereColumn('dm.sale_order_id', 'soi.sale_order_id')
+
+                        ->where('dm.status', 'sent_for_weight')
+
+                        ->select(
+                            'dm.id as dispatch_material_id',
+                            'dm.sale_order_id',
+                            'dm.sale_order_item_id',
+                            'dm.actual_qty',
+                            'soi.size_id',
+                            's.size_name',
+                            'soi.product_id',
+                            'p.product_name',
+                            'soi.grade_id',
+                            'g.grade_name',
+                            'soi.brand_id',
+                            'b.brand_name',
+                            'soi.item_qty as received_qty',
+                            'soi.qty_type',
+                            'soi.sale_item_prices',
+                            'soi.dispatched_qty',
+                            'soi.pending_qty'
+                        )
+
+                        ->get();
+                }
+
+                $hasSelectedDispatchItems = $po_receiving->isNotEmpty();
+
+                break;
+
+
+            default:
+                abort(422, 'Invalid material entry type.');
+        }
+
+
+        // ==================================================
+        // ATTACH WEIGHT DETAILS TO VEHICLE OBJECT
+        // ==================================================
+
+        if ($materialIn) {
+
+            $materialIn->loadedweight = $weight->loadedweight ?? null;
+
+            $materialIn->tareweight = $weight->tareweight ?? null;
+
+            $materialIn->weighmentslip = $weight->weighmentslip
+                ?? $materialIn->weighmentslip;
+
+            $materialIn->vehicleentryslip = $weight->vehicleentryslip
+                ?? $materialIn->vehicleentryslip;
+
+            $materialIn->rstno = $weight->rstno ?? null;
+
+            // Weight table primary key
+            $materialIn->vehicle_weighId = $weight->id ?? null;
+
+            $materialIn->material_weight = $weight->material_weight ?? null;
+
+            $materialIn->unload_tare_weight = $weight->unload_tare_weight ?? null;
+
+            $materialIn->unload_loaded_weight = $weight->unload_loaded_weight ?? null;
+
+            $materialIn->first_weight = $weight->first_weight ?? null;
+
+            $materialIn->second_weight = $weight->second_weight ?? null;
+
+            $materialIn->po_receiving = $po_receiving->toArray();
+        }
+
+
+        // ==================================================
+        // SECOND WEIGHT STATUS
+        // ==================================================
+
+        $isSecondWeightPending = strtolower(
+            trim((string) ($weight->second_weight ?? ''))
+        ) === 'pending';
+
+        return view('weight.material_weight', compact(
+            'user',
+            'parties',
+            'materialIn',
+            'id',
+            'custId',
+            'formlist',
+            'weight',
+            'weigh',
+            'po_receiving',
+            'hasSelectedDispatchItems',
+            'isSecondWeightPending'
+        ));
+    }
 
     public function history(Request $request)
     {

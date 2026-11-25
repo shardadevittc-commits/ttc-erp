@@ -545,14 +545,14 @@ function renderDynamicGradeSections(item) {
             const actualSaved = hasValue(property.actual_value);
             const finalSaved = hasValue(property.final_value);
 
-           const actualReadonly =
-    stage !== 'actual' || actualSaved;
+            const actualReadonly =
+                stage !== 'actual' || actualSaved;
 
-const finalReadonly =
-    stage !== 'final' || finalSaved;
+            const finalReadonly =
+                stage !== 'final' || finalSaved;
 
-const showActualInput = stage === 'actual' || actualSaved;
-const showFinalInput = stage === 'final' || finalSaved;
+            const showActualInput = stage === 'actual' || actualSaved;
+            const showFinalInput = stage === 'final' || finalSaved;
             return `
                 <div class="col-12 col-sm-6 col-xl-3">
                     <div class="lab-property">
@@ -574,28 +574,28 @@ const showFinalInput = stage === 'final' || finalSaved;
 
                             <span style="padding:4px;">
                                ${showActualInput ? `
-<input
-    type="number"
-    class="lab-actual-input"
-    data-property-id="${Number(property.property_id)}"
-    value="${actualSaved ? escapeHtml(property.actual_value) : ''}"
-    placeholder="Actual"
-    ${actualReadonly ? 'readonly' : ''}
->
-` : '-'}
+                                    <input
+                                        type="number"
+                                        class="lab-actual-input"
+                                        data-property-id="${Number(property.property_id)}"
+                                        value="${actualSaved ? escapeHtml(property.actual_value) : ''}"
+                                        placeholder="Actual"
+                                        ${actualReadonly ? 'readonly' : ''}
+                                    >
+                                    ` : '-'}
                             </span>
 
                             <span style="padding:4px;">
                                ${showFinalInput ? `
-<input
-    type="number"
-    class="lab-final-input"
-    data-property-id="${Number(property.property_id)}"
-    value="${finalSaved ? escapeHtml(property.final_value) : ''}"
-    placeholder="Final"
-    ${finalReadonly ? 'readonly' : ''}
->
-` : '-'}
+                                    <input
+                                        type="number"
+                                        class="lab-final-input"
+                                        data-property-id="${Number(property.property_id)}"
+                                        value="${finalSaved ? escapeHtml(property.final_value) : ''}"
+                                        placeholder="Final"
+                                        ${finalReadonly ? 'readonly' : ''}
+                                    >
+                                    ` : '-'}
                             </span>
 
                         </div>

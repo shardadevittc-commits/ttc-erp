@@ -120,7 +120,7 @@
                                             <label class="form-check-label" for="brightBarAcidPickling">Acid Pickling</label>
                                         </div>
                                     </div>
-                                    @if ($currentOperation === 2)
+                                    @if ($currentOperation === 1)
                                         <div class="col-12 text-end mt-3">
                                             <button type="submit" class="btn btn-primary">Submit</button>
                                         </div>

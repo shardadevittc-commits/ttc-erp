@@ -141,7 +141,7 @@
                     </div>
                 </div>
             @endif
-            
+
             @if ($currentOperation >= 2)
                 <div class="accordion-item shadow-sm border rounded mt-4">
                     <h2 class="accordion-header">
@@ -428,6 +428,7 @@
                                     $totalScrap = ($totalNonRecScrap ?? 0) + ($totalRecScrap ?? 0);
                                     $percentage = 0.75;
                                     $bendSawCutScrap = $workOrder->saleOrderItem->losses;
+                                    $bendSawCut = 0;
                                     if(isset($lossWeight) && $lossWeight){
                                         $bendSawCut = 0;
                                         $finishQty = $materialSentKg - $totalScrap;

@@ -34,9 +34,9 @@
                     $weight = $item['weight'] ?? [];
                 @endphp
 
-                @if(($weight['second_weight'] ?? '') === 'pending')
+                {{-- @if(($weight['second_weight'] ?? '') === 'pending')
                     <a href="{{ route('material_weight', ['id' => $item['weight_id'], 'cust_id' => $item['customer_id'], 'vehicle_id' => $item['vehical_id'], 'formlist' => $weight['formlist'],]) }}" class="header-btn header-btn--primary blink-blue"> Add Material Weight </a>
-                @endif
+                @endif --}}
             </div>
         @endif
 
