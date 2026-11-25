@@ -96,12 +96,12 @@
             @endif
 
             @if($isLabUser)
-                <li class="sidebar-item">
+                {{-- <li class="sidebar-item">
                     <a href="{{ route('dashboard.lab') }}" class="sidebar-link {{ request()->routeIs('dashboard.lab') ? 'active' : '' }}">
                         <i class="fa-solid fa-gauge-high nav-icon"></i>
                         <span>Dashboard</span>
                     </a>
-                </li>
+                </li> --}}
 
                 <li class="sidebar-item">
                     <a href="{{ route('lab.index') }}" class="sidebar-link {{ request()->routeIs('lab.index') ? 'active' : '' }}">

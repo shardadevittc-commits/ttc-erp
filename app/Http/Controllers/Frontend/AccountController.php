@@ -400,7 +400,7 @@ class AccountController extends Controller
                 'cash_discount_amount' => $discountAmount,
                 'labor_charges' => $labor,
                 'other_charges' => $other,
-                'freight_type' => $freightType,
+                'freight_type' => $freightType, 
                 'freight_amount' => $freight,
                 'taxable_amount' => $taxable,
                 'sgst_percent' => $gstType === 'SGST_CGST' ? $sgstPercent : 0,
