@@ -1,2193 +1,679 @@
+
 @extends('layouts.app')
 
-@section('title', ucfirst(auth()->user()->role['short_name']) . ' Dashboard | TTC Robotronics - Accounts & Finance ERP')
+@section('title', 'Accounts Dashboard | TTC Robotronics')
 
 @section('content')
 
-    {{-- =========================================================
-        1. ACCOUNTS HERO
-    ========================================================== --}}
-    <div class="dashboard-hero-card mb-4">
-
-        <div class="row align-items-center">
-
-            <div class="col-12 col-lg-8">
-
-                <div class="d-flex align-items-center gap-2 mb-2">
-
-                    <span class="badge border px-2.5 py-1 fs-7"
-                          style="
-                            background: var(--bg-input);
-                            color: var(--text-heading);
-                            border-color: var(--border-color) !important;
-                          ">
-                        <i class="fa-solid fa-calculator me-1 text-muted"></i>
-                        ACCOUNTS & FINANCE
-                    </span>
-
-                    <span class="badge border px-2.5 py-1 fs-7"
-                          style="
-                            background: var(--accent-green-subtle);
-                            color: var(--accent-green);
-                            border-color: var(--accent-green-border) !important;
-                          ">
-                        <i class="fa-solid fa-circle-check me-1"></i>
-                        BOOKS UP TO DATE
-                    </span>
-
-                </div>
-
-                <h2 class="hero-title">
-                    Welcome back, {{ auth()->user()->first_name ?? 'Accounts User' }}! 👋
-                </h2>
-
-                <p class="hero-subtitle">
-                    Centralized Accounts & Finance Control Panel. Monitor cash flow,
-                    receivables, payables, bank balances, expenses, GST/TDS liabilities
-                    and financial-year profitability from one place.
-                </p>
-
-            </div>
-
-
-            <div class="col-12 col-lg-4 text-lg-end mt-3 mt-lg-0">
-
-                <a href="#new-voucher"
-                   class="btn btn-sm text-white px-3 py-2 fw-semibold rounded-3 shadow-sm me-2"
-                   style="
-                        background-color: var(--primary-red);
-                        border-color: var(--primary-red);
-                   ">
-                    <i class="fa-solid fa-plus me-1"></i>
-                    New Voucher
-                </a>
-
-                <a href="#accounts-reports"
-                   class="btn btn-sm px-3 py-2 fw-semibold rounded-3"
-                   style="
-                        color: var(--text-heading);
-                        background: var(--bg-card);
-                        border: 1px solid var(--border-color);
-                   ">
-                    <i class="fa-solid fa-file-lines me-1"></i>
-                    Reports
-                </a>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    {{-- =========================================================
-        2. FINANCIAL KPI CARDS
-    ========================================================== --}}
-    <div class="row g-3 mb-4">
-
-        {{-- CASH & BANK --}}
-        <div class="col-12 col-sm-6 col-xl-3">
-
-            <div class="kpi-metric-card">
-
-                <div class="kpi-top-row">
-
-                    <div class="kpi-icon-pill kpi-icon-green">
-                        <i class="fa-solid fa-building-columns"></i>
-                    </div>
-
-                    <span class="kpi-trend-badge trend-up">
-                        <i class="fa-solid fa-arrow-trend-up"></i>
-                        +6.4%
-                    </span>
-
-                </div>
-
-                <div>
-
-                    <div class="kpi-title">
-                        Cash & Bank Balance
-                    </div>
-
-                    <div class="kpi-value-row">
-
-                        <div class="kpi-value">
-                            ₹ 1.86
-                            <span style="
-                                font-size:.95rem;
-                                font-weight:500;
-                                color:var(--text-muted);
-                            ">
-                                Cr
-                            </span>
-                        </div>
-
-                        <svg class="sparkline-svg" viewBox="0 0 90 34">
-
-                            <path
-                                d="M2,27 C14,25 19,18 30,21 C42,24 48,12 58,16 C69,20 77,7 88,5"
-                                fill="none"
-                                stroke="#10B981"
-                                stroke-width="2.5"
-                                stroke-linecap="round"
-                            />
-
-                        </svg>
-
-                    </div>
-
-                    <div class="small text-muted mt-1">
-                        8 active bank & cash accounts
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        {{-- RECEIVABLE --}}
-        <div class="col-12 col-sm-6 col-xl-3">
-
-            <div class="kpi-metric-card">
-
-                <div class="kpi-top-row">
-
-                    <div class="kpi-icon-pill kpi-icon-blue">
-                        <i class="fa-solid fa-hand-holding-dollar"></i>
-                    </div>
-
-                    <span class="kpi-trend-badge trend-neutral">
-                        <i class="fa-solid fa-clock"></i>
-                        Receivable
-                    </span>
-
-                </div>
-
-                <div>
-
-                    <div class="kpi-title">
-                        Trade Receivables
-                    </div>
-
-                    <div class="kpi-value-row">
-
-                        <div class="kpi-value">
-                            ₹ 3.84
-                            <span style="
-                                font-size:.95rem;
-                                font-weight:500;
-                                color:var(--text-muted);
-                            ">
-                                Cr
-                            </span>
-                        </div>
-
-                        <svg class="sparkline-svg" viewBox="0 0 90 34">
-
-                            <path
-                                d="M2,8 C14,10 20,15 31,12 C44,9 52,19 63,17 C74,15 80,23 88,27"
-                                fill="none"
-                                stroke="#3B82F6"
-                                stroke-width="2.5"
-                                stroke-linecap="round"
-                            />
-
-                        </svg>
-
-                    </div>
-
-                    <div class="small text-muted mt-1">
-                        46 customers with outstanding
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        {{-- PAYABLE --}}
-        <div class="col-12 col-sm-6 col-xl-3">
-
-            <div class="kpi-metric-card">
-
-                <div class="kpi-top-row">
-
-                    <div class="kpi-icon-pill kpi-icon-amber">
-                        <i class="fa-solid fa-money-bill-transfer"></i>
-                    </div>
-
-                    <span class="kpi-trend-badge trend-neutral">
-                        <i class="fa-solid fa-hourglass-half"></i>
-                        Payable
-                    </span>
-
-                </div>
-
-                <div>
-
-                    <div class="kpi-title">
-                        Trade Payables
-                    </div>
-
-                    <div class="kpi-value-row">
-
-                        <div class="kpi-value">
-                            ₹ 2.17
-                            <span style="
-                                font-size:.95rem;
-                                font-weight:500;
-                                color:var(--text-muted);
-                            ">
-                                Cr
-                            </span>
-                        </div>
-
-                        <svg class="sparkline-svg" viewBox="0 0 90 34">
-
-                            <path
-                                d="M2,25 C15,22 21,19 31,21 C42,24 48,13 59,15 C70,18 78,9 88,8"
-                                fill="none"
-                                stroke="#F59E0B"
-                                stroke-width="2.5"
-                                stroke-linecap="round"
-                            />
-
-                        </svg>
-
-                    </div>
-
-                    <div class="small text-muted mt-1">
-                        31 supplier accounts pending
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        {{-- NET PROFIT --}}
-        <div class="col-12 col-sm-6 col-xl-3">
-
-            <div class="kpi-metric-card">
-
-                <div class="kpi-top-row">
-
-                    <div class="kpi-icon-pill kpi-icon-red">
-                        <i class="fa-solid fa-chart-line"></i>
-                    </div>
-
-                    <span class="kpi-trend-badge trend-up">
-                        <i class="fa-solid fa-arrow-trend-up"></i>
-                        +9.2%
-                    </span>
-
-                </div>
-
-                <div>
-
-                    <div class="kpi-title">
-                        Net Profit
-                    </div>
-
-                    <div class="kpi-value-row">
-
-                        <div class="kpi-value">
-                            ₹ 6.42
-                            <span style="
-                                font-size:.95rem;
-                                font-weight:500;
-                                color:var(--text-muted);
-                            ">
-                                Cr
-                            </span>
-                        </div>
-
-                        <svg class="sparkline-svg" viewBox="0 0 90 34">
-
-                            <path
-                                d="M2,28 C13,25 20,23 31,20 C43,18 49,14 59,15 C70,16 77,7 88,4"
-                                fill="none"
-                                stroke="#E52D3F"
-                                stroke-width="2.5"
-                                stroke-linecap="round"
-                            />
-
-                        </svg>
-
-                    </div>
-
-                    <div class="small text-muted mt-1">
-                        Current financial year
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    {{-- =========================================================
-        3. FINANCIAL TREND + PROFIT & LOSS
-    ========================================================== --}}
-    <div class="row g-3 mb-4">
-
-        {{-- CASH FLOW --}}
-        <div class="col-12 col-xl-8">
-
-            <div class="chart-box-card">
-
-                <div class="card-header-flex">
-
-                    <div>
-
-                        <h3>
-                            Financial Performance
-                        </h3>
-
-                        <p class="text-muted small mb-0">
-                            Revenue, expenses and net profit
-                        </p>
-
-                    </div>
-
-
-                    <div class="chart-filter-pills">
-
-                        <button
-                            type="button"
-                            class="filter-btn active">
-                            Monthly
-                        </button>
-
-                        <button
-                            type="button"
-                            class="filter-btn">
-                            Quarterly
-                        </button>
-
-                        <button
-                            type="button"
-                            class="filter-btn">
-                            FY
-                        </button>
-
-                    </div>
-
-                </div>
-
-
-                <div style="
-                    height:290px;
-                    position:relative;
-                ">
-
-                    <canvas id="accountsPerformanceChart"></canvas>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        {{-- P&L --}}
-        <div class="col-12 col-xl-4">
-
-            <div class="chart-box-card">
-
-                <div class="card-header-flex">
-
-                    <div>
-
-                        <h3>
-                            P&L Snapshot
-                        </h3>
-
-                        <p class="text-muted small mb-0">
-                            Current financial year
-                        </p>
-
-                    </div>
-
-                    <span
-                        class="badge border fs-7"
-                        style="
-                            background:var(--accent-green-subtle);
-                            color:var(--accent-green);
-                            border-color:var(--accent-green-border) !important;
-                        ">
-                        FY 2026-27
-                    </span>
-
-                </div>
-
-
-                <div class="py-3">
-
-                    <div class="d-flex justify-content-between mb-2">
-
-                        <span class="text-muted small">
-                            Revenue
-                        </span>
-
-                        <strong style="color:var(--text-heading);">
-                            ₹ 28.56 Cr
-                        </strong>
-
-                    </div>
-
-
-                    <div class="progress mb-3"
-                         style="
-                            height:7px;
-                            background:var(--bg-input);
-                         ">
-
-                        <div
-                            class="progress-bar"
-                            style="
-                                width:82%;
-                                background:#3B82F6;
-                            ">
-                        </div>
-
-                    </div>
-
-
-                    <div class="d-flex justify-content-between mb-2">
-
-                        <span class="text-muted small">
-                            Cost of Goods
-                        </span>
-
-                        <strong style="color:var(--text-heading);">
-                            ₹ 18.72 Cr
-                        </strong>
-
-                    </div>
-
-
-                    <div class="progress mb-3"
-                         style="
-                            height:7px;
-                            background:var(--bg-input);
-                         ">
-
-                        <div
-                            class="progress-bar"
-                            style="
-                                width:65%;
-                                background:#F59E0B;
-                            ">
-                        </div>
-
-                    </div>
-
-
-                    <div class="d-flex justify-content-between mb-2">
-
-                        <span class="text-muted small">
-                            Operating Expenses
-                        </span>
-
-                        <strong style="color:var(--text-heading);">
-                            ₹ 3.42 Cr
-                        </strong>
-
-                    </div>
-
-
-                    <div class="progress mb-3"
-                         style="
-                            height:7px;
-                            background:var(--bg-input);
-                         ">
-
-                        <div
-                            class="progress-bar"
-                            style="
-                                width:30%;
-                                background:#8B5CF6;
-                            ">
-                        </div>
-
-                    </div>
-
-
-                    <div
-                        class="p-3 rounded-3 mt-3"
-                        style="
-                            background:var(--accent-green-subtle);
-                            border:1px solid var(--accent-green-border);
-                        ">
-
-                        <div class="small text-muted">
-                            Net Profit
-                        </div>
-
-                        <div
-                            class="fw-bold fs-4 mt-1"
-                            style="color:var(--accent-green);">
-                            ₹ 6.42 Cr
-                        </div>
-
-                        <div class="small mt-1"
-                             style="color:var(--accent-green);">
-                            Profit Margin: 22.5%
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    {{-- =========================================================
-        4. ACCOUNTING OPERATIONS
-    ========================================================== --}}
-    <div class="row g-4 mb-4">
-
-        <div class="col-12 col-lg-8">
-
-            <div
-                class="d-flex justify-content-between align-items-center mb-3">
-
-                <h3 class="fs-5 m-0 fw-bold">
-
-                    <i class="fa-solid fa-calculator me-2 text-muted"></i>
-
-                    Accounting Operations
-
-                </h3>
-
-                <span class="text-muted small">
-                    Current FY:
-                    <strong>2026-27</strong>
-                </span>
-
-            </div>
-
-
-            <div class="row g-3">
-
-
-                {{-- VOUCHERS --}}
-                <div class="col-12 col-md-6">
-
-                    <a href="#new-voucher"
-                       class="module-tile">
-
-                        <div class="module-icon-box">
-                            <i class="fa-solid fa-file-invoice"></i>
-                        </div>
-
-                        <div>
-
-                            <h4>
-                                Accounting Vouchers
-                            </h4>
-
-                            <p>
-                                Create journal, payment, receipt,
-                                contra and adjustment vouchers.
-                            </p>
-
-                        </div>
-
-                    </a>
-
-                </div>
-
-
-                {{-- RECEIVABLE --}}
-                <div class="col-12 col-md-6">
-
-                    <a href="#receivables"
-                       class="module-tile">
-
-                        <div class="module-icon-box">
-                            <i class="fa-solid fa-hand-holding-dollar"></i>
-                        </div>
-
-                        <div>
-
-                            <h4>
-                                Receivables
-                            </h4>
-
-                            <p>
-                                Monitor customer dues, ageing,
-                                collections and payment follow-up.
-                            </p>
-
-                        </div>
-
-                    </a>
-
-                </div>
-
-
-                {{-- PAYABLE --}}
-                <div class="col-12 col-md-6">
-
-                    <a href="#payables"
-                       class="module-tile">
-
-                        <div class="module-icon-box">
-                            <i class="fa-solid fa-file-invoice-dollar"></i>
-                        </div>
-
-                        <div>
-
-                            <h4>
-                                Payables
-                            </h4>
-
-                            <p>
-                                Manage supplier bills, due dates,
-                                payment schedules and outstanding.
-                            </p>
-
-                        </div>
-
-                    </a>
-
-                </div>
-
-
-                {{-- BANK --}}
-                <div class="col-12 col-md-6">
-
-                    <a href="#banking"
-                       class="module-tile">
-
-                        <div class="module-icon-box">
-                            <i class="fa-solid fa-building-columns"></i>
-                        </div>
-
-                        <div>
-
-                            <h4>
-                                Bank & Cash
-                            </h4>
-
-                            <p>
-                                Bank accounts, cash book,
-                                reconciliation and transfers.
-                            </p>
-
-                        </div>
-
-                    </a>
-
-                </div>
-
-
-                {{-- TAX --}}
-                <div class="col-12 col-md-6">
-
-                    <a href="#taxation"
-                       class="module-tile">
-
-                        <div class="module-icon-box">
-                            <i class="fa-solid fa-file-invoice"></i>
-                        </div>
-
-                        <div>
-
-                            <h4>
-                                GST & TDS
-                            </h4>
-
-                            <p>
-                                Track GST input/output, TDS,
-                                tax payable and compliance data.
-                            </p>
-
-                        </div>
-
-                    </a>
-
-                </div>
-
-
-                {{-- REPORTS --}}
-                <div class="col-12 col-md-6">
-
-                    <a href="#accounts-reports"
-                       class="module-tile">
-
-                        <div class="module-icon-box">
-                            <i class="fa-solid fa-chart-column"></i>
-                        </div>
-
-                        <div>
-
-                            <h4>
-                                Financial Reports
-                            </h4>
-
-                            <p>
-                                Balance sheet, P&L, trial balance,
-                                ledgers and financial analysis.
-                            </p>
-
-                        </div>
-
-                    </a>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        {{-- TAX / DUE SUMMARY --}}
-        <div class="col-12 col-lg-4">
-
-            <div
-                class="d-flex justify-content-between align-items-center mb-3">
-
-                <h3 class="fs-5 m-0 fw-bold">
-
-                    <i class="fa-solid fa-calendar-check me-2 text-muted"></i>
-
-                    Upcoming Dues
-
-                </h3>
-
-                <span
-                    class="badge border px-2 py-1 fs-7"
-                    style="
-                        background:var(--accent-amber-subtle);
-                        color:var(--accent-amber);
-                        border-color:var(--accent-amber-border) !important;
-                    ">
-                    6 Pending
-                </span>
-
-            </div>
-
-
-            <div class="chart-box-card">
-
-                <div
-                    class="d-flex justify-content-between align-items-center
-                           p-3 rounded-3 mb-2"
-                    style="background:var(--bg-input);">
-
-                    <div>
-
-                        <div class="small text-muted">
-                            GST Payable
-                        </div>
-
-                        <div class="fw-bold mt-1">
-                            ₹ 18.42 L
-                        </div>
-
-                    </div>
-
-                    <span
-                        class="badge"
-                        style="
-                            background:var(--accent-amber-subtle);
-                            color:var(--accent-amber);
-                        ">
-                        10 Oct
-                    </span>
-
-                </div>
-
-
-                <div
-                    class="d-flex justify-content-between align-items-center
-                           p-3 rounded-3 mb-2"
-                    style="background:var(--bg-input);">
-
-                    <div>
-
-                        <div class="small text-muted">
-                            TDS Payable
-                        </div>
-
-                        <div class="fw-bold mt-1">
-                            ₹ 4.86 L
-                        </div>
-
-                    </div>
-
-                    <span
-                        class="badge"
-                        style="
-                            background:var(--accent-red-subtle);
-                            color:var(--primary-red);
-                        ">
-                        07 Oct
-                    </span>
-
-                </div>
-
-
-                <div
-                    class="d-flex justify-content-between align-items-center
-                           p-3 rounded-3"
-                    style="background:var(--bg-input);">
-
-                    <div>
-
-                        <div class="small text-muted">
-                            Supplier Payments
-                        </div>
-
-                        <div class="fw-bold mt-1">
-                            ₹ 31.70 L
-                        </div>
-
-                    </div>
-
-                    <span
-                        class="badge"
-                        style="
-                            background:var(--accent-blue-subtle);
-                            color:var(--accent-blue);
-                        ">
-                        12 Oct
-                    </span>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    {{-- =========================================================
-        5. RECEIVABLE / PAYABLE AGEING
-    ========================================================== --}}
-    <div class="row g-3 mb-4">
-
-        {{-- RECEIVABLE AGEING --}}
-        <div class="col-12 col-xl-6">
-
-            <div class="chart-box-card">
-
-                <div class="card-header-flex">
-
-                    <div>
-
-                        <h3>
-                            Receivable Ageing
-                        </h3>
-
-                        <p class="text-muted small mb-0">
-                            Customer outstanding ageing
-                        </p>
-
-                    </div>
-
-                    <span
-                        class="badge border fs-7"
-                        style="
-                            background:var(--accent-blue-subtle);
-                            color:var(--accent-blue);
-                            border-color:var(--accent-blue-border) !important;
-                        ">
-                        ₹ 3.84 Cr
-                    </span>
-
-                </div>
-
-
-                <div class="mt-3">
-
-                    <div class="mb-3">
-
-                        <div class="d-flex justify-content-between mb-1">
-
-                            <span class="small text-muted">
-                                0 - 30 Days
-                            </span>
-
-                            <strong>
-                                ₹ 1.82 Cr
-                            </strong>
-
-                        </div>
-
-                        <div class="progress"
-                             style="height:8px;background:var(--bg-input);">
-
-                            <div
-                                class="progress-bar"
-                                style="
-                                    width:47%;
-                                    background:#10B981;
-                                ">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="mb-3">
-
-                        <div class="d-flex justify-content-between mb-1">
-
-                            <span class="small text-muted">
-                                31 - 60 Days
-                            </span>
-
-                            <strong>
-                                ₹ 1.04 Cr
-                            </strong>
-
-                        </div>
-
-                        <div class="progress"
-                             style="height:8px;background:var(--bg-input);">
-
-                            <div
-                                class="progress-bar"
-                                style="
-                                    width:27%;
-                                    background:#3B82F6;
-                                ">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="mb-3">
-
-                        <div class="d-flex justify-content-between mb-1">
-
-                            <span class="small text-muted">
-                                61 - 90 Days
-                            </span>
-
-                            <strong>
-                                ₹ 62.00 L
-                            </strong>
-
-                        </div>
-
-                        <div class="progress"
-                             style="height:8px;background:var(--bg-input);">
-
-                            <div
-                                class="progress-bar"
-                                style="
-                                    width:16%;
-                                    background:#F59E0B;
-                                ">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div>
-
-                        <div class="d-flex justify-content-between mb-1">
-
-                            <span class="small text-muted">
-                                90+ Days
-                            </span>
-
-                            <strong>
-                                ₹ 36.00 L
-                            </strong>
-
-                        </div>
-
-                        <div class="progress"
-                             style="height:8px;background:var(--bg-input);">
-
-                            <div
-                                class="progress-bar"
-                                style="
-                                    width:10%;
-                                    background:#E52D3F;
-                                ">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        {{-- PAYABLE AGEING --}}
-        <div class="col-12 col-xl-6">
-
-            <div class="chart-box-card">
-
-                <div class="card-header-flex">
-
-                    <div>
-
-                        <h3>
-                            Payable Ageing
-                        </h3>
-
-                        <p class="text-muted small mb-0">
-                            Supplier outstanding ageing
-                        </p>
-
-                    </div>
-
-                    <span
-                        class="badge border fs-7"
-                        style="
-                            background:var(--accent-amber-subtle);
-                            color:var(--accent-amber);
-                            border-color:var(--accent-amber-border) !important;
-                        ">
-                        ₹ 2.17 Cr
-                    </span>
-
-                </div>
-
-
-                <div class="mt-3">
-
-                    <div class="mb-3">
-
-                        <div class="d-flex justify-content-between mb-1">
-
-                            <span class="small text-muted">
-                                0 - 30 Days
-                            </span>
-
-                            <strong>
-                                ₹ 1.12 Cr
-                            </strong>
-
-                        </div>
-
-                        <div class="progress"
-                             style="height:8px;background:var(--bg-input);">
-
-                            <div
-                                class="progress-bar"
-                                style="
-                                    width:52%;
-                                    background:#10B981;
-                                ">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="mb-3">
-
-                        <div class="d-flex justify-content-between mb-1">
-
-                            <span class="small text-muted">
-                                31 - 60 Days
-                            </span>
-
-                            <strong>
-                                ₹ 58.00 L
-                            </strong>
-
-                        </div>
-
-                        <div class="progress"
-                             style="height:8px;background:var(--bg-input);">
-
-                            <div
-                                class="progress-bar"
-                                style="
-                                    width:27%;
-                                    background:#3B82F6;
-                                ">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="mb-3">
-
-                        <div class="d-flex justify-content-between mb-1">
-
-                            <span class="small text-muted">
-                                61 - 90 Days
-                            </span>
-
-                            <strong>
-                                ₹ 31.00 L
-                            </strong>
-
-                        </div>
-
-                        <div class="progress"
-                             style="height:8px;background:var(--bg-input);">
-
-                            <div
-                                class="progress-bar"
-                                style="
-                                    width:14%;
-                                    background:#F59E0B;
-                                ">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div>
-
-                        <div class="d-flex justify-content-between mb-1">
-
-                            <span class="small text-muted">
-                                90+ Days
-                            </span>
-
-                            <strong>
-                                ₹ 16.00 L
-                            </strong>
-
-                        </div>
-
-                        <div class="progress"
-                             style="height:8px;background:var(--bg-input);">
-
-                            <div
-                                class="progress-bar"
-                                style="
-                                    width:7%;
-                                    background:#E52D3F;
-                                ">
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    {{-- =========================================================
-        6. RECENT ACCOUNT TRANSACTIONS
-    ========================================================== --}}
-    <div class="plant-table-card mb-4">
-
-        <div
-            class="card-header-flex p-3 px-4 border-bottom mb-0"
-            style="border-color:var(--border-color) !important;">
-
+<style>
+    .account-dashboard {
+        --navy: #172554;
+        --muted: #64748b;
+        --border: #e8edf5;
+        color: #1e293b;
+    }
+
+    .account-dashboard .dashboard-heading {
+        background: linear-gradient(115deg, #172554, #263f78);
+        border-radius: 16px;
+        padding: 25px 28px;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .account-dashboard .dashboard-heading:after {
+        content: "";
+        position: absolute;
+        width: 220px;
+        height: 220px;
+        border: 35px solid rgba(255,255,255,.06);
+        border-radius: 50%;
+        right: 35px;
+        top: -110px;
+    }
+
+    .account-dashboard .dashboard-heading h4 {
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+
+    .account-dashboard .dashboard-heading p {
+        color: #cbd5e1;
+        margin: 0;
+        font-size: 13px;
+    }
+
+    .account-dashboard .period-label {
+        background: rgba(255,255,255,.12);
+        border: 1px solid rgba(255,255,255,.18);
+        padding: 9px 14px;
+        border-radius: 9px;
+        color: white;
+        font-size: 12px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .account-dashboard .stat-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 13px;
+        padding: 19px;
+        height: 100%;
+        transition: .2s ease;
+        box-shadow: 0 3px 12px rgba(15, 23, 42, .035);
+    }
+
+    .account-dashboard .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .08);
+    }
+
+    .account-dashboard .stat-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 17px;
+    }
+
+    .account-dashboard .stat-title {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .account-dashboard .stat-icon {
+        width: 39px;
+        height: 39px;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+
+    .account-dashboard .stat-value {
+        font-size: 23px;
+        font-weight: 750;
+        color: #172554;
+        margin: 0;
+        letter-spacing: -.5px;
+        overflow-wrap: anywhere;
+    }
+
+    .account-dashboard .stat-note {
+        font-size: 11px;
+        color: #94a3b8;
+        margin-top: 5px;
+    }
+
+    .account-dashboard .icon-blue { background: #eaf1ff; color: #3563d9; }
+    .account-dashboard .icon-green { background: #e6f8ef; color: #159957; }
+    .account-dashboard .icon-purple { background: #f1eaff; color: #8755d9; }
+    .account-dashboard .icon-orange { background: #fff2e5; color: #e58a27; }
+    .account-dashboard .icon-red { background: #ffeded; color: #dc5555; }
+    .account-dashboard .icon-cyan { background: #e5f8fc; color: #159bb8; }
+
+    .account-dashboard .section-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 3px 12px rgba(15, 23, 42, .035);
+        overflow: hidden;
+    }
+
+    .account-dashboard .section-header {
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .account-dashboard .section-header h6 {
+        margin: 0;
+        color: #172554;
+        font-weight: 700;
+        font-size: 14px;
+    }
+
+    .account-dashboard .section-header small {
+        color: #94a3b8;
+        font-size: 11px;
+    }
+
+    .account-dashboard .section-body {
+        padding: 20px;
+    }
+
+    .account-dashboard .month-card {
+        border-radius: 13px;
+        padding: 18px 20px;
+        height: 100%;
+        border: 1px solid var(--border);
+        background: #fff;
+    }
+
+    .account-dashboard .month-card.highlight {
+        background: #f0f5ff;
+        border-color: #dbe6ff;
+    }
+
+    .account-dashboard .month-label {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .account-dashboard .month-value {
+        font-size: 23px;
+        font-weight: 750;
+        color: #172554;
+        margin-top: 10px;
+    }
+
+    .account-dashboard .month-sub {
+        font-size: 11px;
+        color: #94a3b8;
+        margin-top: 4px;
+    }
+
+    .account-dashboard .invoice-table {
+        margin: 0;
+        white-space: nowrap;
+    }
+
+    .account-dashboard .invoice-table thead th {
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .45px;
+        padding: 13px 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .account-dashboard .invoice-table tbody td {
+        padding: 13px 12px;
+        font-size: 12px;
+        color: #475569;
+        border-color: #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .account-dashboard .invoice-table tbody tr:hover {
+        background: #f8faff;
+    }
+
+    .account-dashboard .invoice-number {
+        color: #3159b7;
+        font-weight: 700;
+    }
+
+    .account-dashboard .amount-text {
+        font-weight: 650;
+        color: #172554 !important;
+    }
+
+    .account-dashboard .view-btn {
+        border-radius: 7px;
+        font-size: 11px;
+        padding: 5px 11px;
+        font-weight: 600;
+    }
+
+    .account-dashboard .table-footer {
+        padding: 14px 18px;
+        border-top: 1px solid var(--border);
+    }
+
+    .account-dashboard .table-footer nav p {
+        margin-bottom: 0;
+    }
+
+    .account-dashboard .table-footer .pagination {
+        margin-bottom: 0;
+    }
+
+    .account-dashboard .summary-badge {
+        font-size: 11px;
+        padding: 7px 11px;
+        border-radius: 7px;
+        background: #edf3ff;
+        color: #3159b7;
+        font-weight: 700;
+    }
+
+    @media(max-width: 767px) {
+        .account-dashboard .dashboard-heading {
+            padding: 20px;
+        }
+
+        .account-dashboard .stat-value,
+        .account-dashboard .month-value {
+            font-size: 19px;
+        }
+
+        .account-dashboard .section-body {
+            padding: 14px;
+        }
+    }
+</style>
+
+<div class="container-fluid py-3 account-dashboard">
+
+    {{-- HEADER --}}
+    <div class="dashboard-heading mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 position-relative">
             <div>
-
-                <h3 class="fs-6 m-0 fw-bold">
-
-                    <i class="fa-solid fa-receipt me-2 text-muted"></i>
-
-                    Recent Account Transactions
-
-                </h3>
-
-                <p class="text-muted small mb-0">
-                    Latest receipts, payments, journal and bank transactions
-                </p>
-
+                <h4><i class="fas fa-chart-pie me-2"></i> Accounts Dashboard</h4>
+                <p>Financial performance, invoice analytics & tax overview</p>
             </div>
 
+            <div class="period-label">
+                <i class="far fa-calendar-alt me-2"></i>
+                {{ now()->format('d M Y') }}
+            </div>
+        </div>
+    </div>
 
-            <a
-                href="#transactions"
-                class="btn btn-sm btn-outline-secondary px-2.5 py-1"
-                style="
-                    font-size:.75rem;
-                    color:var(--text-heading);
-                    border-color:var(--border-color);
-                ">
+    {{-- MAIN FINANCIAL KPIs --}}
+    <div class="row g-3 mb-4">
 
-                View All
-
-                <i class="fa-solid fa-arrow-right ms-1"></i>
-
-            </a>
-
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="stat-title">Total Invoices</span>
+                    <div class="stat-icon icon-blue"><i class="fas fa-file-invoice"></i></div>
+                </div>
+                <h4 class="stat-value">{{ number_format($totalInvoices) }}</h4>
+                <div class="stat-note">Total invoices recorded</div>
+            </div>
         </div>
 
-
-        <div class="table-responsive">
-
-            <table class="table table-custom">
-
-                <thead>
-
-                    <tr>
-
-                        <th>Voucher</th>
-
-                        <th>Date</th>
-
-                        <th>Account</th>
-
-                        <th>Type</th>
-
-                        <th>Reference</th>
-
-                        <th>Amount</th>
-
-                        <th>Mode</th>
-
-                        <th>Status</th>
-
-                    </tr>
-
-                </thead>
-
-
-                <tbody>
-
-
-                    <tr>
-
-                        <td class="fw-bold"
-                            style="color:var(--text-heading);">
-                            #RV-2026-089
-                        </td>
-
-                        <td>
-                            29 Sep 2026
-                        </td>
-
-                        <td class="fw-semibold">
-                            Tata Projects
-                        </td>
-
-                        <td>
-                            Receipt
-                        </td>
-
-                        <td>
-                            INV-2026-089
-                        </td>
-
-                        <td class="fw-bold"
-                            style="color:var(--text-heading);">
-                            ₹ 18.42 L
-                        </td>
-
-                        <td>
-                            Bank
-                        </td>
-
-                        <td>
-
-                            <span class="badge-status badge-status-verified">
-
-                                <i class="fa-solid fa-circle-check"></i>
-
-                                Posted
-
-                            </span>
-
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="fw-bold"
-                            style="color:var(--text-heading);">
-                            #PV-2026-112
-                        </td>
-
-                        <td>
-                            29 Sep 2026
-                        </td>
-
-                        <td class="fw-semibold">
-                            JSW Steel Ltd.
-                        </td>
-
-                        <td>
-                            Payment
-                        </td>
-
-                        <td>
-                            BILL-4582
-                        </td>
-
-                        <td class="fw-bold"
-                            style="color:var(--text-heading);">
-                            ₹ 24.80 L
-                        </td>
-
-                        <td>
-                            Bank
-                        </td>
-
-                        <td>
-
-                            <span class="badge-status badge-status-verified">
-
-                                <i class="fa-solid fa-circle-check"></i>
-
-                                Posted
-
-                            </span>
-
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="fw-bold"
-                            style="color:var(--text-heading);">
-                            #JV-2026-074
-                        </td>
-
-                        <td>
-                            28 Sep 2026
-                        </td>
-
-                        <td class="fw-semibold">
-                            Freight Expenses
-                        </td>
-
-                        <td>
-                            Journal
-                        </td>
-
-                        <td>
-                            EXP-0926
-                        </td>
-
-                        <td class="fw-bold"
-                            style="color:var(--text-heading);">
-                            ₹ 4.72 L
-                        </td>
-
-                        <td>
-                            Journal
-                        </td>
-
-                        <td>
-
-                            <span class="badge-status badge-status-gross">
-
-                                <i class="fa-solid fa-clock"></i>
-
-                                Review
-
-                            </span>
-
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="fw-bold"
-                            style="color:var(--text-heading);">
-                            #BR-2026-031
-                        </td>
-
-                        <td>
-                            28 Sep 2026
-                        </td>
-
-                        <td class="fw-semibold">
-                            HDFC Bank
-                        </td>
-
-                        <td>
-                            Bank Receipt
-                        </td>
-
-                        <td>
-                            NEFT-92871
-                        </td>
-
-                        <td class="fw-bold"
-                            style="color:var(--text-heading);">
-                            ₹ 12.50 L
-                        </td>
-
-                        <td>
-                            NEFT
-                        </td>
-
-                        <td>
-
-                            <span class="badge-status badge-status-verified">
-
-                                <i class="fa-solid fa-circle-check"></i>
-
-                                Reconciled
-
-                            </span>
-
-                        </td>
-
-                    </tr>
-
-
-                </tbody>
-
-            </table>
-
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="stat-title">Invoice Amount</span>
+                    <div class="stat-icon icon-green"><i class="fas fa-rupee-sign"></i></div>
+                </div>
+                <h4 class="stat-value">₹{{ number_format($totalInvoiceAmount, 2) }}</h4>
+                <div class="stat-note">Total invoice value</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="stat-title">Taxable Amount</span>
+                    <div class="stat-icon icon-purple"><i class="fas fa-calculator"></i></div>
+                </div>
+                <h4 class="stat-value">₹{{ number_format($totalTaxable, 2) }}</h4>
+                <div class="stat-note">Total taxable value</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="stat-title">Total Discount</span>
+                    <div class="stat-icon icon-orange"><i class="fas fa-tags"></i></div>
+                </div>
+                <h4 class="stat-value">₹{{ number_format($totalDiscount, 2) }}</h4>
+                <div class="stat-note">Total cash discount</div>
+            </div>
         </div>
 
     </div>
 
+    {{-- TAX SUMMARY --}}
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0" style="color:#172554;">
+            <i class="fas fa-landmark me-2 text-primary"></i>Tax Summary
+        </h6>
+        <small class="text-muted">Overall tax details</small>
+    </div>
 
-    {{-- =========================================================
-        7. PENDING ACCOUNTING ITEMS
-    ========================================================== --}}
-    <div
-        id="accounts-reports"
-        class="plant-table-card mb-4">
+    <div class="row g-3 mb-4">
 
-        <div
-            class="card-header-flex p-3 px-4 border-bottom mb-0"
-            style="border-color:var(--border-color) !important;">
+        <div class="col-lg-4 col-md-4">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="stat-title">Total GST</span>
+                    <div class="stat-icon icon-blue"><i class="fas fa-percent"></i></div>
+                </div>
+                <h4 class="stat-value">₹{{ number_format($totalGst, 2) }}</h4>
+                <div class="stat-note">Goods & Services Tax</div>
+            </div>
+        </div>
 
+        <div class="col-lg-4 col-md-4">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="stat-title">Total TDS</span>
+                    <div class="stat-icon icon-green"><i class="fas fa-file-invoice-dollar"></i></div>
+                </div>
+                <h4 class="stat-value">₹{{ number_format($totalTds, 2) }}</h4>
+                <div class="stat-note">Tax deducted at source</div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-4">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="stat-title">Total TCS</span>
+                    <div class="stat-icon icon-orange"><i class="fas fa-wallet"></i></div>
+                </div>
+                <h4 class="stat-value">₹{{ number_format($totalTcs, 2) }}</h4>
+                <div class="stat-note">Tax collected at source</div>
+            </div>
+        </div>
+
+    </div>
+
+    {{-- MONTHLY PERFORMANCE --}}
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0" style="color:#172554;">
+            <i class="fas fa-calendar-alt me-2 text-primary"></i>Monthly Performance
+        </h6>
+    </div>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-lg-4 col-md-4">
+            <div class="month-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="month-label">Current Month Invoices</span>
+                    <i class="fas fa-file-alt text-primary"></i>
+                </div>
+                <div class="month-value">{{ number_format($currentMonthInvoices) }}</div>
+                <div class="month-sub">{{ now()->format('F Y') }}</div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-4">
+            <div class="month-card highlight">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="month-label">Current Month Amount</span>
+                    <i class="fas fa-chart-line text-primary"></i>
+                </div>
+                <div class="month-value">₹{{ number_format($currentMonthAmount, 2) }}</div>
+                <div class="month-sub">Invoice value this month</div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-4">
+            <div class="month-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="month-label">Previous Month Amount</span>
+                    <i class="fas fa-history text-secondary"></i>
+                </div>
+                <div class="month-value">₹{{ number_format($previousMonthAmount, 2) }}</div>
+                <div class="month-sub">{{ now()->copy()->subMonth()->format('F Y') }}</div>
+            </div>
+        </div>
+
+    </div>
+
+    {{-- CHART --}}
+    <div class="section-card mb-4">
+        <div class="section-header">
             <div>
+                <h6><i class="fas fa-chart-bar me-2 text-primary"></i>Invoice Analytics</h6>
+                <small>Monthly invoice amount and invoice count</small>
+            </div>
+            <span class="summary-badge">Last 6 Months</span>
+        </div>
 
-                <h3 class="fs-6 m-0 fw-bold">
+        <div class="section-body">
+            <div style="height:320px; position:relative;">
+                <canvas id="invoiceChart"></canvas>
+            </div>
+        </div>
+    </div>
 
-                    <i class="fa-solid fa-list-check me-2 text-muted"></i>
+    {{-- RECENT INVOICES --}}
+    <div class="section-card">
 
-                    Pending Accounting Items
-
-                </h3>
-
-                <p class="text-muted small mb-0">
-                    Items requiring review, approval or reconciliation
-                </p>
-
+        <div class="section-header">
+            <div>
+                <h6><i class="fas fa-file-invoice me-2 text-primary"></i>Recent Invoices</h6>
+                <small>Latest invoice records and financial details</small>
             </div>
 
-
-            <span
-                class="badge border px-2 py-1"
-                style="
-                    background:var(--accent-amber-subtle);
-                    color:var(--accent-amber);
-                    border-color:var(--accent-amber-border) !important;
-                ">
-
-                14 Pending
-
+            <span class="summary-badge">
+                {{ number_format($totalInvoices) }} Total
             </span>
-
         </div>
 
-
         <div class="table-responsive">
-
-            <table class="table table-custom">
-
+            <table class="table invoice-table align-middle">
                 <thead>
-
                     <tr>
-
-                        <th>Reference</th>
-
-                        <th>Party / Account</th>
-
-                        <th>Category</th>
-
-                        <th>Amount</th>
-
-                        <th>Due Date</th>
-
-                        <th>Assigned To</th>
-
-                        <th>Priority</th>
-
-                        <th>Status</th>
-
+                        <th>#</th>
+                        <th>Invoice No.</th>
+                        <th>Date</th>
+                        <th>Party Name</th>
+                        <th>Gate ID</th>
+                        <th class="text-end">Invoice Amount</th>
+                        <th class="text-end">Taxable</th>
+                        <th class="text-end">GST</th>
+                        <th class="text-end">TDS</th>
+                        <th class="text-end">TCS</th>
+                        <th class="text-end">Discount</th>
+                        <th class="text-center">Action</th>
                     </tr>
-
                 </thead>
 
-
                 <tbody>
+                    @forelse($invoices as $key => $invoice)
+                        <tr>
+                            <td>{{ $invoices->firstItem() + $key }}</td>
 
+                            <td>
+                                <span class="invoice-number">
+                                    {{ $invoice->invoice_no ?? '-' }}
+                                </span>
+                            </td>
 
-                    <tr>
+                            <td>
+                                {{ $invoice->invoice_date
+                                    ? \Carbon\Carbon::parse($invoice->invoice_date)->format('d M Y')
+                                    : '-' }}
+                            </td>
 
-                        <td class="fw-bold">
-                            BILL-2026-4582
-                        </td>
+                            <td class="fw-semibold text-dark">
+                                {{ $invoice->billed_to
+                                    ?: $invoice->gate?->customer?->company_name
+                                    ?: '-' }}
+                            </td>
 
-                        <td>
-                            JSW Steel Ltd.
-                        </td>
+                            <td>{{ $invoice->gate_id ?? '-' }}</td>
 
-                        <td>
-                            Supplier Bill
-                        </td>
+                            <td class="text-end amount-text">
+                                ₹{{ number_format((float) $invoice->total_amount, 2) }}
+                            </td>
 
-                        <td class="fw-bold">
-                            ₹ 24.80 L
-                        </td>
+                            <td class="text-end">
+                                ₹{{ number_format((float) $invoice->taxable_amount, 2) }}
+                            </td>
 
-                        <td>
-                            02 Oct 2026
-                        </td>
+                            <td class="text-end">
+                                ₹{{ number_format((float) $invoice->gst_amount, 2) }}
+                            </td>
 
-                        <td>
-                            Accounts Payable
-                        </td>
+                            <td class="text-end">
+                                ₹{{ number_format((float) $invoice->tds_amount, 2) }}
+                            </td>
 
-                        <td>
+                            <td class="text-end">
+                                ₹{{ number_format((float) $invoice->tcs_amount, 2) }}
+                            </td>
 
-                            <span
-                                class="badge"
-                                style="
-                                    background:var(--accent-red-subtle);
-                                    color:var(--primary-red);
-                                ">
-                                High
-                            </span>
+                            <td class="text-end">
+                                ₹{{ number_format((float) $invoice->cash_discount_amount, 2) }}
+                            </td>
 
-                        </td>
-
-                        <td>
-
-                            <span class="badge-status badge-status-gross">
-                                <i class="fa-solid fa-clock"></i>
-                                Pending
-                            </span>
-
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="fw-bold">
-                            REC-2026-118
-                        </td>
-
-                        <td>
-                            Shivam Infrastructure
-                        </td>
-
-                        <td>
-                            Customer Receipt
-                        </td>
-
-                        <td class="fw-bold">
-                            ₹ 8.40 L
-                        </td>
-
-                        <td>
-                            01 Oct 2026
-                        </td>
-
-                        <td>
-                            Accounts Receivable
-                        </td>
-
-                        <td>
-
-                            <span
-                                class="badge"
-                                style="
-                                    background:var(--accent-amber-subtle);
-                                    color:var(--accent-amber);
-                                ">
-                                Medium
-                            </span>
-
-                        </td>
-
-                        <td>
-
-                            <span class="badge-status badge-status-inward">
-                                <i class="fa-solid fa-hourglass-half"></i>
-                                Follow-up
-                            </span>
-
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="fw-bold">
-                            BANK-0926
-                        </td>
-
-                        <td>
-                            HDFC Bank
-                        </td>
-
-                        <td>
-                            Bank Reconciliation
-                        </td>
-
-                        <td class="fw-bold">
-                            ₹ 3.18 L
-                        </td>
-
-                        <td>
-                            30 Sep 2026
-                        </td>
-
-                        <td>
-                            Finance Team
-                        </td>
-
-                        <td>
-
-                            <span
-                                class="badge"
-                                style="
-                                    background:var(--accent-blue-subtle);
-                                    color:var(--accent-blue);
-                                ">
-                                Normal
-                            </span>
-
-                        </td>
-
-                        <td>
-
-                            <span class="badge-status badge-status-gross">
-                                <i class="fa-solid fa-clock"></i>
-                                Reconcile
-                            </span>
-
-                        </td>
-
-                    </tr>
-
-
-                    <tr>
-
-                        <td class="fw-bold">
-                            GST-0926
-                        </td>
-
-                        <td>
-                            GST Output Liability
-                        </td>
-
-                        <td>
-                            GST
-                        </td>
-
-                        <td class="fw-bold">
-                            ₹ 18.42 L
-                        </td>
-
-                        <td>
-                            10 Oct 2026
-                        </td>
-
-                        <td>
-                            Taxation
-                        </td>
-
-                        <td>
-
-                            <span
-                                class="badge"
-                                style="
-                                    background:var(--accent-red-subtle);
-                                    color:var(--primary-red);
-                                ">
-                                High
-                            </span>
-
-                        </td>
-
-                        <td>
-
-                            <span class="badge-status badge-status-inward">
-                                <i class="fa-solid fa-hourglass-half"></i>
-                                Due
-                            </span>
-
-                        </td>
-
-                    </tr>
-
-
+                            <td class="text-center">
+                                <a href="{{ route('accounts.invoice.bill', ['gate' => $invoice->gate_id]) }}"
+                                   class="btn btn-outline-primary view-btn"
+                                   target="_blank">
+                                    <i class="fas fa-eye me-1"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="12" class="text-center py-5">
+                                <i class="fas fa-file-invoice fa-2x text-muted mb-3 d-block"></i>
+                                <span class="text-muted">No invoices found.</span>
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
-
             </table>
+        </div>
 
+        <div class="table-footer">
+            {{ $invoices->links() }}
         </div>
 
     </div>
 
+</div>
 
 @endsection
 
-
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-
 document.addEventListener('DOMContentLoaded', function () {
 
-    let accountsChart = null;
-
-
-    /* =========================================================
-       FINANCIAL YEAR
-    ========================================================== */
-
-    function getFinancialYear(date = new Date()) {
-
-        const year = date.getFullYear();
-
-        const month = date.getMonth() + 1;
-
-        if (month >= 4) {
-
-            return `${year}-${String(year + 1).slice(-2)}`;
-
-        }
-
-        return `${year - 1}-${String(year).slice(-2)}`;
-
-    }
-
-
-    /* =========================================================
-       ACCOUNTS PERFORMANCE CHART
-    ========================================================== */
-
-    function initAccountsChart(isDark = false) {
-
-        if (typeof Chart === 'undefined') {
-
-            console.warn('Chart.js is not loaded.');
-
-            return;
-
-        }
-
-
-        if (accountsChart) {
-
-            accountsChart.destroy();
-
-            accountsChart = null;
-
-        }
-
-
-        const canvas =
-            document.getElementById(
-                'accountsPerformanceChart'
-            );
-
-
-        if (!canvas) {
-
-            return;
-
-        }
-
-
-        const ctx =
-            canvas.getContext('2d');
-
-
-        const gridColor = isDark
-            ? 'rgba(255,255,255,.05)'
-            : 'rgba(11,18,32,.06)';
-
-
-        const labelColor = isDark
-            ? '#8493A8'
-            : '#64748B';
-
-
-        const profitGradient =
-            ctx.createLinearGradient(
-                0,
-                0,
-                0,
-                280
-            );
-
-
-        profitGradient.addColorStop(
-            0,
-            'rgba(16,185,129,.20)'
-        );
-
-
-        profitGradient.addColorStop(
-            1,
-            'rgba(16,185,129,0)'
-        );
-
-
-        accountsChart = new Chart(ctx, {
-
-            type: 'line',
-
-            data: {
-
-                labels: [
-
-                    'Apr',
-                    'May',
-                    'Jun',
-                    'Jul',
-                    'Aug',
-                    'Sep'
-
-                ],
-
-                datasets: [
-
-                    {
-
-                        label: 'Revenue',
-
-                        data: [
-
-                            4.20,
-                            4.65,
-                            5.10,
-                            4.82,
-                            5.20,
-                            4.59
-
-                        ],
-
-                        borderColor: '#3B82F6',
-
-                        backgroundColor: 'transparent',
-
-                        borderWidth: 2.5,
-
-                        tension: .4,
-
-                        pointRadius: 3,
-
-                        pointBackgroundColor: '#3B82F6'
-
-                    },
-
-
-                    {
-
-                        label: 'Expenses',
-
-                        data: [
-
-                            3.10,
-                            3.28,
-                            3.46,
-                            3.12,
-                            3.40,
-                            3.21
-
-                        ],
-
-                        borderColor: '#F59E0B',
-
-                        backgroundColor: 'transparent',
-
-                        borderWidth: 2.5,
-
-                        tension: .4,
-
-                        pointRadius: 3,
-
-                        pointBackgroundColor: '#F59E0B'
-
-                    },
-
-
-                    {
-
-                        label: 'Net Profit',
-
-                        data: [
-
-                            1.10,
-                            1.37,
-                            1.64,
-                            1.70,
-                            1.80,
-                            1.38
-
-                        ],
-
-                        borderColor: '#10B981',
-
-                        backgroundColor: profitGradient,
-
-                        borderWidth: 2.5,
-
-                        fill: true,
-
-                        tension: .4,
-
-                        pointRadius: 3,
-
-                        pointBackgroundColor: '#10B981'
-
-                    }
-
-                ]
-
+    const canvas = document.getElementById('invoiceChart');
+
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    new Chart(canvas, {
+        type: 'bar',
+
+        data: {
+            labels: @json($chartLabels),
+
+            datasets: [
+                {
+                    label: 'Invoice Amount',
+                    data: @json($chartAmounts),
+                    backgroundColor: 'rgba(59, 130, 246, 0.75)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    barPercentage: 0.55,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Invoice Count',
+                    data: @json($chartCounts),
+                    type: 'line',
+                    borderColor: '#16a36a',
+                    backgroundColor: '#16a36a',
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#16a36a',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    tension: 0.35,
+                    fill: false,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            interaction: {
+                mode: 'index',
+                intersect: false
             },
 
-
-            options: {
-
-                responsive: true,
-
-                maintainAspectRatio: false,
-
-
-                interaction: {
-
-                    intersect: false,
-
-                    mode: 'index'
-
+            plugins: {
+                legend: {
+                    position: 'top',
+                    align: 'end',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 8,
+                        padding: 18,
+                        font: { size: 11 }
+                    }
                 },
 
-
-                plugins: {
-
-                    legend: {
-
-                        position: 'bottom',
-
-                        labels: {
-
-                            color: labelColor,
-
-                            usePointStyle: true,
-
-                            padding: 18,
-
-                            font: {
-
-                                family:
-                                    'Plus Jakarta Sans',
-
-                                size: 11
-
+                tooltip: {
+                    backgroundColor: '#172554',
+                    padding: 12,
+                    callbacks: {
+                        label: function(context) {
+                            if (context.dataset.yAxisID === 'y') {
+                                return ' Amount: ₹' +
+                                    Number(context.raw).toLocaleString('en-IN');
                             }
 
+                            return ' Invoices: ' + context.raw;
                         }
-
-                    },
-
-
-                    tooltip: {
-
-                        backgroundColor:
-                            isDark
-                                ? '#172033'
-                                : '#111827',
-
-                        titleColor: '#FFFFFF',
-
-                        bodyColor: '#FFFFFF',
-
-                        padding: 12,
-
-                        callbacks: {
-
-                            label: function (context) {
-
-                                return ' ' +
-                                    context.dataset.label +
-                                    ': ₹ ' +
-                                    Number(context.raw)
-                                        .toFixed(2) +
-                                    ' Cr';
-
-                            }
-
-                        }
-
                     }
-
-                },
-
-
-                scales: {
-
-                    x: {
-
-                        grid: {
-
-                            color: gridColor,
-
-                            drawBorder: false
-
-                        },
-
-                        ticks: {
-
-                            color: labelColor,
-
-                            font: {
-
-                                family:
-                                    'Plus Jakarta Sans',
-
-                                size: 11
-
-                            }
-
-                        }
-
-                    },
-
-
-                    y: {
-
-                        beginAtZero: true,
-
-                        grid: {
-
-                            color: gridColor,
-
-                            drawBorder: false
-
-                        },
-
-                        ticks: {
-
-                            color: labelColor,
-
-                            callback: function (value) {
-
-                                return '₹ ' +
-                                    value +
-                                    ' Cr';
-
-                            },
-
-                            font: {
-
-                                family:
-                                    'Plus Jakarta Sans',
-
-                                size: 11
-
-                            }
-
-                        }
-
-                    }
-
                 }
+            },
 
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        color: '#64748b',
+                        font: { size: 11 }
+                    }
+                },
+
+                y: {
+                    beginAtZero: true,
+                    position: 'left',
+                    grid: { color: '#eef2f7' },
+                    title: {
+                        display: true,
+                        text: 'Invoice Amount (₹)',
+                        color: '#64748b'
+                    },
+                    ticks: {
+                        color: '#64748b',
+                        callback: function(value) {
+                            return '₹' + Number(value).toLocaleString('en-IN');
+                        }
+                    }
+                },
+
+                y1: {
+                    beginAtZero: true,
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    title: {
+                        display: true,
+                        text: 'Invoice Count',
+                        color: '#64748b'
+                    },
+                    ticks: {
+                        precision: 0,
+                        color: '#64748b'
+                    }
+                }
             }
-
-        });
-
-    }
-
-
-    /* =========================================================
-       INITIALIZE
-    ========================================================== */
-
-    const currentTheme =
-        document.documentElement
-            .getAttribute('data-theme') ||
-        'light';
-
-
-    initAccountsChart(
-        currentTheme === 'dark'
-    );
-
-
-    /* =========================================================
-       THEME SWITCH SUPPORT
-    ========================================================== */
-
-    window.updateAccountsChartsTheme =
-        function (theme) {
-
-            initAccountsChart(
-                theme === 'dark'
-            );
-
-        };
-
-
-    /* =========================================================
-       FY AUTO REFRESH
-    ========================================================== */
-
-    setInterval(function () {
-
-        const latestFY =
-            getFinancialYear();
-
-        console.log(
-            'Current Financial Year:',
-            latestFY
-        );
-
-    }, 60000);
-
+        }
+    });
 
 });
-
 </script>
-
 @endpush
