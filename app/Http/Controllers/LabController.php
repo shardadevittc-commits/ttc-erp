@@ -55,6 +55,14 @@ class LabController extends Controller
                 continue;
             }
 
+            $workorderId = DB::table('work_orders_and_process')
+                ->where('po_item_id', $unloadWeight->purchase_order_item_id)
+                ->first();
+
+            if (!$workorderId) {
+                continue;
+            }
+
             $sizeName = Size::where('id', $item->size_id)
                 ->value('size_name');
 
@@ -64,11 +72,10 @@ class LabController extends Controller
                 ->value('company_name');
 
             /*
-             * Production ID
-             */
+            * Production ID
+            */
 
-            $productionId = $item->production_id;
-
+            $productionId = $workorderId->id;
             /*
              * Fetch Saved Results
              */

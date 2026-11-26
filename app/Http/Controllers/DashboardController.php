@@ -976,12 +976,12 @@ class DashboardController extends Controller
     /**
      * Lab Dashboard
      */
-    // public function lab()
-    // {
-    //     $user = Auth::user();
+    public function lab()
+    {
+        $user = Auth::user();
 
-    //     return view('dashboard.lab', compact('user'));
-    // }
+        return view('dashboard.lab', compact('user'));
+    }
 
     /**
      * Production Dashboard

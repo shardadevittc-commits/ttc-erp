@@ -17,11 +17,11 @@ use Illuminate\Validation\ValidationException;
 class ProductionController extends Controller
 {
     private const PRODUCT_TYPE_OPERATIONS = [
-        1 => 'operation6', /* Bright Bar */
-        2 => 'operation2', /* HB Wire */
-        3 => 'operation5', /* HHB Wire */
-        4 => 'operation7', /* Annealing Bar */
-        5 => 'operation8', /* Bolt Road */
+        'bright_bar' => 'operation6',
+        'hb_wire' => 'operation2',
+        'hhb_wire' => 'operation5',
+        'annealed_bar' => 'operation7',
+        'bolt_rod' => 'operation8',
     ];
 
     /**
@@ -248,7 +248,7 @@ class ProductionController extends Controller
         $workOrder = DB::transaction(function () use ($validated, $saleOrderItem, $request) {
             // Serialize submissions for this sale item before checking the idempotency token.
             $lockedSaleOrderItem = SaleOrderItem::query()
-                ->with('saleOrder.items')
+                ->with(['saleOrder.items', 'product'])
                 ->whereKey($saleOrderItem->id)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -352,7 +352,7 @@ class ProductionController extends Controller
                 'pending_raw_material' => ($availableCents - $requestedCents) / 100,
                 'heat_no' => $firstAllocatedReceiving?->genrated_heat_no,
                 'j_messages' => $validated['remarks'] ?? null,
-                'total_operation_perfome' => self::PRODUCT_TYPE_OPERATIONS[$lockedSaleOrderItem->product_type] ?? null,
+                'total_operation_perfome' => self::PRODUCT_TYPE_OPERATIONS[$lockedSaleOrderItem->product?->product_type] ?? null,
                 'status' => 'under_process',
                 'current_operation' => 1,
                 'created_by' => $request->user()->id,
@@ -391,17 +391,14 @@ class ProductionController extends Controller
         ]);
         abort_unless($workOrder->saleOrderItem, 404);
 
-        if($workOrder->saleOrderItem->product_type === 1){
-            $view = 'productions.workOrderProcess.brightBar';
-        }elseif($workOrder->saleOrderItem->product_type === 2){
-            $view = 'productions.workOrderProcess.hbWire';
-        }elseif($workOrder->saleOrderItem->product_type === 3){
-            $view = 'productions.workOrderProcess.hhbWire';
-        }elseif($workOrder->saleOrderItem->product_type === 4){
-            $view = 'productions.workOrderProcess.anealingBrightBar';
-        }elseif($workOrder->saleOrderItem->product_type === 5){
-            $view = 'productions.workOrderProcess.boldRoad';
-        }
+        $view = match ($workOrder->saleOrderItem->product?->product_type) {
+            'bright_bar' => 'productions.workOrderProcess.brightBar',
+            'hb_wire'    => 'productions.workOrderProcess.hbWire',
+            'hhb_wire'   => 'productions.workOrderProcess.hhbWire',
+            'annealed_bar' => 'productions.workOrderProcess.anealingBrightBar',
+            'bolt_rod'     => 'productions.workOrderProcess.boldRoad',
+            default      => abort(404),
+        };
         $totalNonRecScrap = $workOrder->saleOrderItem->losses->where('scrap_type', 2)->sum('loss_weight');
         $totalRecScrap = $workOrder->saleOrderItem->losses->where('scrap_type', 1)->sum('loss_weight');
         $adjScrap = $workOrder->saleOrderItem->losses->sum('adjustable_material');
@@ -427,12 +424,12 @@ class ProductionController extends Controller
         abort_unless($workOrder->saleOrderItem, 404);
 
         // Product type ke hisaab se uska apna function chalega.
-        match ((int) $workOrder->saleOrderItem->product_type) {
-            1 => $this->brightBarProduction($request, $workOrder, $operation),
-            2 => $this->hbWireProduction($request, $workOrder, $operation),
-            3 => $this->hhbWireProduction($request, $workOrder, $operation),
-            4 => $this->annealingBrightBarProduction($request, $workOrder, $operation),
-            5 => $this->boldRoadProduction($request, $workOrder, $operation),
+        match ($workOrder->saleOrderItem->product?->product_type) {
+            'bright_bar' => $this->brightBarProduction($request, $workOrder, $operation),
+            'hb_wire' => $this->hbWireProduction($request, $workOrder, $operation),
+            'hhb_wire' => $this->hhbWireProduction($request, $workOrder, $operation),
+            'annealed_bar' => $this->annealingBrightBarProduction($request, $workOrder, $operation),
+            'bolt_rod' => $this->boldRoadProduction($request, $workOrder, $operation),
             default => abort(404),
         };
 
@@ -440,76 +437,6 @@ class ProductionController extends Controller
             ->route('productions.workflow', ['workOrder' => $workOrder->id])
             ->with('success', "Operation {$operation} completed successfully.");
     }
-
-    /**
-     * Bright Bar (product_type = 1): operations 1 to 6.
-     * Validation, save, bundle calculation aur status sab yahin hai.
-     */
-    /* private function brightBarProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
-    {
-        $finalOperation = 6;
-        abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
-
-        // Validation
-        $validated = match ($operation) {
-            1 => $request->validate([
-                'surface_process' => ['required', Rule::in(['shot_blasting', 'acid_pickling'])],
-            ]),
-            2 => $request->validate([
-                'pointing' => ['required', 'integer', Rule::in([1, 2])],
-            ]),
-            3 => $request->validate([
-                'fs_observed_size' => ['required', 'string', 'max:20'],
-                'fs_observed_unit' => ['nullable', 'string', 'max:20'],
-            ]),
-            4 => $request->validate([
-                'poin_discard' => ['required', 'integer', Rule::in([1, 2])],
-            ]),
-            5 => $request->validate([
-                'straightening' => ['required', 'integer', Rule::in([1, 2])],
-            ]),
-            6 => [],
-        };
-
-        DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
-            $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
-
-            // Operation pehle hi complete ho chuka hai (double submit / refresh).
-            if ($lockedWorkOrder === null) {
-                return;
-            }
-
-            // Save
-            switch ($operation) {
-                case 1:
-                    $lockedWorkOrder->shot_blasting = $validated['surface_process'] === 'shot_blasting' ? 1 : 2;
-                    $lockedWorkOrder->acid_pickling = $validated['surface_process'] === 'acid_pickling' ? 1 : 2;
-                    break;
-                case 2:
-                    $lockedWorkOrder->pointing = (int) $validated['pointing'];
-                    break;
-                case 3:
-                    $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
-                    $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'] ?? null;
-                    break;
-                case 4:
-                    $lockedWorkOrder->poin_discard = (int) $validated['poin_discard'];
-                    break;
-                case 5:
-                    $lockedWorkOrder->straightening = (int) $validated['straightening'];
-                    break;
-                case 6:
-                    $this->calculateBundles($lockedWorkOrder);
-                    break;
-            }
-
-            calculateProductionScrap($request, $lockedWorkOrder);
-
-            $lockedWorkOrder->status = $operation === $finalOperation ? 'completed' : 'under_process';
-            $lockedWorkOrder->current_operation = $operation + 1;
-            $lockedWorkOrder->save();
-        });
-    } */
 
     private function brightBarProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
     {
@@ -1721,7 +1648,7 @@ class ProductionController extends Controller
             $saleOrderItem->setAttribute('vehicle_id', $firstReceiving?->vehical_id);
             $saleOrderItem->setAttribute(
                 'work_operation',
-                self::PRODUCT_TYPE_OPERATIONS[$saleOrderItem->product_type] ?? null
+                self::PRODUCT_TYPE_OPERATIONS[$saleOrderItem->product?->product_type] ?? null
             );
         }
     }

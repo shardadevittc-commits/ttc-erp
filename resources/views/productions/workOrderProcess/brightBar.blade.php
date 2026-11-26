@@ -96,16 +96,16 @@
             @if ($currentOperation >= 1)
                 <div class="accordion-item shadow-sm border rounded mt-4">
                     <h2 class="accordion-header">
-                        <button class="accordion-button {{ $currentOperation === 2 ? '' : 'collapsed' }} bg-success text-white"
+                        <button class="accordion-button {{ $currentOperation === 1 ? '' : 'collapsed' }} bg-success text-white"
                             type="button" data-bs-toggle="collapse" data-bs-target="#brightBarOperation2"
-                            aria-expanded="{{ $currentOperation === 2 ? 'true' : 'false' }}" aria-controls="brightBarOperation2">
-                            <b>SHOT BLASTING / ACID PICKLING (Operation 2)</b>
+                            aria-expanded="{{ $currentOperation === 1 ? 'true' : 'false' }}" aria-controls="brightBarOperation2">
+                            <b>SHOT BLASTING / ACID PICKLING (Operation 1)</b>
                         </button>
                     </h2>
-                    <div id="brightBarOperation2" class="accordion-collapse collapse {{ $currentOperation === 2 ? 'show' : '' }}"
+                    <div id="brightBarOperation2" class="accordion-collapse collapse {{ $currentOperation === 1 ? 'show' : '' }}"
                         data-bs-parent="#brightBarOperationAccordion">
                         <div class="accordion-body">
-                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 2]) }}">
+                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 1]) }}">
                                 @csrf
                                 <div class="row">
                                     <div class="col-md-12">
@@ -135,16 +135,16 @@
             @if ($currentOperation >= 2)
                 <div class="accordion-item shadow-sm border rounded mt-4">
                     <h2 class="accordion-header">
-                        <button class="accordion-button {{ $currentOperation === 3 ? '' : 'collapsed' }} bg-success text-white"
+                        <button class="accordion-button {{ $currentOperation === 2 ? '' : 'collapsed' }} bg-success text-white"
                             type="button" data-bs-toggle="collapse" data-bs-target="#brightBarOperation3"
-                            aria-expanded="{{ $currentOperation === 3 ? 'true' : 'false' }}" aria-controls="brightBarOperation3">
-                            <b>POINTING (Operation 3)</b>
+                            aria-expanded="{{ $currentOperation === 2 ? 'true' : 'false' }}" aria-controls="brightBarOperation3">
+                            <b>POINTING (Operation 2)</b>
                         </button>
                     </h2>
-                    <div id="brightBarOperation3" class="accordion-collapse collapse {{ $currentOperation === 3 ? 'show' : '' }}"
+                    <div id="brightBarOperation3" class="accordion-collapse collapse {{ $currentOperation === 2 ? 'show' : '' }}"
                         data-bs-parent="#brightBarOperationAccordion">
                         <div class="accordion-body">
-                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 3]) }}">
+                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 2]) }}">
                                 @csrf
                                 <div class="row">
                                     <div class="col-md-12">
@@ -159,7 +159,7 @@
                                             <label class="form-check-label" for="brightBarPointingNo">No</label>
                                         </div>
                                     </div>
-                                    @if ($currentOperation === 3)
+                                    @if ($currentOperation === 2)
                                         <div class="col-12 text-end mt-3">
                                             <button type="submit" class="btn btn-primary">Submit</button>
                                         </div>
@@ -174,16 +174,16 @@
             @if ($currentOperation >= 3)
                 <div class="accordion-item shadow-sm border rounded mt-4">
                     <h2 class="accordion-header">
-                        <button class="accordion-button {{ $currentOperation === 4 ? '' : 'collapsed' }} bg-success text-white"
+                        <button class="accordion-button {{ $currentOperation === 3 ? '' : 'collapsed' }} bg-success text-white"
                             type="button" data-bs-toggle="collapse" data-bs-target="#brightBarOperation4"
-                            aria-expanded="{{ $currentOperation === 4 ? 'true' : 'false' }}" aria-controls="brightBarOperation4">
-                            <b>DRAWING (Operation 4)</b>
+                            aria-expanded="{{ $currentOperation === 3 ? 'true' : 'false' }}" aria-controls="brightBarOperation4">
+                            <b>DRAWING (Operation 3)</b>
                         </button>
                     </h2>
-                    <div id="brightBarOperation4" class="accordion-collapse collapse {{ $currentOperation === 4 ? 'show' : '' }}"
+                    <div id="brightBarOperation4" class="accordion-collapse collapse {{ $currentOperation === 3 ? 'show' : '' }}"
                         data-bs-parent="#brightBarOperationAccordion">
                         <div class="accordion-body">
-                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 4]) }}">
+                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 3]) }}">
                                 @csrf
                                 <div class="row">
                                     {{-- <div class="col-md-4 mt-3">
@@ -215,7 +215,7 @@
                                             </select>
                                         </div>
                                     </div>
-                                    @if ($currentOperation === 4)
+                                    @if ($currentOperation === 3)
                                         <div class="col-12 text-end mt-3">
                                             <button type="submit" class="btn btn-primary">Submit</button>
                                         </div>
@@ -230,16 +230,16 @@
             @if ($currentOperation >= 4)
                 <div class="accordion-item shadow-sm border rounded mt-4">
                     <h2 class="accordion-header">
-                        <button class="accordion-button {{ $currentOperation === 5 ? '' : 'collapsed' }} bg-success text-white"
+                        <button class="accordion-button {{ $currentOperation === 4 ? '' : 'collapsed' }} bg-success text-white"
                             type="button" data-bs-toggle="collapse" data-bs-target="#brightBarOperation5"
-                            aria-expanded="{{ $currentOperation === 5 ? 'true' : 'false' }}" aria-controls="brightBarOperation5">
-                            <b>POINT DISCARD (Operation 5)</b>
+                            aria-expanded="{{ $currentOperation === 4 ? 'true' : 'false' }}" aria-controls="brightBarOperation5">
+                            <b>POINT DISCARD (Operation 4)</b>
                         </button>
                     </h2>
-                    <div id="brightBarOperation5" class="accordion-collapse collapse {{ $currentOperation === 5 ? 'show' : '' }}"
+                    <div id="brightBarOperation5" class="accordion-collapse collapse {{ $currentOperation === 4 ? 'show' : '' }}"
                         data-bs-parent="#brightBarOperationAccordion">
                         <div class="accordion-body">
-                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 5]) }}">
+                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 4]) }}">
                                 @csrf
                                 <div class="row">
                                     <div class="col-md-12">
@@ -254,7 +254,7 @@
                                             <label class="form-check-label" for="brightBarPointDiscardNo">No</label>
                                         </div>
                                     </div>
-                                    @if ($currentOperation === 5)
+                                    @if ($currentOperation === 4)
                                         <div class="col-12 text-end mt-3">
                                             <button type="submit" class="btn btn-primary">Submit</button>
                                         </div>
@@ -269,16 +269,16 @@
             @if ($currentOperation >= 5)
                 <div class="accordion-item shadow-sm border rounded mt-4">
                     <h2 class="accordion-header">
-                        <button class="accordion-button {{ $currentOperation === 6 ? '' : 'collapsed' }} bg-success text-white"
+                        <button class="accordion-button {{ $currentOperation === 5 ? '' : 'collapsed' }} bg-success text-white"
                             type="button" data-bs-toggle="collapse" data-bs-target="#brightBarOperation6"
-                            aria-expanded="{{ $currentOperation === 6 ? 'true' : 'false' }}" aria-controls="brightBarOperation6">
-                            <b>STRAIGHTENING (Operation 6)</b>
+                            aria-expanded="{{ $currentOperation === 5 ? 'true' : 'false' }}" aria-controls="brightBarOperation6">
+                            <b>STRAIGHTENING (Operation 5)</b>
                         </button>
                     </h2>
-                    <div id="brightBarOperation6" class="accordion-collapse collapse {{ $currentOperation === 6 ? 'show' : '' }}"
+                    <div id="brightBarOperation6" class="accordion-collapse collapse {{ $currentOperation === 5 ? 'show' : '' }}"
                         data-bs-parent="#brightBarOperationAccordion">
                         <div class="accordion-body">
-                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 6]) }}">
+                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 5]) }}">
                                 @csrf
                                 <div class="row">
                                     <div class="col-md-12">
@@ -293,7 +293,7 @@
                                             <label class="form-check-label" for="brightBarStraighteningNo">No</label>
                                         </div>
                                     </div>
-                                    @if ($currentOperation === 6)
+                                    @if ($currentOperation === 5)
                                         <div class="col-12 text-end mt-3">
                                             <button type="submit" class="btn btn-primary">Submit</button>
                                         </div>
@@ -308,16 +308,16 @@
             @if ($currentOperation >= 6)
                 <div class="accordion-item shadow-sm border rounded mt-4">
                     <h2 class="accordion-header">
-                        <button class="accordion-button {{ $currentOperation === 7 ? '' : 'collapsed' }} bg-success text-white"
+                        <button class="accordion-button {{ $currentOperation === 6 ? '' : 'collapsed' }} bg-success text-white"
                             type="button" data-bs-toggle="collapse" data-bs-target="#brightBarOperation7"
-                            aria-expanded="{{ $currentOperation === 7 ? 'true' : 'false' }}" aria-controls="brightBarOperation7">
-                            <b>Bend Saw Cut (Operation 7)</b>
+                            aria-expanded="{{ $currentOperation === 6 ? 'true' : 'false' }}" aria-controls="brightBarOperation7">
+                            <b>Bend Saw Cut (Operation 6)</b>
                         </button>
                     </h2>
-                    <div id="brightBarOperation7" class="accordion-collapse collapse {{ $currentOperation === 7 ? 'show' : '' }}"
+                    <div id="brightBarOperation7" class="accordion-collapse collapse {{ $currentOperation === 6 ? 'show' : '' }}"
                         data-bs-parent="#brightBarOperationAccordion">
                         <div class="accordion-body">
-                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 7]) }}">
+                            <form method="post" action="{{ route('productions.operation', ['workOrder' => $workOrder->id, 'operation' => 6]) }}">
                                 @csrf
                                 <div class="row">
                                     {{-- <div class="col-md-4 mt-3">
@@ -367,7 +367,7 @@
                                         <input type="text" class="form-control" value="{{ _rz($materialSentKg) }}" readonly>
                                     </div> --}}
 
-                                    @if ($currentOperation === 7)
+                                    @if ($currentOperation === 6)
                                         <div class="col-12 text-end mt-3">
                                             <button type="submit" class="btn btn-primary">Complete Operation &amp; Generate Token</button>
                                         </div>
@@ -378,13 +378,12 @@
                                 @php
                                     $totalScrap = ($totalNonRecScrap ?? 0) + ($totalRecScrap ?? 0);
                                     $percentage = 0.75;
-                                    $bendSawCutScrap = $workOrder->saleOrderItem->losses;
                                     $bendSawCut = 0;
-                                    if(isset($lossWeight) && $lossWeight){
+                                    if (isset($lossWeight) && $lossWeight) {
                                         $finishQty = $materialSentKg - $totalScrap;
-                                    }else{
-                                        $finishQty = $materialSentKg - ($totalScrap + $bendSawCut);
+                                    } else {
                                         $bendSawCut = ($materialSentKg * $percentage) / 100;
+                                        $finishQty = $materialSentKg - ($totalScrap + $bendSawCut);
                                     }
 
                                 @endphp
@@ -450,37 +449,30 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
+        const scrapInput = document.getElementById('recoverable_scrap');
+        const finishInput = document.getElementById('finished_material');
 
-    let scrapInput = document.getElementById('recoverable_scrap');
-    let finishInput = document.getElementById('finished_material');
-
-    let initialScrap = parseFloat(scrapInput.value) || 0;
-    let initialFinish = parseFloat(finishInput.value) || 0;
-
-    let totalQty = initialScrap + initialFinish;
-
-    scrapInput.addEventListener('input', function () {
-
-        let scrap = parseFloat(this.value) || 0;
-
-        // Scrap total quantity se jyada nahi hona chahiye
-        if (scrap > totalQty) {
-            scrap = totalQty;
-            this.value = totalQty;
+        if (!scrapInput || !finishInput) {
+            return;
         }
 
-        if (scrap < 0) {
-            scrap = 0;
-            this.value = 0;
-        }
+        const totalQty = (parseFloat(scrapInput.value) || 0) + (parseFloat(finishInput.value) || 0);
 
-        // Finish Qty automatically calculate hogi
-        let finish = totalQty - scrap;
+        scrapInput.addEventListener('input', function () {
+            let scrap = parseFloat(this.value) || 0;
 
-        finishInput.value = finish.toFixed(3);
+            if (scrap > totalQty) {
+                scrap = totalQty;
+                this.value = totalQty;
+            }
 
+            if (scrap < 0) {
+                scrap = 0;
+                this.value = 0;
+            }
+
+            finishInput.value = (totalQty - scrap).toFixed(3);
+        });
     });
-
-});
 </script>
 @endsection
