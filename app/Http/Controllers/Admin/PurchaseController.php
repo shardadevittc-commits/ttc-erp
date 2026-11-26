@@ -11,6 +11,7 @@ use App\Models\SaleOrder;
 use App\Models\Size;
 use App\Models\Unit;
 use App\Models\GateAndGaadi;
+use App\Models\WorkOrderProcess;
 use App\Models\Brand;
 use App\Models\Branch;
 use Illuminate\Http\Request;
@@ -19,6 +20,15 @@ use Illuminate\Support\Facades\Log;
 
 class PurchaseController extends Controller
 {
+
+    private const RELATIONS = [
+        'saleOrderItem.saleOrder.customer',
+        'saleOrderItem.product',
+        'saleOrderItem.grade',
+        'saleOrderItem.size',
+        'lab'
+    ];
+
     /* public function index(Request $request)
     {
         $query = PurchaseOrder::with([
@@ -314,6 +324,8 @@ class PurchaseController extends Controller
                 'size',
                 'grade',
                 'sizeUnit',
+                'poitemReceiving',
+                'lab'
             ]);
 
             // Search functionality
@@ -353,11 +365,11 @@ class PurchaseController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'status' => true,
-                'html' => view('admin.rawMaterials.listingLoop', compact('listing'))->render(),
-                'page' => $listing->currentPage(),
-                'counter' => $listing->perPage(),
-                'count' => $listing->total(),
-                'lastPage' => $listing->lastPage(),
+                'html'       => view('admin.rawMaterials.listingLoop', compact('listing'))->render(),
+                'page'       => $listing->currentPage(),
+                'counter'    => $listing->perPage(),
+                'count'      => $listing->total(),
+                'lastPage'   => $listing->lastPage(),
                 'pagination' => $listing->links('pagination::bootstrap-5')->toHtml(),
             ]);
         }
@@ -366,11 +378,11 @@ class PurchaseController extends Controller
         $sizes    = Size::query()->where('status', 1)->select(['id', 'size_name', 'created_at'])->get();
         $brands   = Brand::query()->where('status', 1)->select(['id', 'brand_name','created_at'])->get();
         $grades   = Grade::query()->where('status', 1)->select(['id', 'grade_name', 'created_at'])->get();
-
+        //echo"<pre>";print_r($listing->toArray());die;
         return view('admin.rawMaterials.index', compact('listing','products','sizes','brands', 'grades'));
     }
 
-    public function indexFM(Request $request)
+    /*public function indexFM(Request $request)
     {
         $data = DB::table('work_orders_and_process as wop')
             ->join('sale_orders as so', 'wop.sale_order_id', '=', 'so.id')
@@ -404,9 +416,9 @@ class PurchaseController extends Controller
                 'c.company_name'
             )
             ->get();
-
+            
         return view('admin.finishMaterials.index', compact('data'));
-    }
+    }*/
 
     public function indexVH(Request $request)
     {
@@ -482,7 +494,7 @@ class PurchaseController extends Controller
                 'p.product_name',
                 'v.truckno'
             )
-            ->where('uw.id', $id)
+            ->where('uw.purchase_order_item_id', $id)
             ->first();
 
         if (!$unloadWeight) {
@@ -507,6 +519,19 @@ class PurchaseController extends Controller
         return view('admin.rawMaterials.print', compact(
             'unloadWeight',
             'labResults'
+        ));
+    }
+
+
+    public function printFM(Request $request)
+    {
+        $data = WorkOrderProcess::query()
+            ->with(self::RELATIONS)
+            ->where('status', 'completed')
+            ->whereHas('saleOrderItem.saleOrder');
+        //echo"<pre>";print_r($data);die;
+        return view('admin.rawMaterials.fmprint', compact(
+            'data',
         ));
     }
 

@@ -73,4 +73,20 @@ class PurchaseOrderItem extends Model
         return $this->hasMany(PurchaseOrderitemReceiving::class,'purchase_order_item_id','id');
     }
 
+    public function poitemReceiving()
+    {
+        return $this->hasMany(
+            PurchaseOrderitemReceiving::class,
+            'purchase_order_item_id',
+            'id'
+        );
+    }
+    public function lab()
+    {
+        return $this->hasMany(
+            LabResult::class,
+            'purchase_order_item_id',
+            'id'
+        );
+    }
 }

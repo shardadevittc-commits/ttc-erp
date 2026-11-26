@@ -616,7 +616,7 @@ function renderDynamicGradeSections(item) {
     }).join('');
 
     container.insertAdjacentHTML('afterbegin', `
-        <div class="row g-3 mt-2">
+        {{-- <div class="row g-3 mt-2">
             <div class="col-12">
                 <div class="lab-property-values fw-bold text-center">
                     <span>Min</span>
@@ -625,7 +625,7 @@ function renderDynamicGradeSections(item) {
                     <span>Final</span>
                 </div>
             </div>
-        </div>
+        </div> --}}
     `);
 
     updateSubmitButton(stage);

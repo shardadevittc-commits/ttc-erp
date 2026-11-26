@@ -1,7 +1,7 @@
 
 @extends('layouts.app')
 
-@section('title', 'View Composition Raw Materials')
+@section('title', 'Raw Materials Print View')
 
 @section('content')
 

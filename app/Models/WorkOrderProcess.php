@@ -93,4 +93,13 @@ class WorkOrderProcess extends Model
     {
         return $this->belongsTo(PoItem::class, 'po_item_id');
     }
+
+    public function lab()
+    {
+        return $this->hasMany(
+            LabResult::class,
+            'purchase_order_item_id',
+            'po_item_id'
+        );
+    }
 }
