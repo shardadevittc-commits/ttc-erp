@@ -18,10 +18,10 @@ class ProductionController extends Controller
 {
     private const PRODUCT_TYPE_OPERATIONS = [
         'bright_bar' => 'operation6',
-        'hb_wire' => 'operation5',
-        'hhb_wire' => 'operation2',
-        'annealed_bar' => 'operation8',
-        'bolt_rod' => 'operation9',
+        'hb_wire' => 'operation2',
+        'hhb_wire' => 'operation5',
+        'annealed_bar' => 'operation7',
+        'bolt_rod' => 'operation8',
     ];
 
     /**
@@ -395,6 +395,8 @@ class ProductionController extends Controller
             'bright_bar' => 'productions.workOrderProcess.brightBar',
             'hb_wire'    => 'productions.workOrderProcess.hbWire',
             'hhb_wire'   => 'productions.workOrderProcess.hhbWire',
+            'annealed_bar' => 'productions.workOrderProcess.anealingBrightBar',
+            'bolt_rod'     => 'productions.workOrderProcess.boldRoad',
             default      => abort(404),
         };
         $totalNonRecScrap = $workOrder->saleOrderItem->losses->where('scrap_type', 2)->sum('loss_weight');
@@ -435,76 +437,6 @@ class ProductionController extends Controller
             ->route('productions.workflow', ['workOrder' => $workOrder->id])
             ->with('success', "Operation {$operation} completed successfully.");
     }
-
-    /**
-     * Bright Bar (product_type = 1): operations 1 to 6.
-     * Validation, save, bundle calculation aur status sab yahin hai.
-     */
-    /* private function brightBarProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
-    {
-        $finalOperation = 6;
-        abort_unless($operation >= 1 && $operation <= $finalOperation, 404);
-
-        // Validation
-        $validated = match ($operation) {
-            1 => $request->validate([
-                'surface_process' => ['required', Rule::in(['shot_blasting', 'acid_pickling'])],
-            ]),
-            2 => $request->validate([
-                'pointing' => ['required', 'integer', Rule::in([1, 2])],
-            ]),
-            3 => $request->validate([
-                'fs_observed_size' => ['required', 'string', 'max:20'],
-                'fs_observed_unit' => ['nullable', 'string', 'max:20'],
-            ]),
-            4 => $request->validate([
-                'poin_discard' => ['required', 'integer', Rule::in([1, 2])],
-            ]),
-            5 => $request->validate([
-                'straightening' => ['required', 'integer', Rule::in([1, 2])],
-            ]),
-            6 => [],
-        };
-
-        DB::transaction(function () use ($request, $workOrder, $operation, $validated, $finalOperation) {
-            $lockedWorkOrder = $this->lockWorkOrderAtOperation($workOrder, $operation);
-
-            // Operation pehle hi complete ho chuka hai (double submit / refresh).
-            if ($lockedWorkOrder === null) {
-                return;
-            }
-
-            // Save
-            switch ($operation) {
-                case 1:
-                    $lockedWorkOrder->shot_blasting = $validated['surface_process'] === 'shot_blasting' ? 1 : 2;
-                    $lockedWorkOrder->acid_pickling = $validated['surface_process'] === 'acid_pickling' ? 1 : 2;
-                    break;
-                case 2:
-                    $lockedWorkOrder->pointing = (int) $validated['pointing'];
-                    break;
-                case 3:
-                    $lockedWorkOrder->fs_observed_size = $validated['fs_observed_size'];
-                    $lockedWorkOrder->fs_observed_unit = $validated['fs_observed_unit'] ?? null;
-                    break;
-                case 4:
-                    $lockedWorkOrder->poin_discard = (int) $validated['poin_discard'];
-                    break;
-                case 5:
-                    $lockedWorkOrder->straightening = (int) $validated['straightening'];
-                    break;
-                case 6:
-                    $this->calculateBundles($lockedWorkOrder);
-                    break;
-            }
-
-            calculateProductionScrap($request, $lockedWorkOrder);
-
-            $lockedWorkOrder->status = $operation === $finalOperation ? 'completed' : 'under_process';
-            $lockedWorkOrder->current_operation = $operation + 1;
-            $lockedWorkOrder->save();
-        });
-    } */
 
     private function brightBarProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void
     {
