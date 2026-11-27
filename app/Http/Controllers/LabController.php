@@ -18,39 +18,31 @@ use Illuminate\Validation\ValidationException;
 
 class LabController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Lab Management Listing
-    |--------------------------------------------------------------------------
-    */
-
     public function index(Request $request)
     {
         $unloadWeights = UnloadWeight::all();
-
+        //echo"<pre>";print_r($unloadWeights->toArray());die;
         $unloaderData = [];
 
         foreach ($unloadWeights as $unloadWeight) {
 
             $vehicleId = $unloadWeight->vehicle_id;
             $customerId = $unloadWeight->cust_id;
+            $poItemId = $unloadWeight->purchase_order_item_id;
 
             $weighRecord = Weight::where('vehicle_id', $vehicleId)->where('cust_id', $customerId)->first();
 
             $labTest = PurchaseOrderitemReceiving::where('vehical_id',$vehicleId)->where('customer_id', $customerId)
-                ->where('lab_test', '1')->first();
+                    ->where('purchase_order_item_id', $poItemId)
+                    ->where('lab_test', '1')->first();
 
-            $item = PurchaseOrderItem::find($unloadWeight->purchase_order_item_id);
+            if (!$labTest) { continue; }
 
-            if (!$item) {
-                continue;
-            }
+            $item = PurchaseOrderItem::find($poItemId);
 
-            $workorderId = DB::table('work_orders_and_process')->where('po_item_id', $unloadWeight->purchase_order_item_id)->first();
+            if (!$item) { continue; }
 
-            if (!$workorderId) {
-                continue;
-            }
+            $workorder = DB::table('work_orders_and_process')->where('po_item_id', $poItemId)->first();
 
             $sizeName = Size::where('id', $item->size_id)->value('size_name');
 
@@ -58,8 +50,8 @@ class LabController extends Controller
 
             $customerName = Customer::where('id', $item->cust_id)->value('company_name');
 
-            $productionId = $workorderId->id;
-            
+            $productionId = $workorder->id ?? null;
+
             $savedResults = LabResult::where('purchase_order_item_id', $item->id)->get()->keyBy('property_id');
 
             $gradeReactions = GradeReaction::with(['property.gradeCategory','category'])->where('grade_id', $item->grade_id)->get();
@@ -92,7 +84,7 @@ class LabController extends Controller
                 'production_id'             => $productionId,
                 'po_item_qty'               => $item->qty ?? 0,
                 'received_qty'              => $unloadWeight->received_qty ?? 0,
-                'production_used_qty'       => $workorderId->material_send_for_work,
+                'production_used_qty'       => $workorder->material_send_for_work ?? 'null',
                 'order_price'               => $item->rate ?? 0,
                 'received_price'            => $unloadWeight->received_price ?? 0,
                 'size_id'                   => $item->size_id,
@@ -109,7 +101,7 @@ class LabController extends Controller
                 'updated_at'                => $unloadWeight->updated_at,
             ];
         }
-
+        //pr($unloaderData);die;
         return view('lab.index', compact('unloaderData'));
     }
 
@@ -120,8 +112,9 @@ class LabController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function store(Request $request)
+    /*public function store(Request $request)
     {
+        //echo"<pre>";print_r($request->all());die;
         $validated = $request->validate([
             'stage' => ['required','in:actual,final'],
             'purchase_order_item_id' => ['required','integer','min:1','exists:purchase_order_items,id'],
@@ -186,9 +179,165 @@ class LabController extends Controller
                 }
             };
 
+            if ($validated['stage'] === 'actual') {
+
+                $pendingActualIds = collect($gradeProperties)
+                    ->filter(function ($propertyId) use ($savedResults) {
+                        $saved = $savedResults->get($propertyId);
+                        return !$saved || $saved->actual_value === null || $saved->actual_value === '';
+                    })
+                    ->values();
+
+                $assertCompleteSubmission($pendingActualIds);
+
+                foreach ($validated['values'] as $row) {
+
+                    $propertyId = (int) $row['property_id'];
+
+                    $existing = $savedResults->get($propertyId);
+                    if ($existing && $existing->actual_value !== null && $existing->actual_value !== '') {
+                        throw ValidationException::withMessages([
+                            'values' =>
+                                'Actual value already saved for property ID: '
+                                . $propertyId
+                        ]);
+                    }
+
+                    $labResult = $existing ?: new LabResult();
+                    $labResult->purchase_order_item_id = $purchaseOrderItem->id;
+                    $labResult->property_id = $propertyId;
+                    $labResult->actual_value = $row['value'];
+                    $labResult->save();
+                }
+                return;
+            }
+
+            if ($validated['stage'] === 'final') {
+
+                foreach ($gradeProperties as $propertyId) {
+
+                    $saved = $savedResults->get($propertyId);
+
+                    if (!$saved ||$saved->actual_value === null ||$saved->actual_value === '') {
+                        throw ValidationException::withMessages([
+                            'values' =>
+                                'First save all Actual Values.'
+                        ]);
+                    }
+                }
+
+                $pendingFinalIds = collect($gradeProperties)
+                    ->filter(function ($propertyId) use ($savedResults) {
+                        $saved = $savedResults->get($propertyId);
+
+                        return !$saved ||$saved->final_value === null ||$saved->final_value === '';
+                    })->values();
+
+                $assertCompleteSubmission($pendingFinalIds);
+
+                foreach ($validated['values'] as $row) {
+
+                    $propertyId = (int) $row['property_id'];
+                    $labResult = $savedResults->get($propertyId);
+                    if (!$labResult) {
+                        throw ValidationException::withMessages([
+                            'values' => 'Actual value not found.'
+                        ]);
+                    }
+                    if ($labResult->final_value !== null && $labResult->final_value !== '') {
+                        throw ValidationException::withMessages([
+                            'values' =>
+                                'Final value already saved for property ID: '
+                                . $propertyId
+                        ]);
+                    }
+                    $labResult->final_value = $row['value'];
+                    $labResult->save();
+                }
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => $validated['stage'] === 'actual' ? 'Actual values saved successfully.' : 'Final values saved successfully.',
+        ]);
+    }*/
+
+
+    public function store(Request $request)
+    {
+        //echo"<pre>";print_r($request->all());die;
+        $validated = $request->validate([
+            'stage' => ['required','in:actual,final'],
+            'purchase_order_item_id' => ['required','integer','min:1','exists:purchase_order_items,id'],
+            'values' => ['required','array','min:1'],
+            'values.*.property_id' => ['required','integer','min:1'],
+            'values.*.value' => ['required','numeric','min:0'],
+        ]);
+
+        DB::transaction(function () use ($validated) {
+
+            $purchaseOrderItem = PurchaseOrderItem::where('id', $validated['purchase_order_item_id'])->lockForUpdate()->firstOrFail();
+
+            if ($validated['stage'] === 'final') {
+
+                $workOrderId = DB::table('work_orders_and_process')->where('po_item_id', $validated['purchase_order_item_id'])->first();
+
+                if (!$workOrderId || empty($workOrderId->id)) {
+
+                    throw ValidationException::withMessages([
+                        'production_id' => 'Production ID not found.'
+                    ]);
+                }
+            }
+
+            $gradeProperties = GradeReaction::where('grade_id',$purchaseOrderItem->grade_id)->pluck('property_id')
+                ->map(fn ($id) => (int) $id)->unique()->values()->all();
+
+            if (empty($gradeProperties)) {
+                throw ValidationException::withMessages([
+                    'values' => 'No grade properties found.'
+                ]);
+            }
+            $submittedIds = collect($validated['values'])->pluck('property_id')->map(fn ($id) => (int) $id);
+
+            if ($submittedIds->unique()->count() !== $submittedIds->count()) {
+                throw ValidationException::withMessages([
+                    'values' => 'Duplicate properties are not allowed.'
+                ]);
+            }
+
+            foreach ($submittedIds as $propertyId) {
+                if (!in_array($propertyId, $gradeProperties, true)) {
+                    throw ValidationException::withMessages([
+                        'values' => 'Invalid property ID: ' . $propertyId
+                    ]);
+                }
+            }
+
+            $savedResults = LabResult::where('purchase_order_item_id',$purchaseOrderItem->id)
+                ->lockForUpdate()->get()->keyBy('property_id');
+
+            $assertCompleteSubmission = function ($expectedIds) use ($submittedIds) {
+                $expectedIds = collect($expectedIds);
+                $missingIds = $expectedIds->diff($submittedIds);
+                $unexpectedIds = $submittedIds->diff($expectedIds);
+
+                if ($missingIds->isNotEmpty()) {
+                    throw ValidationException::withMessages([
+                        'values' => 'Submit all unsaved property values.'
+                    ]);
+                }
+                if ($unexpectedIds->isNotEmpty()) {
+                    throw ValidationException::withMessages([
+                        'values' => 'Only unsaved property values can be submitted.'
+                    ]);
+                }
+            };
+
             /*
-             * ACTUAL VALUE SAVE
-             */
+            * ACTUAL VALUE SAVE
+            */
 
             if ($validated['stage'] === 'actual') {
 
@@ -224,8 +373,8 @@ class LabController extends Controller
             }
 
             /*
-             * FINAL VALUE SAVE
-             */
+            * FINAL VALUE SAVE
+            */
 
             if ($validated['stage'] === 'final') {
 
@@ -249,7 +398,7 @@ class LabController extends Controller
                     })->values();
 
                 $assertCompleteSubmission($pendingFinalIds);
-               
+
                 foreach ($validated['values'] as $row) {
 
                     $propertyId = (int) $row['property_id'];
@@ -277,4 +426,5 @@ class LabController extends Controller
             'message' => $validated['stage'] === 'actual' ? 'Actual values saved successfully.' : 'Final values saved successfully.',
         ]);
     }
+
 }

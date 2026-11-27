@@ -10,7 +10,9 @@ use App\Models\PurchaseOrderitemReceiving;
 use App\Models\SaleOrderItem;
 use App\Models\WorkOrderLoss;
 use App\Models\WorkOrderProcess;
+use App\Models\Branch;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -48,6 +50,34 @@ class ProductionController extends Controller
                 })
                 ->whereHas('saleOrderItem.saleOrder');
         } else {
+            // Count completed output in KG so partial work orders remain pending until the sale quantity is met.
+            $productionOutputKg = <<<'SQL'
+                CASE
+                    WHEN COALESCE(completed_production.finished_pcs_weight, 0) > 0
+                        THEN completed_production.finished_pcs_weight
+                    WHEN completed_production.total_full_bundle_count IS NOT NULL
+                        OR completed_production.lose_bundle_weight IS NOT NULL
+                        THEN (
+                            COALESCE(completed_production.total_full_bundle_count, 0)
+                                * COALESCE(completed_production.fs_bundle_weight, 0)
+                                + COALESCE(completed_production.lose_bundle_weight, 0)
+                        ) * CASE
+                            WHEN LOWER(COALESCE(completed_production.fs_bundle_unit, '')) IN ('2', 'ton', 'tons')
+                                THEN 1000
+                            ELSE 1
+                        END
+                    ELSE COALESCE(completed_production.material_send_for_work, 0) * 1000
+                END
+                SQL;
+            $completedProductionKg = DB::table('work_orders_and_process as completed_production')
+                ->selectRaw("COALESCE(SUM({$productionOutputKg}), 0)")
+                ->whereColumn(
+                    'completed_production.sale_order_item_id',
+                    'sale_order_items.id'
+                )
+                ->where('completed_production.status', 'completed')
+                ->whereNull('completed_production.delete_at');
+
             // Load production items with the related data needed by the listing.
             $query = SaleOrderItem::query()
                 ->with(['saleOrder.customer', 'product', 'grade', 'size'])
@@ -78,17 +108,14 @@ class ProductionController extends Controller
                                 });
                         });
                 })
-                ->whereNotExists(function ($completedProductionQuery) {
-                    $completedProductionQuery
-                        ->selectRaw('1')
-                        ->from('work_orders_and_process as completed_production')
-                        ->whereColumn(
-                            'completed_production.sale_order_item_id',
-                            'sale_order_items.id'
-                        )
-                        ->where('completed_production.status', 'completed')
-                        ->whereNull('completed_production.delete_at');
-                });
+                ->whereRaw(
+                    'COALESCE((' . $completedProductionKg->toSql() . '), 0) < CASE
+                        WHEN sale_order_items.qty_type = ?
+                            THEN COALESCE(sale_order_items.item_qty, 0)
+                        ELSE COALESCE(sale_order_items.item_qty, 0) * 1000
+                    END',
+                    array_merge($completedProductionKg->getBindings(), [SaleOrderItem::QTY_KGS])
+                );
         }
 
         // Validate listing inputs before adding them to the query.
@@ -433,9 +460,209 @@ class ProductionController extends Controller
             default => abort(404),
         };
 
+        $workOrder->refresh();
+        if ($workOrder->status === 'completed') {
+            return redirect()
+                ->route('productions.bundle-stickers', ['workOrder' => $workOrder->id])
+                ->with('success', "Operation {$operation} completed successfully. Bundle stickers are ready.");
+        }
+
         return redirect()
             ->route('productions.workflow', ['workOrder' => $workOrder->id])
             ->with('success', "Operation {$operation} completed successfully.");
+    }
+
+    public function bundleStickers(WorkOrderProcess $workOrder)
+    {
+        $workOrder->load([
+            'saleOrderItem.product',
+            'saleOrderItem.grade',
+            'saleOrderItem.size',
+        ]);
+        abort_unless($workOrder->status === 'completed' && $workOrder->saleOrderItem, 404);
+        $branches = Branch::getAll(1) ?? [];
+        $stickerCompany = [
+            'company_name' => $branches['company_name'] ?? '',
+            'logo' => $branches['logo'] ?? null,
+            'phone' => $branches['phone'] ?? '',
+            'address' => $branches['address'] ?? '',
+            'certificate_desc' => $branches['certificate_desc'] ?? '',
+        ];
+
+        $saleOrderItem = $workOrder->saleOrderItem;
+        $productType = $saleOrderItem->product?->product_type;
+        $productName = $saleOrderItem->product?->product_name ?? str($productType ?? 'Product')->replace('_', ' ')->title()->toString();
+        $gradeName = $saleOrderItem->grade?->grade_name ?? '-';
+        $size = $saleOrderItem->size?->size_name ?? $workOrder->final_fs_observed_size ?? $workOrder->fs_size ?? $workOrder->fs_observed_size ?? '-';
+        $sizeUnit = $workOrder->final_fs_observed_unit ?? $workOrder->fs_observed_unit ?? $workOrder->fs_size_unit ?? $saleOrderItem->size_unit;
+        $sizeLabel = trim($size . ($sizeUnit && $size !== '-' ? ' ' . $sizeUnit : ''));
+        $bundleRows = [];
+
+        if ($productType === 'bolt_rod') {
+            $boxCount = max(0, (int) ($workOrder->no_of_boxes ?? 0));
+            $looseBoxCount = max(0, (int) ($workOrder->loss_box_count ?? 0));
+            $piecesPerBox = max(0, (int) ($workOrder->pcs_per_box ?? 0));
+            $loosePieces = max(0, (int) ($workOrder->loss_box_pcs ?? 0));
+            $pieceWeight = (float) ($workOrder->per_pcs_weight ?? 0);
+
+            if ($boxCount + $looseBoxCount > 0 && $pieceWeight <= 0) {
+                abort(422, 'A positive per-piece weight is required to generate bolt rod box stickers.');
+            }
+
+            for ($boxNumber = 1; $boxNumber <= $boxCount; $boxNumber++) {
+                $pieces = $piecesPerBox;
+                if ($looseBoxCount === 0 && $boxNumber === $boxCount) {
+                    $pieces += $loosePieces;
+                }
+
+                $bundleRows[] = [
+                    'type' => 'full',
+                    'weight' => $pieceWeight * $pieces,
+                    'unit' => 'KG',
+                    'pieces' => $pieces,
+                ];
+            }
+
+            for ($looseBoxNumber = 0; $looseBoxNumber < $looseBoxCount; $looseBoxNumber++) {
+                $bundleRows[] = [
+                    'type' => 'loose',
+                    'weight' => $pieceWeight * $loosePieces,
+                    'unit' => 'KG',
+                    'pieces' => $loosePieces,
+                ];
+            }
+        } else {
+            $fullBundleCount = max(0, (int) ($workOrder->total_full_bundle_count ?? 0));
+            $looseBundleCount = max(0, (int) ($workOrder->lose_bundle_count ?? 0));
+            $fullBundleWeight = (float) ($workOrder->fs_bundle_weight ?? 0);
+            $bundleUnit = $this->bundleUnitLabel($workOrder->fs_bundle_unit);
+
+            if (($fullBundleCount > 0 || $looseBundleCount > 0) && ($fullBundleWeight <= 0 || $bundleUnit === null)) {
+                abort(422, 'A positive bundle weight and a valid bundle unit are required to generate stickers.');
+            }
+
+            for ($bundleNumber = 0; $bundleNumber < $fullBundleCount; $bundleNumber++) {
+                $bundleRows[] = [
+                    'type' => 'full',
+                    'weight' => $fullBundleWeight,
+                    'unit' => $bundleUnit,
+                    'pieces' => null,
+                ];
+            }
+
+            $looseBundleWeight = (float) ($workOrder->lose_bundle_weight ?? 0);
+            $looseBundleUnit = in_array($productType, ['bright_bar', 'annealed_bar'], true) && $bundleUnit === 'Tons'
+                ? 'KG'
+                : $bundleUnit;
+
+            for ($bundleNumber = 0; $bundleNumber < $looseBundleCount; $bundleNumber++) {
+                $bundleRows[] = [
+                    'type' => 'loose',
+                    'weight' => $looseBundleWeight,
+                    'unit' => $looseBundleUnit,
+                    'pieces' => null,
+                ];
+            }
+        }
+
+        $totalBundles = count($bundleRows);
+        $stickers = [];
+
+        foreach ($bundleRows as $index => $bundle) {
+            $number = $index + 1;
+            $weight = round((float) $bundle['weight'], 3);
+            $bundleNumber = "{$number} / {$totalBundles}";
+            $weightLabel = _rz($weight) . ' ' . $bundle['unit']
+                . ($bundle['type'] === 'loose' ? ' (L)' : '');
+            $qrPayload = [
+                'schema' => 'ttc.bundle-sticker.v1',
+                'company' => [
+                    'name' => $stickerCompany['company_name'],
+                    'phone' => $stickerCompany['phone'],
+                ],
+                'work_order' => [
+                    'id' => (int) $workOrder->id,
+                    'sale_order_id' => (int) $workOrder->sale_order_id,
+                ],
+                'product' => [
+                    'name' => $productName,
+                    'type' => $productType,
+                    'grade' => $gradeName,
+                    'size' => $sizeLabel,
+                ],
+                'bundle' => [
+                    'number' => $number,
+                    'total' => $totalBundles,
+                    'type' => $bundle['type'],
+                    'weight' => $weight,
+                    'unit' => $bundle['unit'],
+                    'pieces' => $bundle['pieces'],
+                    'heat_number' => $workOrder->heat_no,
+                ],
+            ];
+            $qrPayload['scan_text'] = implode("\n", [
+                'BUNDLE STICKER',
+                'Company: ' . $stickerCompany['company_name'],
+                'Work Order: ' . $workOrder->id,
+                'Sale Order: ' . $workOrder->sale_order_id,
+                'Product: ' . $productName,
+                'Grade: ' . $gradeName,
+                'Size: ' . $sizeLabel,
+                'Bundle: ' . $bundleNumber . ' (' . strtoupper($bundle['type']) . ')',
+                'Weight: ' . $weightLabel,
+                'Heat No: ' . ($workOrder->heat_no ?: '-'),
+            ]);
+            $qrPayload['scan_url'] = URL::signedRoute('productions.bundle-stickers.scan', [
+                'company' => $stickerCompany['company_name'],
+                'work_order' => $workOrder->id,
+                'sale_order' => $workOrder->sale_order_id,
+                'product' => $productName,
+                'grade' => $gradeName,
+                'size' => $sizeLabel,
+                'bundle' => $bundleNumber,
+                'type' => $bundle['type'],
+                'weight' => number_format($weight, 3, '.', ''),
+                'unit' => $bundle['unit'],
+                'heat' => $workOrder->heat_no ?: '-',
+                'pieces' => $bundle['pieces'] ?? '',
+            ]);
+
+            $stickers[] = [
+                'number' => $bundleNumber,
+                'weight' => $weightLabel,
+                'type' => $bundle['type'],
+                'pieces' => $bundle['pieces'],
+                'qrPayload' => $qrPayload,
+            ];
+        }
+        return view('productions.bundleStickers', compact(
+            'workOrder',
+            'productName',
+            'gradeName',
+            'sizeLabel',
+            'stickers',
+            'stickerCompany'
+        ));
+    }
+
+    public function showScannedBundle(Request $request)
+    {
+        $bundle = $request->validate([
+            'company' => ['required', 'string', 'max:255'],
+            'work_order' => ['required', 'integer'],
+            'sale_order' => ['required', 'integer'],
+            'product' => ['required', 'string', 'max:255'],
+            'grade' => ['required', 'string', 'max:255'],
+            'size' => ['required', 'string', 'max:255'],
+            'bundle' => ['required', 'string', 'max:50'],
+            'type' => ['required', Rule::in(['full', 'loose'])],
+            'weight' => ['required', 'numeric', 'min:0'],
+            'unit' => ['required', 'string', 'max:20'],
+            'heat' => ['nullable', 'string', 'max:255'],
+            'pieces' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        return view('productions.scannedBundle', compact('bundle'));
     }
 
     private function brightBarProduction(Request $request, WorkOrderProcess $workOrder, int $operation): void

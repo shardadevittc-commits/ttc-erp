@@ -18,4 +18,13 @@ class Branch extends Model
         'website',
         'phone',
     ];
+
+    public static function getAll($id = null)
+    {
+        if ($id) {
+            return self::where('id', $id)->first()?->toArray();
+        }
+
+        return self::all();
+    }
 }

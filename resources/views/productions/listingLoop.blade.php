@@ -69,6 +69,12 @@
                     class="btn {{ $workOrder->status === 'completed' ? 'btn-primary' : 'btn-warning' }} btn-sm">
                     {{ $workOrder->status === 'completed' ? 'View' : 'Under Process' }}
                 </a>
+                @if ($workOrder->status === 'completed')
+                    <a href="{{ route('productions.bundle-stickers', ['workOrder' => $workOrder->id]) }}"
+                        class="btn btn-outline-primary btn-sm mt-1">
+                        Bundle Stickers
+                    </a>
+                @endif
             @else
             <button type="button"
                 class="btn btn-success btn-sm send-for-work"
