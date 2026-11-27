@@ -456,7 +456,7 @@ class PurchaseController extends Controller
                 'c.company_name'
             )
             ->get();
-            
+
         return view('admin.finishMaterials.index', compact('data'));
     }*/
 
