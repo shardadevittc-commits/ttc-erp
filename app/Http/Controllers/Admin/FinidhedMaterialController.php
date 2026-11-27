@@ -30,6 +30,7 @@ class FinidhedMaterialController extends Controller
         'saleOrderItem.product',
         'saleOrderItem.grade',
         'saleOrderItem.size',
+        'lab'
     ];
 
     /**
@@ -153,8 +154,7 @@ class FinidhedMaterialController extends Controller
                 'pagination' => $listing->links('pagination::bootstrap-5')->toHtml(),
             ], 200);
         }
-
-        /* Normal Request */
+        //pr($viewData);die;
         return view('admin.finidhedMaterial.index', $viewData);
     }
 

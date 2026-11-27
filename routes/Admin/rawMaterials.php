@@ -7,7 +7,9 @@ Route::get('/raw-materials', [PurchaseController::class, 'indexRM'])->name('rawM
 
 Route::get('/raw-materials/{id}/print', [PurchaseController::class, 'printRM'])->whereNumber('id')->name('rawMaterials.print');
 
-Route::get('/finished-materials', [PurchaseController::class, 'indexFM'])->name('finishedMaterials');
+// Route::get('/finished-materials', [PurchaseController::class, 'indexFM'])->name('finishedMaterials');
+
+Route::get('/finishedMaterials/{id}/print', [PurchaseController::class, 'printFM'])->whereNumber('id')->name('finishedMaterials.print');
 
 Route::get('/dispatch-materials', [PurchaseController::class, 'indexDM'])->name('dispatchMaterials');
 

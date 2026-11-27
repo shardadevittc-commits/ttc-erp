@@ -22,6 +22,12 @@
         <td class="text-end"><strong>{{ number_format($summary['finished_kg'], 3) }}</strong></td>
         <td>{{ $summary['packing'] }}</td>
         <td class="no-print">
+            @if($workOrder->lab && $workOrder->lab->isNotEmpty())
+                <button style="background-color: green; color: white; padding: 8px 15px; border: none; cursor: pointer;"
+                    onclick="window.open('{{ route('finishedMaterials.print', $workOrder->po_item_id) }}', '_blank')">
+                    TC
+                </button>
+            @endif
             <a href="{{ route('finishedMaterial.view', ['id' => $workOrder->id]) }}" class="btn btn-sm btn-outline-primary">View</a>
         </td>
     </tr>
