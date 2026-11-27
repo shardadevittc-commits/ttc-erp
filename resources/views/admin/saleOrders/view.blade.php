@@ -22,7 +22,7 @@
 </div>
 
 <div class="content_area">
-    <div class="container-xxl flex-grow-1 container-p-y">
+    <div class="">
         <div class="row">
             <div class="col-xxl-6 col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
                 <div class="card mb-4">
@@ -54,7 +54,7 @@
                                     <tr>
 										<th>Remarks</th>
 										<td>{{ $saleOrder->remarks ?: '-' }}</td>
-									</tr>									
+									</tr>
 								</tbody>
 							</table>
 						</div>

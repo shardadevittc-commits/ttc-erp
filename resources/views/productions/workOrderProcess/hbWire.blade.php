@@ -170,7 +170,7 @@
                                        $finishedMaterial = !empty($workOrder->material_send_for_work) ? _rz(($workOrder->material_send_for_work * 1000) - ($totalNonRecScrap ?? 0)): '0:00 Kgs';
                                        $finishedqty = !empty($workOrder->material_send_for_work) ? _rz(($workOrder->material_send_for_work * 1000) - (($totalNonRecScrap ?? 0) + ($totalRecScrap ?? 0))) : '0:00 Kgs';
                                        $fullBundle = $finishedMaterial / $saleOrderItem->fs_bundle_weight;
-                                      
+
 
                                         $fullBundles = (int) floor($finishedMaterial / $saleOrderItem->fs_bundle_weight);
                                         $remainingWeight = fmod($finishedMaterial, $saleOrderItem->fs_bundle_weight);
@@ -181,14 +181,14 @@
                                                 "count" => $fullBundles
                                             ]
                                         ];
-                                        
+
                                         if ($remainingWeight > 0) {
                                             $bundleData[] = [
                                                 "bundleWeight" => $remainingWeight,
                                                 "count" => 1
                                             ];
                                         }
-                                        
+
                                         $loose_bundle_count = json_encode($bundleData);
                                     @endphp
                                     <div class="col-md-2">
@@ -211,8 +211,8 @@
                                         <div class="col-md-6 mt-3">
                                             <label class="col-form-label text-danger"> <b> RM Size (Purchase) </b></label>
                                             <div class="input-group mb-3">
-                                            <input type="text" class="form-control" value="{{ $saleOrderItem->size->size_name }}" name="rmSize" readonly>
-                                            <select class="form-select" name="rmSizeUnit" style="max-width:100px;">
+                                            <input type="text" class="form-control" value="{{ $saleOrderItem->size->size_name }}" name="rm_size" readonly>
+                                            <select class="form-select" name="rm_size_unit" style="max-width:100px;">
                                                 <option value="MM">MM</option>
                                                 <option value="THOU">THOU</option>
                                             </select>
@@ -222,7 +222,7 @@
                                             <label class="col-form-label">Observed Size</label>
                                             <div class="input-group mb-3">
                                             <input type="text" name="rm_observed_size" class="form-control">
-                                            <select class="form-select" name="rm_observed_size_unit" style="max-width:100px;">
+                                            <select class="form-select" name="rm_observed_unit" style="max-width:100px;">
                                                 <option value="MM">MM</option>
                                                 <option value="THOU">THOU</option>
                                             </select>
@@ -289,6 +289,24 @@
                                     </div>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            @if ($currentOperation >= 3)
+                <div class="accordion-item shadow-sm border rounded mt-4">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button {{ $currentOperation === 3 ? '' : 'collapsed' }} bg-success text-white"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#annealingOperation3"
+                            aria-expanded="{{ $currentOperation === 3 ? 'true' : 'false' }}" aria-controls="annealingOperation3">
+                            <b>Product Bundle Stickers</b>
+                        </button>
+                    </h2>
+                    <div id="annealingOperation3" class="accordion-collapse collapse {{ $currentOperation === 3 ? 'show' : '' }}"
+                        data-bs-parent="#annealingOperationAccordion">
+                        <div class="accordion-body">
+                            @include('productions.partials.bundleStickersEmbed')
                         </div>
                     </div>
                 </div>

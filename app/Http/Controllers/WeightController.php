@@ -873,15 +873,9 @@ class WeightController extends Controller
 
                 DB::transaction(function () use ($data, $vehicle) {
 
-                    GateAndGaadi::whereKey($vehicle->id)
-                        ->lockForUpdate()
-                        ->firstOrFail();
+                    GateAndGaadi::whereKey($vehicle->id)->lockForUpdate()->firstOrFail();
 
-                    $existingWeight = Weight::where('vehicle_id', $vehicle->id)
-                        ->where('cust_id', $vehicle->cust_id)
-                        ->where('formlist', $vehicle->formlist)
-                        ->lockForUpdate()
-                        ->exists();
+                    $existingWeight = Weight::where('vehicle_id', $vehicle->id)->where('cust_id', $vehicle->cust_id)->where('formlist', $vehicle->formlist)->lockForUpdate()->exists();
 
                     if ($existingWeight) {
                         throw ValidationException::withMessages([
@@ -1134,7 +1128,8 @@ class WeightController extends Controller
         $isSecondWeightPending = strtolower(
             trim((string) ($weight->second_weight ?? ''))
         ) === 'pending';
-
+        $rstNo = Weight::latest('id')->value('rstno');
+            // pr($rstNo); die;
         return view('weight.material_weight', compact(
             'user',
             'parties',
@@ -1146,7 +1141,8 @@ class WeightController extends Controller
             'weigh',
             'po_receiving',
             'hasSelectedDispatchItems',
-            'isSecondWeightPending'
+            'isSecondWeightPending',
+            'rstNo'
         ));
     }
 
