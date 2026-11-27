@@ -555,7 +555,7 @@ class PurchaseController extends Controller
                 $unloadWeight->purchase_order_item_id
             )
             ->get();
-
+        echo"<pre>";print_r
         return view('admin.rawMaterials.print', compact(
             'unloadWeight',
             'labResults'
