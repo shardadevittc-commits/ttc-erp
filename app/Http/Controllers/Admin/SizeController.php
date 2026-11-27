@@ -78,7 +78,7 @@ class SizeController extends Controller
 
             $size = Size::create([
                 'size_name' => $validated['size_name'],
-                'status' => (int) $request->status ?? 1,
+                'status' =>    $request->status ?? 1,
                 'created_by' => auth()->id(),
             ]);
 

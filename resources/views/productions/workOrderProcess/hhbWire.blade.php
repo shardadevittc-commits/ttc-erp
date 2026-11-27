@@ -144,14 +144,14 @@
             @php
                 $finishedMaterial = !empty($workOrder->material_send_for_work) ? _rz(($workOrder->material_send_for_work * 1000) - ($totalNonRecScrap ?? 0)): '0:00 Kgs';
                 $finishedqty = !empty($workOrder->material_send_for_work) ? _rz(($workOrder->material_send_for_work * 1000) - (($totalNonRecScrap ?? 0) + ($totalRecScrap ?? 0))) : '0:00 Kgs';
-                
+
                 if($bundleUnit == 'KG'){
                     $fsBundleW8 = $saleOrderItem->fs_bundle_weight;
                 }elseif($bundleUnit == 'Tons'){
                     $fsBundleW8 = $saleOrderItem->fs_bundle_weight*1000;
                 }
                 $fullBundle = $finishedMaterial / $fsBundleW8;
-                
+
                 $fullBundles = (int) floor($finishedMaterial / $fsBundleW8);
                 $remainingWeight = fmod($finishedMaterial, $fsBundleW8);
 
@@ -161,14 +161,14 @@
                         "count" => $fullBundles
                     ]
                 ];
-                
+
                 if ($remainingWeight > 0) {
                     $bundleData[] = [
                         "bundleWeight" => $remainingWeight,
                         "count" => 1
                     ];
                 }
-                
+
                 $loose_bundle_count = json_encode($bundleData);
             @endphp
             @if ($currentOperation >= 2)
@@ -270,7 +270,7 @@
                                         </div>
                                     @endif
                                 </div>
-                                
+
                                 <hr>
                                 <!-- Finish Material Info (HB wire) -->
                                 <div class="row bg-light mt-4 p-2">
@@ -295,7 +295,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                </div>                                
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -334,7 +334,7 @@
                                             <input type="text" class="form-control" id="hhbHardnessSo" value="{{ old('final_bundle_count', ($workOrder->total_full_bundle_count) + ($workOrder->lose_bundle_count)) }}" disabled>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="col-md-5 mt-3">
                                         <label class="col-form-label" for="hhbBatchNo">Batch No.</label>
 
@@ -361,7 +361,7 @@
                                                 <option value="THOU" @selected(old('fs_size_unit', $saleOrderItem->size_unit) === 'THOU')>THOU</option>
                                             </select>
                                         </div>
-                                    </div>                                    
+                                    </div>
                                     <div class="col-md-3 mt-3">
                                         <label class="col-form-label" for="hhbHardnessSo">Hardness (Sale Order)</label>
                                         <div class="input-group">
@@ -479,7 +479,7 @@
                                             title="Whatever weight you enter in 'Misc. Bundle Weight (Kgs)' will be deducted directly from the main bundle weight and added to Misc Scrap.">
                                             Other Misc. Bundle Weight (Kg.)
                                         </label>
-                                        <span data-toggle="tooltip" data-placement="top" 
+                                        <span data-toggle="tooltip" data-placement="top"
                                             title="Whatever weight you enter in 'Misc. Bundle Weight (Kgs)' will be deducted directly from the main bundle weight and added to Misc Scrap." style="cursor: pointer;">ⓘ
                                         </span>
                                         <input type="text" class="form-control number_only" id="hhbMiscBundleWeight" placeholder="Enter Misc. Bundle weight in Kg EX: 250"
@@ -489,12 +489,12 @@
                                         $text = "Any weight deducted from 'Misc. Scrap (Kg.)' will be directly adjusted against your Recovered Scrap.";
                                     @endphp
                                     <div class="col-md-4">
-                                        <label class="col-form-label" for="hhbManageMiscScrap" 
+                                        <label class="col-form-label" for="hhbManageMiscScrap"
                                             data-bs-toggle="tooltip"
                                             data-bs-html="true" title="{{ $text }}">
                                             Misc. Scrap (Kg.)
                                         </label>
-                                        <span 
+                                        <span
                                             data-bs-toggle="tooltip"
                                             data-bs-html="true"
                                             title="{{ $text }}"
@@ -507,12 +507,12 @@
                                     @else
                                         @if(isset($adjScrap) && $adjScrap)
                                         <div class="col-md-4">
-                                            <label class="col-form-label" for="hhbManageMiscScrap" 
+                                            <label class="col-form-label" for="hhbManageMiscScrap"
                                                 data-bs-toggle="tooltip"
                                                 data-bs-html="true" title="...">
                                                 Adjustable Scrap
                                             </label>
-                                            <span 
+                                            <span
                                                 data-bs-toggle="tooltip"
                                                 data-bs-html="true"
                                                 title="..."
@@ -539,7 +539,7 @@
                                                         <option value="THOU" @selected(old('fs_observed_unit', $workOrder->fs_observed_unit) === 'THOU')>THOU</option>
                                                     </select>
                                                 </div>
-                                            </div>                                        
+                                            </div>
 
                                             <div class="col-md-6 mt-3">
                                                 <label class="col-form-label" for="hhbFirstDrawObservedSize">Observed Size</label>
@@ -634,6 +634,24 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            @if ($currentOperation >= 6)
+                <div class="accordion-item shadow-sm border rounded mt-4">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button {{ $currentOperation === 6 ? '' : 'collapsed' }} bg-success text-white"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#annealingOperation6"
+                            aria-expanded="{{ $currentOperation === 6 ? 'true' : 'false' }}" aria-controls="annealingOperation6">
+                            <b>Product Bundle Stickers</b>
+                        </button>
+                    </h2>
+                    <div id="annealingOperation6" class="accordion-collapse collapse {{ $currentOperation === 6 ? 'show' : '' }}"
+                        data-bs-parent="#annealingOperationAccordion">
+                        <div class="accordion-body">
+                            @include('productions.partials.bundleStickersEmbed')
                         </div>
                     </div>
                 </div>

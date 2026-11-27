@@ -145,8 +145,48 @@ class PurchaseController extends Controller
             $grades     = Grade::where(['status'=>'1'])->orderBy('grade_name')->get();
             $products   = Product::where(['product_category'=>'raw_material', 'status'=>'1'])->orderBy('product_name')->get();
 
-            $saleOrders = SaleOrder::with('customer')->get();
+            $saleOrders = SaleOrder::with('customer','items:id,sale_order_id,item_qty,qty_type')
+                ->withSum('items as total_qty', 'item_qty')
+                ->whereExists(function ($query) {
+                    $orderedQuantities = DB::table('sale_order_items as sale_items')
+                        ->select('sale_order_id', 'grade_id')
+                        ->selectRaw('SUM(COALESCE(item_qty, 0)) as ordered_qty')
+                        ->whereNull('deleted_at')
+                        ->groupBy('sale_order_id', 'grade_id');
 
+                    $purchasedQuantities = DB::table('purchase_order_items as purchase_items')
+                        ->select('ref_saleorder_id', 'grade_id')
+                        ->selectRaw('SUM(COALESCE(qty, 0)) as purchased_qty')
+                        ->groupBy('ref_saleorder_id', 'grade_id');
+
+                    $query->selectRaw('1')
+                        ->fromSub($orderedQuantities, 'ordered_quantities')
+                        ->leftJoinSub(
+                            $purchasedQuantities,
+                            'purchased_quantities',
+                            function ($join) {
+                                $join->on(
+                                    'purchased_quantities.ref_saleorder_id',
+                                    '=',
+                                    'ordered_quantities.sale_order_id'
+                                )->where(function ($gradeJoin) {
+                                    $gradeJoin->on(
+                                        'purchased_quantities.grade_id',
+                                        '=',
+                                        'ordered_quantities.grade_id'
+                                    )->orOn(function ($nullGradeJoin) {
+                                        $nullGradeJoin->whereNull('purchased_quantities.grade_id')
+                                            ->whereNull('ordered_quantities.grade_id');
+                                    });
+                                });
+                            }
+                        )
+                        ->whereColumn('ordered_quantities.sale_order_id', 'sale_orders.id')
+                        ->whereRaw(
+                            'ordered_quantities.ordered_qty > COALESCE(purchased_quantities.purchased_qty, 0)'
+                        );
+                })
+                ->get();
             $payType = '';
             $payTypeUnit = '';
 

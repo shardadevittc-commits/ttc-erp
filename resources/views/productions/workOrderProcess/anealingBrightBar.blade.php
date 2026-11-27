@@ -480,7 +480,27 @@
                     </div>
                 </div>
             @endif
+
+            @if ($currentOperation >= 8)
+                <div class="accordion-item shadow-sm border rounded mt-4">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button {{ $currentOperation === 8 ? '' : 'collapsed' }} bg-success text-white"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#annealingOperation8"
+                            aria-expanded="{{ $currentOperation === 8 ? 'true' : 'false' }}" aria-controls="annealingOperation8">
+                            <b>Product Bundle Stickers</b>
+                        </button>
+                    </h2>
+                    <div id="annealingOperation8" class="accordion-collapse collapse {{ $currentOperation === 8 ? 'show' : '' }}"
+                        data-bs-parent="#annealingOperationAccordion">
+                        <div class="accordion-body">
+                            @include('productions.partials.bundleStickersEmbed')
+                        </div>
+                    </div>
+                </div>
+            @endif
+
         </div>
+
     </div>
 </div>
 

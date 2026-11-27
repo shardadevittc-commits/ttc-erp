@@ -474,77 +474,35 @@
 
                             </div>
 
-
+                            @php
+                                $rst = $materialIn->rstno ? :  $rstNo+1;
+                            @endphp
                             <div class="row">
-
                                 {{-- RST NO --}}
-
-                                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 mb-3">
-
-                                    <label for="rstno" class="form-label">
-                                        RST No.
-                                    </label>
-
-                                    <input type="text"
-                                           name="rstno"
-                                           id="rstno"
-                                           class="form-control"
-                                           value="{{ old('rstno', $materialIn->rstno ?? '') }}"
-                                           placeholder="Enter RST No."
-                                           required>
-
+                                <div class="col-xxl-2 col-xl-2 col-lg-2 col-md-6 mb-3">
+                                    <label for="rstno" class="form-label"> RST No. </label>
+                                    <input type="text" name="rstno" id="rstno" class="form-control" value="{{ old('rstno', $rst ?? '') }}" placeholder="Enter RST No." required>
                                 </div>
 
-
                                 {{-- FIRST WEIGHT --}}
-
                                 <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 mb-3">
-
                                     <label for="weight" class="form-label">
-
-                                        <span id="weightLabel">
-                                            {{ $weightLabel }}
-                                        </span>
-
+                                        <span id="weightLabel">{{ $weightLabel }}</span>
                                         <span class="required-star">*</span>
-
                                     </label>
-
-                                    <input type="number"
-                                           name="{{ $weightField }}"
-                                           id="weight"
-                                           class="form-control"
-                                           value="{{ $weightValue }}"
-                                           placeholder="Enter {{ $weightLabel }}"
-                                           min="0"
-                                           step="0.01"
-                                           required>
-
+                                    <input type="number" name="{{ $weightField }}" id="weight" class="form-control" value="{{ $weightValue }}" placeholder="Enter {{ $weightLabel }}" min="0" step="0.01" required>
                                 </div>
 
 
                                 {{-- WEIGHMENT SLIP --}}
-
                                 <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 mb-3">
-
-                                    <label for="weighmentslip" class="form-label">
-                                        Weighment Slip
-                                    </label>
-
+                                    <label for="weighmentslip" class="form-label"> Weighment Slip </label>
                                     @if (!empty($materialIn->weighmentslip))
-
                                         <div class="mt-2">
-
-                                            <a href="{{ asset('storage/' . $materialIn->weighmentslip) }}"
-                                               target="_blank"
-                                               rel="noopener noreferrer"
-                                               class="btn btn-sm btn-outline-primary">
-
+                                            <a href="{{ asset('storage/' . $materialIn->weighmentslip) }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
                                                 <i class="fas fa-file-alt"></i>
                                                 View Weighment Slip
-
                                             </a>
-
                                         </div>
 
                                     @elseif (empty($weigh))

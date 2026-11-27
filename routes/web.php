@@ -4,6 +4,7 @@
     use App\Http\Controllers\Auth\LoginController;
     use App\Http\Controllers\DashboardController;
     use App\Http\Controllers\Frontend\AccountController;
+    use App\Http\Controllers\Frontend\ProductionController;
 
     Route::get('/', function () {
         return redirect()->route('login');
@@ -20,6 +21,9 @@
     Route::get('/public/invoices/scrap/{token}', [AccountController::class, 'publicScrapDispatchInvoice'])
         ->whereUuid('token')
         ->name('invoices.public.scrap');
+    Route::get('/public/bundle-sticker', [ProductionController::class, 'showScannedBundle'])
+        ->middleware('signed')
+        ->name('productions.bundle-stickers.scan');
 
     // Protected ERP Dashboard & User/Role Management
     Route::middleware(['auth'])->group(function () {

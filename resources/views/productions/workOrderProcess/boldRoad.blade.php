@@ -299,11 +299,11 @@
                                     <input type="number" step="0.001" class="form-control pe-none bg-body-secondary" id="total_weight"
                                         name="total_weight" value="{{ number_format($finishQty, 3, '.', '') }}" readonly>
                                 </div>
-                                
+
                                 <div class="col-md-2 mt-3">
                                     <input type="hidden" class="form-control {{ $scrapReadonly ? 'bg-body-secondary' : '' }} number_only" id="scrapWt" name="scrap_weight" value="{{ _rz($scrapKg) }}"
                                         @if ($scrapReadonly) readonly @else required @endif>
-                                    
+
                                 </div>
                                 {{-- <div class="col-12">
                                     <div class="text-danger small mt-1" id="op4Error" role="alert"></div>
@@ -533,13 +533,13 @@
                                         <input type="number" min="1" step="1" class="form-control" id="pcsPerBox" name="pcs_per_box"
                                             value="{{ old('pcs_per_box', $workOrder->pcs_per_box) }}" required>
                                     </div>
-                            
+
                                     <div class="col-12 mt-3">
                                         <div id="packInfo" class="alert alert-info d-none mb-2" role="status"></div>
-                            
+
                                         <div id="looseOptions" class="d-none border rounded p-3 bg-light">
                                             <div class="fw-semibold mb-2">How do you want to pack the remaining <span id="loosePcsText"></span> pcs?</div>
-                            
+
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio" name="loose_handling" id="looseAdjust"
                                                     value="adjust_last_box" @checked($looseHandling === 'adjust_last_box')>
@@ -554,11 +554,11 @@
                                                     Pack in 1 extra box (<span id="extraBoxPcsText"></span> pcs)
                                                 </label>
                                             </div>
-                            
+
                                             <div class="small text-muted mt-2" id="looseNote"></div>
                                         </div>
                                     </div>
-                            
+
                                     @if ($currentOperation === 8)
                                         <div class="col-12 text-end mt-3">
                                             <button type="submit" class="btn btn-primary">Complete Operation</button>
@@ -571,7 +571,26 @@
                 </div>
             @endif
 
+            @if ($currentOperation >= 9)
+                <div class="accordion-item shadow-sm border rounded mt-4">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button {{ $currentOperation === 9 ? '' : 'collapsed' }} bg-success text-white"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#annealingOperation9"
+                            aria-expanded="{{ $currentOperation === 9 ? 'true' : 'false' }}" aria-controls="annealingOperation9">
+                            <b>Product Bundle Stickers</b>
+                        </button>
+                    </h2>
+                    <div id="annealingOperation3" class="accordion-collapse collapse {{ $currentOperation === 9 ? 'show' : '' }}"
+                        data-bs-parent="#annealingOperationAccordion">
+                        <div class="accordion-body">
+                            @include('productions.partials.bundleStickersEmbed')
+                        </div>
+                    </div>
+                </div>
+            @endif
+
         </div>
+        @include('productions.partials.bundleStickersEmbed')
     </div>
 </div>
 
@@ -580,17 +599,17 @@
     document.addEventListener('DOMContentLoaded', function () {
         const form = document.getElementById('boltOp4Form');
         if (!form || form.dataset.opDone === '1') return; // Operation 4 ho chuka hai
- 
+
         // Sab calculation milli-units (1 kg = 1000) mein, taaki float ki galti na aaye.
         const toMilli   = (v) => Math.round((parseFloat(v) || 0) * 1000);
         const fromMilli = (m) => (m / 1000).toFixed(3);
- 
+
         const material  = toMilli(form.dataset.materialKg);
         const nonReco   = toMilli(form.dataset.nonRecoKg);
         const baseReco  = toMilli(form.dataset.baseRecoKg);
         const bendSaw   = toMilli(form.dataset.bendSawKg);
         const available = Math.max(material - nonReco - baseReco, 0); // Total = available - scrap
- 
+
         const wInput      = document.getElementById('perPcsWt');
         const nInput      = document.getElementById('finishPcs');
         const totalWt     = document.getElementById('total_weight');
@@ -602,12 +621,12 @@
         const adjPct      = document.getElementById('adjustable_percentage');
         const misc        = document.getElementById('misc');
         const processType = form.querySelector('input[name="processtype"]');
- 
+
         let totalMilli = 0;    // Total Weight (= Finish Qty), milli
         let originalReco = 0;  // kg (manual recoverable logic ke liye)
         let prevReco = 0;      // kg
         let pieceAnchor = null; // 'weight' | 'pcs': in dono mein se jo aakhir mein edit hua
- 
+
         const isBendSaw = () => {
             const checked = form.querySelector('input[name="cutting_type"]:checked');
             return !!checked && checked.value === 'bend_saw_cutting';
@@ -615,12 +634,12 @@
         const getWeight = () => toMilli(wInput.value);
         const getPcs    = () => parseInt(nInput.value, 10) || 0;
         const getScrap  = () => (isBendSaw() ? bendSaw : toMilli(scrapInput.value));
- 
+
         function showTotal() {
             totalWt.value     = fromMilli(totalMilli);
             finishInput.value = fromMilli(totalMilli);
         }
- 
+
         // Per PCS WT se Pcs nikalo (Per PCS WT, Total se bada ho to Total tak limit)
         function applyWeight(w) {
             if (w <= 0) { nInput.value = ''; return; }
@@ -631,7 +650,7 @@
             }
             nInput.value = Math.floor(totalMilli / w);
         }
- 
+
         // Pcs se Per PCS WT nikalo (Pcs bahut zyada ho to sabse chhote weight 0.001 Kg tak limit)
         function applyPcs(n) {
             if (n <= 0) { wInput.value = ''; return; }
@@ -642,7 +661,7 @@
             }
             wInput.value = fromMilli(Math.floor(totalMilli / n));
         }
- 
+
         // Total badalne par (scrap / recoverable) jo aakhir mein edit hua tha use rakh kar doosra adjust
         function resyncPieces() {
             if (pieceAnchor === 'pcs') {
@@ -651,90 +670,90 @@
                 applyWeight(getWeight());
             }
         }
- 
+
         // Scrap ke hisaab se Total / Recoverable / Finish set karo aur manual adjustments reset
         function setBase(scrapMilli) {
             const scrap = Math.min(Math.max(scrapMilli, 0), available);
- 
+
             totalMilli = available - scrap;
- 
+
             const reco = baseReco + scrap;
             originalReco = reco / 1000;
             prevReco = originalReco;
- 
+
             recoInput.value = fromMilli(reco);
             showTotal();
- 
+
             adjReco.value = '0.000'; adjReco.disabled = false;
             adjPct.value  = '0.00';  adjPct.disabled  = false;
             misc.value    = '0.000'; misc.disabled    = true;
             processType.disabled = true;
- 
+
             return scrap;
         }
- 
+
         // Cutting type badalne par bilkul fresh form
         function resetForm() {
             const bend = isBendSaw();
- 
+
             pieceAnchor = null;
             wInput.value = '';
             nInput.value = '';
- 
+
             scrapInput.readOnly = bend;
             scrapInput.required = !bend;
             scrapInput.classList.toggle('bg-body-secondary', bend);
             //scrapHint.textContent = bend ? 'Bend Saw: auto 0.75% of sent RM' : 'Press Cutting: enter scrap';
- 
+
             const scrap = setBase(bend ? bendSaw : 0);
             scrapInput.value = bend ? fromMilli(scrap) : '';
         }
- 
+
         form.querySelectorAll('input[name="cutting_type"]').forEach((radio) => {
             radio.addEventListener('change', resetForm);
         });
- 
+
         wInput.addEventListener('input', function () {
             pieceAnchor = 'weight';
             applyWeight(getWeight());
         });
- 
+
         nInput.addEventListener('input', function () {
             pieceAnchor = 'pcs';
             applyPcs(getPcs());
         });
- 
+
         scrapInput.addEventListener('input', function () {
             if (isBendSaw()) return; // Bend Saw mein scrap fixed hai
- 
+
             const typed = toMilli(this.value);
             if (typed > available) {
                 this.value = fromMilli(available); // available se zyada nahi
             }
- 
+
             setBase(typed);
             resyncPieces();
         });
- 
+
         // Recoverable scrap manually badalne par: farak Total Weight mein add / minus, phir pieces auto adjust
         recoInput.addEventListener('input', function () {
             let current = Math.max(parseFloat(this.value) || 0, 0);
             let diffMilli = Math.round((current - prevReco) * 1000);
             let adjusted = parseFloat(this.value) < 0;
- 
+
             // Recoverable badhane se Total 0 se neeche na jaye
             if (diffMilli > totalMilli) {
                 diffMilli = totalMilli;
                 current = prevReco + diffMilli / 1000;
                 adjusted = true;
             }
- 
+
             if (adjusted) {
                 this.value = current.toFixed(3);
             }
- 
+
             const diff = diffMilli / 1000; // kg
- 
+
             if (current > originalReco) {
                 // MISC mode
                 misc.value = (current - originalReco).toFixed(3);
@@ -749,19 +768,19 @@
                 processType.disabled = true;
                 adjReco.disabled = false;
                 adjPct.disabled  = false;
- 
+
                 adjReco.value = ((parseFloat(adjReco.value) || 0) + diff).toFixed(3);
                 adjPct.value  = originalReco > 0
                     ? (((current - originalReco) / originalReco) * 100).toFixed(2)
                     : '0.00';
             }
- 
+
             totalMilli = Math.max(totalMilli - diffMilli, 0);
             prevReco = current;
             showTotal();
             resyncPieces();
         });
- 
+
         // Page load: jo values pehle se bharin hain unhe rehne do, sirf Total / Recoverable sync karo.
         if (getWeight() > 0) {
             pieceAnchor = 'weight';
@@ -776,39 +795,39 @@
     document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById('boltOp8Form');
         if (!form) return;
-    
+
         const total = parseInt(form.dataset.availablePcs, 10) || 0;
         const $ = (id) => document.getElementById(id);
         const boxesEl = $('noOfBoxes'), perBoxEl = $('pcsPerBox');
         const info = $('packInfo'), options = $('looseOptions'), note = $('looseNote');
         const radios = form.querySelectorAll('input[name="loose_handling"]');
         const num = (el) => parseInt(el.value, 10) || 0;
-    
+
         function render() {
             const boxes = num(boxesEl), perBox = num(perBoxEl), loose = total - boxes * perBox;
             const valid = boxes > 0 && perBox > 0 && loose >= 0;
-    
+
             info.classList.toggle('d-none', !valid);
             options.classList.toggle('d-none', !valid || loose === 0);
             radios.forEach((r) => (r.required = valid && loose > 0));
             if (!valid) return;
-    
+
             info.textContent = loose === 0
                 ? `${total} pcs = ${boxes} boxes x ${perBox} pcs/box. Nothing is left over.`
                 : `${perBox} pcs/box x ${boxes} boxes = ${boxes * perBox} pcs. ${loose} pcs are left over.`;
             if (loose === 0) return;
-    
+
             $('loosePcsText').textContent = loose;
             $('lastBoxPcsText').textContent = perBox + loose;
             $('extraBoxPcsText').textContent = loose;
-    
+
             const choice = form.querySelector('input[name="loose_handling"]:checked')?.value;
             note.textContent = {
                 adjust_last_box: `Note: ${loose} pcs will be adjusted in the last box. Last box will have ${perBox + loose} pcs.`,
                 extra_box: `Note: 1 extra box of ${loose} pcs will be added (loose box count: 1, loose box pcs: ${loose}).`,
             }[choice] ?? 'Please choose one option to continue.';
         }
-    
+
         // from: jo field user ne badli, to: jo auto hoti hai (dono taraf ka formula same: total / value)
         function link(from, to) {
             from.addEventListener('input', () => {
@@ -818,7 +837,7 @@
                 render();
             });
         }
-    
+
         link(boxesEl, perBoxEl); // Boxes -> Pcs/Box
         link(perBoxEl, boxesEl); // Pcs/Box -> Boxes
         radios.forEach((r) => r.addEventListener('change', render));
